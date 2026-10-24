@@ -21,6 +21,7 @@ class Placement(BaseModel):
     duty_class: str | None = None
     signal_type: str | None = None
     signal_level: str | None = None
+    group: str | None = None  # affinity group of the block
 
     @property
     def charm_no(self) -> int:

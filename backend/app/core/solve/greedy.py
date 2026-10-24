@@ -6,6 +6,8 @@ from app.core.model.allocation import Allocation, Placement, Unplaced
 from app.core.model.issue import Issue
 from app.core.model.layout import Block, Layout
 from app.core.model.pack import Pack
+from app.core.rules.primitives import Ctx, check_rule
+from app.core.rules.schema import Rule
 
 MAX_EXTRA_CABINETS = 200
 
@@ -52,24 +54,16 @@ class _Grid:
             for b in c.baseplates:
                 self.occ[(c.no, b.n)] = [False] * self.ch
 
-    def _run(self, cno: int, n: int, size: int) -> int | None:
-        row = self.occ[(cno, n)]
-        run = 0
-        for i, taken in enumerate(row):
-            run = 0 if taken else run + 1
-            if run == size:
-                return i - size + 1
-        return None
-
-    def find(self, cno: int, size: int) -> list[tuple[int, int]] | None:
-        """Positions (baseplate, channel) for a block in this CIOC, or None."""
+    def candidates(self, cno: int, size: int):
+        """Every feasible set of positions (baseplate, channel) in this CIOC, first-fit order."""
         usable = self.usable[cno]
         if size <= self.ch:
             for n in usable:
-                start = self._run(cno, n, size)
-                if start is not None:
-                    return [(n, start + 1 + i) for i in range(size)]
-            return None
+                row = self.occ[(cno, n)]
+                for start in range(self.ch - size + 1):
+                    if not any(row[start : start + size]):
+                        yield [(n, start + 1 + i) for i in range(size)]
+            return
         k = -(-size // self.ch)
         for i in range(len(usable) - k + 1):
             span = usable[i : i + k]
@@ -79,10 +73,12 @@ class _Grid:
             if all(not any(self.occ[(cno, n)]) for n in span[:-1]) and not any(
                 self.occ[(cno, span[-1])][:rest]
             ):
-                return [(n, ch) for n in span[:-1] for ch in range(1, self.ch + 1)] + [
+                yield [(n, ch) for n in span[:-1] for ch in range(1, self.ch + 1)] + [
                     (span[-1], ch) for ch in range(1, rest + 1)
                 ]
-        return None
+
+    def find(self, cno: int, size: int) -> list[tuple[int, int]] | None:
+        return next(self.candidates(cno, size), None)
 
     def take(self, cno: int, cells: list[tuple[int, int]]) -> None:
         for n, ch in cells:
@@ -94,11 +90,15 @@ def _majority(values: list[str | None]) -> str | None:
     return min(c, key=lambda k: (-c[k], k)) if c else None
 
 
-def pack_blocks(blocks: BlockSet, layout: Layout, pack: Pack) -> Allocation:
+def pack_blocks(
+    blocks: BlockSet, layout: Layout, pack: Pack, rules: list[Rule] | None = None
+) -> Allocation:
     """First-fit-decreasing into a fixed layout. Never mutates its inputs."""
     alloc = Allocation(layout=layout.model_copy(deep=True), solver="greedy")
     alloc.issues.extend(layout.issues)
     grid = _Grid(layout, pack)
+    active = [r for r in rules or [] if r.enabled and r.enforced and r.strength == "hard"]
+    ctx = Ctx(layout, pack)
     families: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
     groups: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
 
@@ -142,45 +142,85 @@ def pack_blocks(blocks: BlockSet, layout: Layout, pack: Pack) -> Allocation:
             continue
         hosts = [c.no for c in layout.ciocs if block.group in groups[c.no]]
         order = hosts + [c.no for c in layout.ciocs if c.no not in hosts]
+        io = _majority([s.io_type for s in block.signals])
+        same = [s for s in block.signals if s.io_type == io]
+        duty = _majority([s.duty_class for s in same])
+        st = _majority([s.signal_type for s in same])
+        lvl = _majority([s.signal_level for s in same])
+
+        hw = (io, duty, st, lvl)
+
+        rejected_by: set[str] = set()
+        chosen: tuple[int, list[Placement], list[tuple[int, int]]] | None = None
         for cno in order:
             if not compatible(families[cno], bool(groups[cno]), block, pack):
                 continue
-            cells2 = grid.find(cno, block.size)
-            if cells2 is None:
-                continue
+            for cells2 in grid.candidates(cno, block.size):
+                new_ps = _make_placements(block, cno, cells2, hw)
+                bad = _rule_rejections(active, ctx, alloc.placements, new_ps)
+                if bad:
+                    rejected_by |= bad
+                    continue
+                chosen = (cno, new_ps, cells2)
+                break
+            if chosen:
+                break
+        if chosen:
+            cno, new_ps, cells2 = chosen
             grid.take(cno, cells2)
             families[cno] |= set(block.families)
             groups[cno].add(block.group or block.id)
-            io = _majority([s.io_type for s in block.signals])
-            same = [s for s in block.signals if s.io_type == io]
-            duty = _majority([s.duty_class for s in same])
-            st = _majority([s.signal_type for s in same])
-            lvl = _majority([s.signal_level for s in same])
-            for pos, (n, ch) in zip(block.positions, cells2, strict=True):
-                alloc.placements.append(
-                    Placement(
-                        cioc_no=cno,
-                        baseplate=n,
-                        channel=ch,
-                        kind=pos.kind,
-                        signal=pos.signal,
-                        block_id=block.id,
-                        pair=pos.pair,
-                        io_type=pos.signal.io_type if pos.signal else io,
-                        duty_class=pos.signal.duty_class if pos.signal else duty,
-                        signal_type=pos.signal.signal_type if pos.signal else st,
-                        signal_level=pos.signal.signal_level if pos.signal else lvl,
-                    )
-                )
-            break
-        else:
+            alloc.placements.extend(new_ps)
+            continue
+        if rejected_by:
             _unplace(
-                alloc, block, "TQ-CAP", f"cable {block.id} ({block.size} positions) does not fit"
+                alloc,
+                block,
+                "TQ-RULE",
+                f"cable {block.id} cannot be placed without breaking rule(s) "
+                f"{', '.join(sorted(rejected_by))}",
             )
+            continue
+        _unplace(alloc, block, "TQ-CAP", f"cable {block.id} ({block.size} positions) does not fit")
     alloc.cioc_labels = {
         c: cioc_label(families[c], groups[c]) for c in sorted(families) if groups[c]
     }
     return alloc
+
+
+def _make_placements(
+    block: Block, cno: int, cells: list[tuple[int, int]], hw: tuple
+) -> list[Placement]:
+    io, duty, st, lvl = hw
+    return [
+        Placement(
+            cioc_no=cno,
+            baseplate=n,
+            channel=ch,
+            kind=pos.kind,
+            signal=pos.signal,
+            block_id=block.id,
+            pair=pos.pair,
+            io_type=pos.signal.io_type if pos.signal else io,
+            duty_class=pos.signal.duty_class if pos.signal else duty,
+            signal_type=pos.signal.signal_type if pos.signal else st,
+            signal_level=pos.signal.signal_level if pos.signal else lvl,
+            group=block.group,
+        )
+        for pos, (n, ch) in zip(block.positions, cells, strict=True)
+    ]
+
+
+def _rule_rejections(
+    rules: list[Rule], ctx: Ctx, placed: list[Placement], new: list[Placement]
+) -> set[str]:
+    """Ids of the hard rules a hypothetical placement would break (new violations only)."""
+    out = set()
+    for r in rules:
+        before = len(check_rule(r, placed, ctx))
+        if len(check_rule(r, [*placed, *new], ctx)) > before:
+            out.add(r.id)
+    return out
 
 
 def _unplace(alloc: Allocation, block: Block, code: str, message: str) -> None:
@@ -190,18 +230,28 @@ def _unplace(alloc: Allocation, block: Block, code: str, message: str) -> None:
         alloc.unplaced.append(Unplaced(signal=s, issues=[iss]))
 
 
+RULE_RETRY_CABINETS = 3
+
+
 def solve_greedy(
-    blocks: BlockSet, pack: Pack, area: str | None = None, unit: str | None = None
+    blocks: BlockSet,
+    pack: Pack,
+    area: str | None = None,
+    unit: str | None = None,
+    rules: list[Rule] | None = None,
 ) -> Allocation:
     """Open more cabinets until everything fits (or the pack's cabinet cap is reached)."""
     n = cabinets_needed(blocks, pack)
     cap = pack.capacity.max_cabinets
     for extra in range(MAX_EXTRA_CABINETS):
         layout = derive_layout(blocks, pack, area, unit, cabinets=n + extra)
-        alloc = pack_blocks(blocks, layout, pack)
-        capacity_failures = [
-            i for i in alloc.issues if i.code == "TQ-CAP" and "does not fit" in i.message
-        ]
-        if not capacity_failures or (cap is not None and len(layout.cabinets) >= cap):
+        alloc = pack_blocks(blocks, layout, pack, rules)
+        no_room = [i for i in alloc.issues if i.code == "TQ-CAP" and "does not fit" in i.message]
+        by_rule = [i for i in alloc.issues if i.code == "TQ-RULE"]
+        if not no_room and not (by_rule and extra < RULE_RETRY_CABINETS):
+            return alloc
+        if cap is not None and len(layout.cabinets) >= cap:
+            return alloc
+        if not no_room and extra >= RULE_RETRY_CABINETS:
             return alloc
     return alloc

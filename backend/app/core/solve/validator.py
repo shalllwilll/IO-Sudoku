@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from app.core.model.allocation import Allocation
 from app.core.model.pack import Pack
 from app.core.model.signal import Signal
+from app.core.rules.primitives import Ctx, check_rule
+from app.core.rules.schema import Rule
 
 
 class Violation(BaseModel):
@@ -17,7 +19,11 @@ def _key(s: Signal) -> tuple:
 
 
 def validate_allocation(
-    alloc: Allocation, pack: Pack, signals: list[Signal], alarm_signals: list[Signal] | None = None
+    alloc: Allocation,
+    pack: Pack,
+    signals: list[Signal],
+    alarm_signals: list[Signal] | None = None,
+    rules: list[Rule] | None = None,
 ) -> list[Violation]:
     """Check an allocation against the hard invariants. Empty list means valid.
 
@@ -156,4 +162,11 @@ def validate_allocation(
         unknown = {f for f in fs if f.startswith("UNKNOWN:")}
         if unknown and (len(fs) > 1 or cno in occupied_by_neutral):
             v("SEGREGATION", f"CIOC {cioc_by_no[cno].name} shares a CIOC with unknown {unknown}")
+    # rule primitives: hard rules are violations; soft and advisory ones are reported by rule_check
+    if rules:
+        ctx = Ctx(lay, pack)
+        for r in rules:
+            if r.enabled and r.enforced and r.strength == "hard":
+                for msg in check_rule(r, alloc.placements, ctx):
+                    v(f"RULE:{r.id}", msg)
     return out

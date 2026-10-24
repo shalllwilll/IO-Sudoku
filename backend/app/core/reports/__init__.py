@@ -7,6 +7,7 @@ from app.core.model.signal import Signal
 from app.core.reports.declaration import Declaration, build_declaration
 from app.core.reports.kpi import Kpi, compute_kpi
 from app.core.reports.rule_check import RuleResult, rule_check
+from app.core.rules.schema import Rule
 
 
 class CompletionReport(BaseModel):
@@ -52,9 +53,10 @@ def build_report(
     issues: list[Issue],
     extra_held_out: list[Signal] | None = None,
     not_enforced: list[str] | None = None,
+    rules: list[Rule] | None = None,
 ) -> CompletionReport:
     return CompletionReport(
         kpi=compute_kpi(alloc, pack, extra_held_out),
-        rules=rule_check(alloc, pack, signals, not_enforced),
+        rules=rule_check(alloc, pack, signals, not_enforced, rules),
         declaration=build_declaration(pack, issues, not_enforced),
     )
