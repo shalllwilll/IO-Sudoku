@@ -1,9 +1,11 @@
 {
-  "channels_per_baseplate": 12,
-  "baseplates_per_cioc": 8,
-  "ciocs_per_cabinet": 4,
-  "ciocs_per_controller": 16,
-  "alarm_baseplate_index": 1,
-  "spare_percent": 10,
-  "spare_rounding": "floor"
+ "channels_per_baseplate": 12,
+ "baseplates_per_cioc": 8,
+ "ciocs_per_cabinet": 4,
+ "ciocs_per_controller": 16,
+ "alarm_baseplate_index": 1,
+ "spare_percent": 10,
+ "spare_rounding": "floor",
+ "controllers_per_system_cabinet": 1,
+ "max_cabinets": null
 }

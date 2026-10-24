@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+from app.core.model.issue import Issue
 from app.core.model.signal import Signal
 
 
@@ -41,3 +42,46 @@ class Group(BaseModel):
     cables: list[str]
     positions: int
     signals: int
+
+
+class Baseplate(BaseModel):
+    name: str
+    cioc_no: int
+    n: int
+    reserved: str | None = None  # alarm | spare
+
+
+class Cioc(BaseModel):
+    no: int
+    name: str
+    cabinet: int
+    seq_in_cabinet: int
+    controller: int
+    baseplates: list[Baseplate]
+
+
+class Controller(BaseModel):
+    no: int
+    name: str
+    system_cabinet: str
+    ciocs: list[int]
+
+
+class Cabinet(BaseModel):
+    no: int
+    name: str
+    ciocs: list[int]
+
+
+class Layout(BaseModel):
+    """A plan of empty slots; the packer fills it, so solvers stay interchangeable."""
+
+    cabinets: list[Cabinet] = Field(default_factory=list)
+    ciocs: list[Cioc] = Field(default_factory=list)
+    controllers: list[Controller] = Field(default_factory=list)
+    spare_baseplates_per_cabinet: int = 0
+    class_plan: dict[str, int] = Field(default_factory=dict)  # segregation class -> CIOCs needed
+    issues: list[Issue] = Field(default_factory=list)
+
+    def cioc(self, no: int) -> Cioc:
+        return self.ciocs[no - 1]

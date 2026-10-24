@@ -67,6 +67,7 @@ class Segregation(BaseModel):
     model_config = ConfigDict(extra="forbid")
     codes: list[SegregationCode]
     unknown_policy: str = "own_cioc"
+    conflicts: list[list[str]] = [["A", "B"]]
 
 
 class Capacity(BaseModel):
@@ -78,6 +79,8 @@ class Capacity(BaseModel):
     alarm_baseplate_index: int
     spare_percent: int
     spare_rounding: str
+    controllers_per_system_cabinet: int = 1
+    max_cabinets: int | None = None
 
 
 class Schema(BaseModel):
