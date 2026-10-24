@@ -44,6 +44,14 @@ class CpsatError(RuntimeError):
     pass
 
 
+class ModelTooLarge(Exception):
+    """Raised while the options are being built, so an oversized model never gets built."""
+
+    def __init__(self, limit: int):
+        super().__init__(f"more than {limit} placement options")
+        self.limit = limit
+
+
 @dataclass
 class CpsatResult:
     status: str  # OPTIMAL | FEASIBLE | INFEASIBLE | UNKNOWN | REJECTED | ERROR
@@ -233,9 +241,12 @@ class _Build:
             self.unplaced_var[block.id] = u
             m.AddExactlyOne([*(o.var for o in opts), u])
 
-    def add_options(self, strict: bool) -> None:
+    def add_options(self, strict: bool, limit: int | None = None) -> None:
         m = self.model
+        total = 0
         for block in self.blocks.blocks:
+            if limit is not None and total > limit:
+                raise ModelTooLarge(limit)
             why = block_ok(block, self.pack)
             if why:
                 self.rejected[block.id] = why
@@ -261,6 +272,7 @@ class _Build:
                     )
                 )  # fmt: skip
             self.options[block.id] = opts
+            total += len(opts)
             if strict:
                 m.AddExactlyOne([o.var for o in opts])  # no options: infeasible by construction
             else:
@@ -733,9 +745,17 @@ def solve_cpsat(
     layout = base.layout if base else derive_layout(blocks, pack, area, unit)
     build = _Build(blocks, layout, pack, rules)
     try:
-        build.add_options(strict)
+        limit = overrides.get("max_options", pack.capacity.cpsat_max_options)
+        try:
+            build.add_options(strict, limit)
+        except ModelTooLarge as e:
+            return CpsatResult(
+                status="SKIPPED",
+                wall_seconds=time.perf_counter() - t0,
+                message=f"model too large ({e})",
+            )
         n_options = sum(len(v) for v in build.options.values())
-        if n_options > overrides.get("max_options", pack.capacity.cpsat_max_options):
+        if n_options > limit:
             return CpsatResult(
                 status="SKIPPED",
                 wall_seconds=time.perf_counter() - t0,

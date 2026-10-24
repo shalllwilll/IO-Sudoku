@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, defaultdict
 
 from app.core.layout.blocks import BlockSet
 from app.core.layout.derive import cabinets_needed, derive_layout
@@ -195,6 +195,7 @@ def pack_blocks(
             groups[cno].add(block.group or block.id)
             alloc.placements.extend(_make_placements(block, cno, cells, block_hw(block)))
 
+    placed = Placed(alloc.placements, ctx)
     rank = order or {}
     for block in sorted(blocks.blocks, key=lambda b: (-rank.get(b.id, 0), -b.size, b.id)):
         if block.id in pinned:
@@ -223,14 +224,14 @@ def pack_blocks(
                 and compatible(families[cno], bool(groups[cno]), block, pack)
             ):
                 new_ps = _make_placements(block, cno, cells2, hw)
-                if not _rule_rejections(active, ctx, alloc.placements, new_ps, seen):
+                if not _rule_rejections(active, ctx, placed, new_ps, seen):
                     chosen = (cno, new_ps, cells2)
         for cno in [] if chosen else tries:
             if not compatible(families[cno], bool(groups[cno]), block, pack):
                 continue
             for cells2 in grid.candidates(cno, block.size):
                 new_ps = _make_placements(block, cno, cells2, hw)
-                bad = _rule_rejections(active, ctx, alloc.placements, new_ps, seen)
+                bad = _rule_rejections(active, ctx, placed, new_ps, seen)
                 if bad:
                     rejected_by |= bad
                     continue
@@ -244,6 +245,7 @@ def pack_blocks(
             families[cno] |= set(block.families)
             groups[cno].add(block.group or block.id)
             alloc.placements.extend(new_ps)
+            placed.add(new_ps)
             continue
         if rejected_by:
             _unplace(
@@ -284,24 +286,109 @@ def _make_placements(
     ]
 
 
+class Placed:
+    """The placements made so far, indexed so a rule check reads only what a candidate can affect.
+
+    A violation a candidate adds can only appear in the units it touches (capacity, quota,
+    separation: its CIOC or cabinet; order: its CIOC; co-location: the values it carries; assign
+    and reserve: nowhere else). Rules that look at the whole plant (pin, limit_span) still see it.
+    """
+
+    def __init__(self, placements: list[Placement], ctx: Ctx):
+        self.all = placements
+        self.ctx = ctx
+        self.by_cioc: dict[int, list[Placement]] = defaultdict(list)
+        self.by_value: dict[str, dict[object, list[Placement]]] = {}
+        self.by_cabinet: dict[int, set[int]] = defaultdict(set)
+        for c, cab in ctx.cab_of.items():
+            self.by_cabinet[cab].add(c)
+        for p in placements:
+            self.by_cioc[p.cioc_no].append(p)
+
+    def add(self, new: list[Placement]) -> None:
+        """Record placements the caller has just appended to `all`."""
+        for p in new:
+            self.by_cioc[p.cioc_no].append(p)
+            for by, index in self.by_value.items():
+                v = _value(p, by)
+                if v is not None:
+                    index.setdefault(v, []).append(p)
+
+    def _ciocs(self, level: str, new: list[Placement]) -> list[Placement]:
+        touched = {p.cioc_no for p in new}
+        if level == "cabinet":
+            touched = {c for cno in touched for c in self.by_cabinet[self.ctx.cab_of[cno]]}
+        return [p for c in sorted(touched) for p in self.by_cioc.get(c, [])]
+
+    def _values(self, by: str, new: list[Placement]) -> list[Placement]:
+        if by not in self.by_value:
+            index: dict[object, list[Placement]] = {}
+            for p in self.all:
+                v = _value(p, by)
+                if v is not None:
+                    index.setdefault(v, []).append(p)
+            self.by_value[by] = index
+        wanted = {v for p in new if (v := _value(p, by)) is not None}
+        return [p for v in sorted(wanted, key=str) for p in self.by_value[by].get(v, [])]
+
+    def around(self, rule: Rule, new: list[Placement]) -> list[Placement] | None:
+        """The placements that decide whether `new` adds a violation; None means all of them."""
+        prm = rule.parameters
+        match rule.primitive:
+            case "capacity" | "quota":
+                return self._ciocs(str(prm["per"]), new)
+            case "separate":
+                return self._ciocs(str(prm.get("level", "cioc")), new)
+            case "order":
+                return self._ciocs("cioc", new)
+            case "co_locate":
+                return self._values(str(prm["by"]), new)
+            case "assign" | "reserve":
+                return []
+        return None
+
+
+def _value(p: Placement, field: str) -> object:
+    v = p.group if field == "group" else getattr(p.signal, field, None)
+    return None if v is None or v == "" else v
+
+
+def rule_rejections_full(
+    rules: list[Rule], ctx: Ctx, placed: list[Placement], new: list[Placement]
+) -> set[str]:
+    """Reference implementation: every rule over every placement, before and after."""
+    out = set()
+    for r in rules:
+        if len(check_rule(r, [*placed, *new], ctx)) > len(check_rule(r, placed, ctx)):
+            out.add(r.id)
+    return out
+
+
 def _rule_rejections(
     rules: list[Rule],
     ctx: Ctx,
-    placed: list[Placement],
+    placed: "Placed | list[Placement]",
     new: list[Placement],
     seen: dict[str, int] | None = None,
 ) -> set[str]:
     """Ids of the hard rules a hypothetical placement would break (new violations only).
 
-    `seen` holds the violation count of `placed` per rule; the caller keeps it only while `placed`
-    does not change.
+    Same answer as `rule_rejections_full`. `seen` holds the whole-plant violation count of
+    `placed` for the rules that need it; the caller keeps it only while `placed` does not change.
     """
+    if not isinstance(placed, Placed):
+        placed = Placed(placed, ctx)
     seen = {} if seen is None else seen
     out = set()
     for r in rules:
-        if r.id not in seen:
-            seen[r.id] = len(check_rule(r, placed, ctx))
-        if len(check_rule(r, [*placed, *new], ctx)) > seen[r.id]:
+        near = placed.around(r, new)
+        if near is None:
+            if r.id not in seen:
+                seen[r.id] = len(check_rule(r, placed.all, ctx))
+            before, after = seen[r.id], len(check_rule(r, [*placed.all, *new], ctx))
+        else:
+            before, after = len(check_rule(r, near, ctx)), len(check_rule(r, [*near, *new], ctx))
+        if after > before:
             out.add(r.id)
     return out
 

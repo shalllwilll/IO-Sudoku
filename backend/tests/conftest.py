@@ -2,10 +2,13 @@ import os
 from pathlib import Path
 
 import pytest
-from hypothesis import settings
+from hypothesis import Phase, settings
 
 # modest in CI; HYPOTHESIS_PROFILE=nightly (or pytest -m nightly) for the big sweep
 settings.register_profile("ci", max_examples=40, deadline=None)
+settings.register_profile(
+    "noshrink", max_examples=150, deadline=None, phases=[Phase.generate]
+)  # mutation checks
 settings.register_profile("nightly", max_examples=1000, deadline=None)
 settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "ci"))
 
