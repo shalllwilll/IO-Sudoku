@@ -2,6 +2,7 @@
 
 from pydantic import BaseModel, Field
 
+from app.core.ai.features import RulePreview, Suggestion, TqWording
 from app.core.ingest.mapper import ColumnMatch
 from app.core.model.allocation import Placement, Unplaced
 from app.core.model.issue import Issue
@@ -63,6 +64,7 @@ class MappingSheet(BaseModel):
     matches: dict[str, ColumnMatch]
     grouping_mode: str
     issues: list[Issue]
+    ai_hints: dict[str, Suggestion] = Field(default_factory=dict)  # field -> suggestion
 
 
 class MappingOut(BaseModel):
@@ -81,6 +83,7 @@ class UnknownValueOut(BaseModel):
     value: str
     count: int
     suggestion: str | None = None
+    ai: Suggestion | None = None  # a suggestion awaiting confirmation, never applied
 
 
 class ValueMaps(BaseModel):
@@ -177,3 +180,14 @@ class AnswerOut(BaseModel):
     answer: Answer
     tq: TQ
     history: list[Answer]
+
+
+class CompileIn(BaseModel):
+    request: str = Field(min_length=3, max_length=600)
+
+
+class ConfirmRuleIn(BaseModel):
+    rule: dict
+
+
+__all__ = ["RulePreview", "TqWording"]

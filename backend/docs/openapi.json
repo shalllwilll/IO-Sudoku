@@ -419,6 +419,21 @@
     "title": "ColumnMatch",
     "type": "object"
    },
+   "CompileIn": {
+    "properties": {
+     "request": {
+      "maxLength": 600,
+      "minLength": 3,
+      "title": "Request",
+      "type": "string"
+     }
+    },
+    "required": [
+     "request"
+    ],
+    "title": "CompileIn",
+    "type": "object"
+   },
    "CompletionReport": {
     "properties": {
      "declaration": {
@@ -441,6 +456,20 @@
      "declaration"
     ],
     "title": "CompletionReport",
+    "type": "object"
+   },
+   "ConfirmRuleIn": {
+    "properties": {
+     "rule": {
+      "additionalProperties": true,
+      "title": "Rule",
+      "type": "object"
+     }
+    },
+    "required": [
+     "rule"
+    ],
+    "title": "ConfirmRuleIn",
     "type": "object"
    },
    "Controller": {
@@ -1075,6 +1104,13 @@
    },
    "MappingSheet": {
     "properties": {
+     "ai_hints": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/Suggestion"
+      },
+      "title": "Ai Hints",
+      "type": "object"
+     },
      "columns": {
       "items": {
        "type": "string"
@@ -1438,6 +1474,163 @@
      "report"
     ],
     "title": "ReportOut",
+    "type": "object"
+   },
+   "Rule": {
+    "properties": {
+     "builtin": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Builtin"
+     },
+     "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "default": "",
+      "title": "Name",
+      "type": "string"
+     },
+     "not_enforced_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Not Enforced Reason"
+     },
+     "parameters": {
+      "additionalProperties": true,
+      "title": "Parameters",
+      "type": "object"
+     },
+     "primitive": {
+      "anyOf": [
+       {
+        "enum": [
+         "co_locate",
+         "separate",
+         "capacity",
+         "reserve",
+         "quota",
+         "order",
+         "assign",
+         "pin",
+         "limit_span"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Primitive"
+     },
+     "scope": {
+      "default": "",
+      "title": "Scope",
+      "type": "string"
+     },
+     "strength": {
+      "default": "hard",
+      "enum": [
+       "hard",
+       "soft",
+       "advisory"
+      ],
+      "title": "Strength",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id"
+    ],
+    "title": "Rule",
+    "type": "object"
+   },
+   "RulePreview": {
+    "properties": {
+     "applied": {
+      "default": false,
+      "title": "Applied",
+      "type": "boolean"
+     },
+     "confidence": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence"
+     },
+     "dry_run": {
+      "items": {
+       "$ref": "#/components/schemas/DryRun"
+      },
+      "title": "Dry Run",
+      "type": "array"
+     },
+     "findings": {
+      "items": {
+       "$ref": "#/components/schemas/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "rule": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Rule"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "source": {
+      "const": "ai",
+      "default": "ai",
+      "title": "Source",
+      "type": "string"
+     },
+     "status": {
+      "enum": [
+       "ok",
+       "not_enforced",
+       "rejected",
+       "unavailable"
+      ],
+      "title": "Status",
+      "type": "string"
+     }
+    },
+    "required": [
+     "status",
+     "message"
+    ],
+    "title": "RulePreview",
     "type": "object"
    },
    "RuleResult": {
@@ -2124,6 +2317,49 @@
     "title": "SpareReport",
     "type": "object"
    },
+   "Suggestion": {
+    "properties": {
+     "confidence": {
+      "title": "Confidence",
+      "type": "number"
+     },
+     "kind": {
+      "enum": [
+       "suggestion",
+       "question"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "model": {
+      "default": "",
+      "title": "Model",
+      "type": "string"
+     },
+     "prompt_hash": {
+      "default": "",
+      "title": "Prompt Hash",
+      "type": "string"
+     },
+     "source": {
+      "const": "ai",
+      "default": "ai",
+      "title": "Source",
+      "type": "string"
+     },
+     "value": {
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "value",
+     "confidence"
+    ],
+    "title": "Suggestion",
+    "type": "object"
+   },
    "TQ": {
     "properties": {
      "answer": {
@@ -2254,8 +2490,51 @@
     "title": "TqOption",
     "type": "object"
    },
+   "TqWording": {
+    "properties": {
+     "confidence": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Confidence"
+     },
+     "source": {
+      "enum": [
+       "ai",
+       "template"
+      ],
+      "title": "Source",
+      "type": "string"
+     },
+     "text": {
+      "title": "Text",
+      "type": "string"
+     }
+    },
+    "required": [
+     "text",
+     "source"
+    ],
+    "title": "TqWording",
+    "type": "object"
+   },
    "UnknownValueOut": {
     "properties": {
+     "ai": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Suggestion"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
      "count": {
       "title": "Count",
       "type": "integer"
@@ -2951,6 +3230,7 @@
   },
   "/api/projects/{pid}/rules/compile": {
    "post": {
+    "description": "Plain English to a rule. Returns a preview with lint and a dry-run count; nothing is applied.",
     "operationId": "compile_rules_api_projects__pid__rules_compile_post",
     "parameters": [
      {
@@ -2963,7 +3243,37 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/CompileIn"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RulePreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
      "422": {
       "content": {
        "application/json": {
@@ -2973,8 +3283,48 @@
        }
       },
       "description": "Validation Error"
+     }
+    },
+    "summary": "Compile Rules"
+   }
+  },
+  "/api/projects/{pid}/rules/compile/confirm": {
+   "post": {
+    "description": "Add a previewed rule to the project's rule set. It is linted again first.",
+    "operationId": "confirm_rule_api_projects__pid__rules_compile_confirm_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConfirmRuleIn"
+       }
+      }
      },
-     "501": {
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RulesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
       "content": {
        "application/json": {
         "schema": {
@@ -2982,10 +3332,20 @@
         }
        }
       },
-      "description": "Successful Response"
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
      }
     },
-    "summary": "Compile Rules"
+    "summary": "Confirm Rule"
    }
   },
   "/api/projects/{pid}/rules/mine": {
@@ -3904,6 +4264,65 @@
      }
     },
     "summary": "Answer"
+   }
+  },
+  "/api/projects/{pid}/tqs/{tid}/explain": {
+   "get": {
+    "description": "Plain-language wording of a TQ; the template text when AI is off.",
+    "operationId": "explain_api_projects__pid__tqs__tid__explain_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "tid",
+      "required": true,
+      "schema": {
+       "title": "Tid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TqWording"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Explain"
    }
   },
   "/api/projects/{pid}/uploads": {

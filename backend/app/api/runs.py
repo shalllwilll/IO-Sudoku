@@ -17,6 +17,7 @@ from app.api.models import (
     RunOut,
 )
 from app.api.service import Service
+from app.core.ai.features import TqWording, explain_tq
 from app.core.model.allocation import Allocation
 from app.core.tq.answers import AnswerError
 from app.core.tq.model import TQ
@@ -169,3 +170,13 @@ def answer(pid: str, tid: str, body: AnswerIn, request: Request, svc: Service = 
     except AnswerError as e:
         raise ApiError(422, "invalid_answer", str(e)) from e
     return AnswerOut(answer=a, tq=store.get(tid), history=store.history(tid))  # type: ignore[arg-type]
+
+
+@router.get("/projects/{pid}/tqs/{tid}/explain", response_model=TqWording, responses={404: ERRORS})
+def explain(pid: str, tid: str, request: Request, svc: Service = Depends(service)):
+    """Plain-language wording of a TQ; the template text when AI is off."""
+    project_of(request, pid)
+    tq = svc.store.tq_store(pid).get(tid)
+    if tq is None:
+        raise not_found("TQ")
+    return explain_tq(svc.gateway, tq)

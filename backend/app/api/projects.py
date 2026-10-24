@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, File, Request, UploadFile
 from app.api.deps import project_of, service
 from app.api.errors import ApiError, ErrorBody, not_found
 from app.api.models import (
+    CompileIn,
+    ConfirmRuleIn,
     LintIn,
     LintOut,
     MappingIn,
@@ -25,6 +27,7 @@ from app.api.models import (
     ValuesOut,
 )
 from app.api.service import Service
+from app.core.ai.features import RulePreview, classify_value, compile_rule, mapping_hint
 from app.core.ingest.reader import ReaderError, read_workbook
 from app.core.layout.blocks import build_blocks
 from app.core.rules.dryrun import dry_run
@@ -181,6 +184,19 @@ def _mapping(svc: Service, project: dict) -> MappingOut:
         for r in reads
         if (k := f"{r.summary.source_file}:{r.summary.sheet}") in maps
     ]  # fmt: skip
+    if svc.gateway.available:
+        for sh, r in zip(
+            sheets,
+            [x for x in reads if f"{x.summary.source_file}:{x.summary.sheet}" in maps],
+            strict=True,
+        ):
+            for i in sh.issues:
+                opts = (i.data.get("options") or "").split("|")
+                if i.code == "TQ-MAP" and len(opts) > 1:
+                    cols = [(c, [row.values.get(c) for row in r.rows[:3]]) for c in opts]
+                    hint = mapping_hint(svc.gateway, i.data["field"], cols)
+                    if hint:
+                        sh.ai_hints[i.data["field"]] = hint
     return MappingOut(
         sheets=sheets,
         fields=sorted(svc.pack.aliases.fields),
@@ -229,8 +245,20 @@ def _allowed(svc: Service) -> dict[str, list[str]]:
 def _values(svc: Service, project: dict) -> ValuesOut:
     _, _, ss = svc.preview(project)
     ov = svc.overrides(project)
+    allowed = _allowed(svc)
+    cats = {
+        "io_type": allowed["io_type"],
+        "duty": allowed["duty_class"],
+        "segregation": allowed["segregation"],
+    }
+    unknown = []
+    for u in ss.unknown_values:
+        ai = None
+        if svc.gateway.available and u.field in cats:
+            ai = classify_value(svc.gateway, u.field, u.value, cats[u.field])
+        unknown.append(UnknownValueOut(**u.model_dump(), ai=ai))
     return ValuesOut(
-        unknown=[UnknownValueOut(**u.model_dump()) for u in ss.unknown_values],
+        unknown=unknown,
         overrides=ValueMaps(
             io_types=ov.io_types, duty_classes=ov.duty_classes, segregation=ov.segregation
         ),
@@ -320,10 +348,37 @@ def lint_rules(pid: str, body: LintIn, request: Request, svc: Service = Depends(
     return LintOut(findings=lint(rules, ss.signals, groups), dry_run=dry_run(rules, blocks))
 
 
-@router.post("/projects/{pid}/rules/compile", status_code=501, responses={501: ERRORS})
-def compile_rules(pid: str, request: Request):
-    project_of(request, pid)
-    raise ApiError(501, "not_implemented", "natural-language rule compiling is not available yet")
+@router.post("/projects/{pid}/rules/compile", response_model=RulePreview, responses={404: ERRORS})
+def compile_rules(pid: str, body: CompileIn, request: Request, svc: Service = Depends(service)):
+    """Plain English to a rule. Returns a preview with lint and a dry-run count; nothing is applied."""
+    project = project_of(request, pid)
+    existing = {r.id for r in svc.rules(project)}
+    signals = blocks = groups = None
+    if svc.store.uploads(pid):
+        _, _, ss = svc.preview(project)
+        signals, blocks = ss.signals, build_blocks(ss.signals, svc.pack)
+        groups = {b.id: b.group for b in blocks.blocks if b.group}
+    return compile_rule(svc.gateway, body.request, existing, signals, blocks, groups)
+
+
+@router.post(
+    "/projects/{pid}/rules/compile/confirm",
+    response_model=RulesOut,
+    responses={404: ERRORS, 422: ERRORS},
+)
+def confirm_rule(pid: str, body: ConfirmRuleIn, request: Request, svc: Service = Depends(service)):
+    """Add a previewed rule to the project's rule set. It is linted again first."""
+    project = project_of(request, pid)
+    current = [r.model_dump() for r in svc.rules(project)]
+    try:
+        merged = load_rules([*current, body.rule])
+    except (RuleSetError, ValueError) as e:
+        raise ApiError(422, "invalid_rules", str(e)) from e
+    errors = [f for f in lint([merged[-1]]) if f.severity == "error"]
+    if errors:
+        raise ApiError(422, "invalid_rules", "; ".join(f.message for f in errors))
+    svc.store.update_settings(pid, rules=[r.model_dump() for r in merged])
+    return get_rules(pid, request, svc)
 
 
 @router.post("/projects/{pid}/rules/mine", status_code=501, responses={501: ERRORS})

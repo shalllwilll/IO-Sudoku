@@ -15,6 +15,8 @@ CONTRACT = [
     ("get", "/api/projects/{pid}/rules"), ("put", "/api/projects/{pid}/rules"),
     ("post", "/api/projects/{pid}/lint"),
     ("post", "/api/projects/{pid}/rules/compile"), ("post", "/api/projects/{pid}/rules/mine"),
+    ("post", "/api/projects/{pid}/rules/compile/confirm"),
+    ("get", "/api/projects/{pid}/tqs/{tid}/explain"),
     ("post", "/api/projects/{pid}/runs"), ("get", "/api/projects/{pid}/runs"),
     ("get", "/api/projects/{pid}/runs/{rid}"),
     ("get", "/api/projects/{pid}/runs/{rid}/layout"),
