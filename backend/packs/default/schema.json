@@ -1,5 +1,26 @@
 {
-  "required": ["tag", "io_type", "cable", "pair"],
-  "optional": ["duty", "signal_type", "signal_level", "instrument_type", "group", "segregation",
-    "logic_number", "area", "equipment_name", "service", "revision", "change_type", "status"]
+ "required": [
+  "tag",
+  "io_type",
+  "cable",
+  "pair"
+ ],
+ "optional": [
+  "duty",
+  "signal_type",
+  "signal_level",
+  "instrument_type",
+  "group",
+  "segregation",
+  "logic_number",
+  "area",
+  "equipment_name",
+  "service",
+  "revision",
+  "change_type",
+  "status"
+ ],
+ "internal_cable_markers": [
+  "internal wiring"
+ ]
 }

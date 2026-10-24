@@ -65,6 +65,7 @@ class Schema(BaseModel):
     model_config = ConfigDict(extra="forbid")
     required: list[str]
     optional: list[str]
+    internal_cable_markers: list[str] = []
 
 
 class Thresholds(BaseModel):

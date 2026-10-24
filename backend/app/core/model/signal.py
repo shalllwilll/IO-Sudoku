@@ -35,6 +35,7 @@ class Signal(BaseModel):
     change_type: str | None = None
     remarks: str | None = None
     status: str | None = None
+    internal_wiring: bool = False
     deleted: bool = False
     out_of_scope: bool = False
     source_file: str | None = None

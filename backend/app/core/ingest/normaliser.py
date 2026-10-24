@@ -48,8 +48,13 @@ class UnknownValue(BaseModel):
 
 
 class HeldOut(BaseModel):
-    row: RawRow
+    """A signal kept out of allocation. It is still listed so nothing is ever lost."""
+
+    source_file: str
+    source_row: int
+    tag: str | None = None
     issues: list[Issue]
+    signal: Signal | None = None
 
 
 class NormalResult(BaseModel):
@@ -201,7 +206,14 @@ def normalise(
             )
 
         if hold:
-            out.held_out.append(HeldOut(row=row, issues=issues))
+            out.held_out.append(
+                HeldOut(
+                    source_file=row.source_file,
+                    source_row=row.source_row,
+                    tag=clean(col(row, "tag")),
+                    issues=issues,
+                )
+            )
         else:
             out.signals.append(sig)
         out.issues.extend(issues)
