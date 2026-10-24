@@ -1,0 +1,90 @@
+from pydantic import BaseModel, Field
+
+from app.core.ingest.normaliser import HeldOut
+from app.core.layout.affinity import build_groups
+from app.core.model.issue import Issue
+from app.core.model.layout import Block, Group, Position
+from app.core.model.pack import Pack
+from app.core.model.signal import Signal
+
+_FAMILY_NEUTRAL = (None,)
+
+
+class BlockSet(BaseModel):
+    blocks: list[Block] = Field(default_factory=list)
+    groups: list[Group] = Field(default_factory=list)
+    alarm_signals: list[Signal] = Field(default_factory=list)
+    held_out: list[HeldOut] = Field(default_factory=list)
+    issues: list[Issue] = Field(default_factory=list)
+
+    @property
+    def positions(self) -> int:
+        return sum(b.size for b in self.blocks)
+
+
+def single_baseplate(block: Block, pack: Pack) -> bool:
+    return block.size <= pack.capacity.channels_per_baseplate
+
+
+def baseplates_needed(block: Block, pack: Pack) -> int:
+    ch = pack.capacity.channels_per_baseplate
+    return -(-block.size // ch)
+
+
+def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
+    """One block per cable. Wired spares fill the pairs a cable declares but does not use."""
+    out = BlockSet()
+    cap = pack.capacity
+    cioc_positions = cap.channels_per_baseplate * cap.baseplates_per_cioc
+    by_cable: dict[str, list[Signal]] = {}
+    for s in signals:
+        if s.cabinet_alarm:
+            out.alarm_signals.append(s)
+            continue
+        key = s.cable if s.cable and not s.internal_wiring and s.pair is not None else None
+        by_cable.setdefault(key or f"INTERNAL:{s.tag}", []).append(s)
+
+    for cable, sigs in sorted(by_cable.items()):
+        sigs.sort(key=lambda s: (s.pair if s.pair is not None else 0, s.tag or ""))
+        declared = max((s.cable_pairs for s in sigs if s.cable_pairs), default=None)
+        positions: list[Position] = []
+        if declared and not cable.startswith("INTERNAL:"):
+            by_pair = {s.pair: s for s in sigs}
+            top = max(declared, max(by_pair))
+            for p in range(1, top + 1):
+                if p in by_pair:
+                    positions.append(Position(pair=p, kind="field", signal=by_pair[p]))
+                else:
+                    positions.append(Position(pair=p, kind="wired_spare"))
+        else:
+            positions = [Position(pair=s.pair or 0, kind="field", signal=s) for s in sigs]
+        block = Block(
+            id=cable,
+            cable=cable,
+            declared_pairs=declared,
+            positions=positions,
+            families=sorted({s.segregation_family for s in sigs if s.segregation_family}),
+            logic_numbers=sorted({s.logic_number for s in sigs if s.logic_number}),
+        )
+        if block.size > cioc_positions:
+            iss = Issue(
+                code="TQ-CAP",
+                severity="blocking",
+                message=f"cable {cable} needs {block.size} positions, more than one CIOC "
+                f"({cioc_positions}); its signals are held out",
+            )
+            out.issues.append(iss)
+            out.held_out.extend(
+                HeldOut(
+                    source_file=s.source_file or "",
+                    source_row=s.source_row or 0,
+                    tag=s.tag,
+                    issues=[iss],
+                    signal=s,
+                )
+                for s in sigs
+            )
+            continue
+        out.blocks.append(block)
+    out.groups = build_groups(out.blocks)
+    return out
