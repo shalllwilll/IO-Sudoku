@@ -34,9 +34,10 @@ def test_cold_run_executes_every_stage_in_order_then_everything_is_reused(pack, 
 
 
 def test_hashes_do_not_depend_on_the_instance(pack, tmp_path):
-    rows = cable_rows("320-CE-0001", 4)
-    a = make(tmp_path, pack, rows).run()
-    b = make(tmp_path, pack, rows).run()
+    # one file: openpyxl stamps a creation time, so two writes can differ by a second
+    path = sheet(tmp_path, cable_rows("320-CE-0001", 4))
+    a = Pipeline([path], pack, "AR1", "100", cpsat_enabled=False).run()
+    b = Pipeline([path], pack, "AR1", "100", cpsat_enabled=False).run()
     assert a.hashes == b.hashes
 
 
