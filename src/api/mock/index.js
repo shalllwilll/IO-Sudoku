@@ -3,9 +3,18 @@
 // loading states are exercised.
 import { DEFAULT_PREFERENCES } from "../../features/preferences/schema.js";
 import { NetworkError, ServerError } from "../errors.js";
-import { ProjectListSchema, ProjectSchema, parseResponse } from "../schemas.js";
+import {
+  LintSchema,
+  MappingSchema,
+  ProjectListSchema,
+  ProjectSchema,
+  RulePreviewSchema,
+  RulesSchema,
+  ValuesSchema,
+  parseResponse,
+} from "../schemas.js";
 
-export const mockControls = { delayMs: 120, failNext: null, corruptNext: false, chatReply: null };
+export const mockControls = { delayMs: 120, failNext: null, corruptNext: false, chatReply: null, hang: false };
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -20,11 +29,15 @@ async function gate() {
   }
 }
 
-const store = { projects: [], uploads: {}, seq: 1 };
+const store = { projects: [], uploads: {}, mapping: {}, values: {}, rules: {}, seq: 1 };
 
 export function resetMock() {
   store.projects = [];
   store.uploads = {};
+  store.mapping = {};
+  store.values = {};
+  store.rules = {};
+  mockControls.hang = false;
   store.seq = 1;
   mockControls.delayMs = 120;
   mockControls.failNext = null;
@@ -96,4 +109,125 @@ export const mockApi = {
     project.uploads += 1;
     return upload;
   },
+
+  async getMapping(pid) {
+    await gate();
+    findProject(pid);
+    const files = store.uploads[pid]?.length ? store.uploads[pid] : [{ name: "sample.xlsx" }];
+    const sheets = files.map((file, n) => ({
+      file: file.name,
+      sheet: "Sheet1",
+      columns: SAMPLE_COLUMNS.map((c) => (n === 1 && c === "Cable No" ? "Cable Ref" : c)),
+      matches: SAMPLE_MATCHES,
+      issues: [],
+      ai_hints: {},
+      grouping_mode: "one_column",
+    }));
+    const mapping = {
+      fields: ["tag", "io_type", "cable", "pair", "area", "service", "group", "segregation", "grouping"],
+      required: ["tag", "io_type", "cable", "pair"],
+      confirmed: store.mapping[pid] ?? {},
+      sheets,
+    };
+    return parseResponse(MappingSchema, mapping, "getMapping");
+  },
+
+  async saveMapping(pid, confirmed) {
+    await gate();
+    store.mapping[pid] = confirmed;
+    return mockApi.getMapping(pid);
+  },
+
+  async getValues(pid) {
+    await gate();
+    findProject(pid);
+    const overrides = store.values[pid] ?? { io_types: {}, duty_classes: {}, segregation: {} };
+    const values = {
+      allowed: { io_type: ["AIR", "AOR", "DIR", "DOR"] },
+      overrides,
+      unknown: [{ field: "io_type", value: "XQ", count: 2 }],
+      observed: {
+        io_type: [
+          { value: "AI", count: 60 },
+          { value: "AO", count: 20 },
+          { value: "DI", count: 70 },
+          { value: "DO-SOV", count: 30 },
+          { value: "XQ", count: 2 },
+        ],
+        grouping: ["-", "A", "B", "A-CONTROL", "B-ALARM", "C", "E"].map((value, i) => ({ value, count: 10 + i })),
+      },
+    };
+    return parseResponse(ValuesSchema, values, "getValues");
+  },
+
+  async saveValues(pid, maps) {
+    await gate();
+    store.values[pid] = maps;
+    return mockApi.getValues(pid);
+  },
+
+  async getRules(pid) {
+    await gate();
+    findProject(pid);
+    if (!store.rules[pid]) store.rules[pid] = { preset: "default", presets: ["default", "strict", "relaxed"], custom: false, rules: defaultRules() };
+    return parseResponse(RulesSchema, structuredClone(store.rules[pid]), "getRules");
+  },
+
+  async saveRules(pid, { preset, rules }) {
+    await gate();
+    const current = await mockApi.getRules(pid);
+    const next = { ...current, preset: preset ?? current.preset, rules: rules ?? defaultRules(), custom: Boolean(rules) };
+    store.rules[pid] = next;
+    return parseResponse(RulesSchema, structuredClone(next), "saveRules");
+  },
+
+  async lintRules(pid, rules) {
+    await gate();
+    const findings = [];
+    const sep = rules.find((r) => r.primitive === "separate" && r.enabled);
+    const co = rules.find((r) => r.primitive === "co_locate" && r.enabled);
+    if (sep && co && sep.parameters.level === co.parameters.level) {
+      findings.push({ rule_id: sep.id, severity: "error", message: "Conflicts with a keep-together rule at the same level." });
+    }
+    return parseResponse(LintSchema, { findings, dry_run: [{ would_place: 189, would_raise_tqs: findings.length, unplaced: 0 }] }, "lintRules");
+  },
+
+  async compileRule(pid, request) {
+    await gate();
+    const text = request.toLowerCase();
+    if (mockControls.hang) return new Promise(() => {});
+    let rule = null;
+    let message = "Could not understand that rule. Rephrase it or use the form.";
+    if (/\band\b.*\bnever\b|\bnever\b.*\balso\b/.test(text) || / and also /.test(text)) {
+      message = "That sentence contains more than one rule. Please enter them one at a time.";
+    } else if (/same cioc|apart|separate|never put/.test(text)) {
+      rule = { ...newMockRule("separate"), name: "Keep A and B apart", parameters: { level: "CIOC" } };
+      message = "Signals in segregation A and B must never share a CIOC.";
+    }
+    return parseResponse(RulePreviewSchema, { status: rule ? "ok" : "unclear", message, applied: false, rule, findings: [] }, "compileRule");
+  },
+};
+
+function newMockRule(primitive) {
+  return { id: `ai-${primitive}`, name: primitive, enabled: true, primitive, builtin: null, scope: "everywhere", strength: "hard", parameters: {}, not_enforced_reason: null };
+}
+
+function defaultRules() {
+  return [
+    { ...newMockRule("separate"), id: "sep-seg", name: "Segregation separation", parameters: { level: "CIOC" } },
+    { ...newMockRule("reserve"), id: "spare-pct", name: "Spare capacity", parameters: { percent: 10 } },
+    { ...newMockRule("capacity"), id: "cap-bp", name: "Baseplate capacity", parameters: { max: 12 } },
+    { ...newMockRule("co_locate"), id: "co-cable", name: "Keep cable pairs together", parameters: { level: "baseplate" }, not_enforced_reason: "Needs cable data that is not mapped." },
+  ];
+}
+
+const SAMPLE_COLUMNS = ["Instrument Tag", "IO Type", "Cable No", "Pair No", "Area", "Service", "Grp/Seg", "", "Remarks", "Vendor Note"];
+const SAMPLE_MATCHES = {
+  "Instrument Tag": { field: "tag", confidence: 0.98, method: "name" },
+  "IO Type": { field: "io_type", confidence: 0.95, method: "name" },
+  "Cable No": { field: "cable", confidence: 0.82, method: "fuzzy" },
+  "Pair No": { field: "pair", confidence: 0.6, method: "fuzzy" },
+  Area: { field: "area", confidence: 0.99, method: "name" },
+  Service: { field: "service", confidence: 0.9, method: "name" },
+  "Grp/Seg": { field: "grouping", confidence: 0.77, method: "fuzzy" },
 };
