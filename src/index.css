@@ -34,3 +34,25 @@ body {
   outline: 2px solid #d7dadf;
   outline-offset: 2px;
 }
+
+/* Page transitions: opacity and transform only, duration from --t-page (0 under reduced motion). */
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-enter {
+  animation: page-enter var(--t-page) ease-out both;
+}
+
+.page-leave {
+  opacity: 0;
+  transform: translateX(-24px);
+  transition: opacity var(--t-page) ease-in, transform var(--t-page) ease-in;
+}
