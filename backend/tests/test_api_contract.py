@@ -28,6 +28,7 @@ CONTRACT = [
     ("get", "/api/projects/{pid}/runs/{rid}/download"),
     ("get", "/api/projects/{pid}/runs/{rid}/events"),
     ("get", "/api/health"),
+    ("get", "/api/ai/status"),
 ]  # fmt: skip
 
 

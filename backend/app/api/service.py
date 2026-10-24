@@ -6,6 +6,8 @@ from pathlib import Path
 
 from app.api.store import ApiStore
 from app.config import Settings
+from app.core.ai import Gateway
+from app.core.ai.cache import AiCache
 from app.core.events import EventStore
 from app.core.events import models as ev
 from app.core.events.run_events import run_events
@@ -23,6 +25,7 @@ from app.core.writer.template import WriterError, build_rows, write_allocation
 class Service:
     def __init__(self, store: ApiStore, pack: Pack, settings: Settings):
         self.store, self.pack, self.settings = store, pack, settings
+        self.gateway = Gateway(settings, cache=AiCache(str(store.root / "ai_cache.db")))
         self.events = EventStore(store.db, store.lock)
         self.run_lock = threading.Lock()
         self._pipelines: dict[str, Pipeline] = {}

@@ -1,6 +1,41 @@
 {
  "components": {
   "schemas": {
+   "AiStatus": {
+    "properties": {
+     "ai_available": {
+      "title": "Ai Available",
+      "type": "boolean"
+     },
+     "models": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Models",
+      "type": "array"
+     },
+     "verified": {
+      "anyOf": [
+       {
+        "additionalProperties": {
+         "type": "boolean"
+        },
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Verified"
+     }
+    },
+    "required": [
+     "ai_available",
+     "models"
+    ],
+    "title": "AiStatus",
+    "type": "object"
+   },
    "AllocationOut": {
     "properties": {
      "issues": {
@@ -2419,6 +2454,46 @@
  },
  "openapi": "3.1.0",
  "paths": {
+  "/api/ai/status": {
+   "get": {
+    "operationId": "ai_status_api_ai_status_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "probe",
+      "required": false,
+      "schema": {
+       "default": false,
+       "title": "Probe",
+       "type": "boolean"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AiStatus"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Ai Status"
+   }
+  },
   "/api/health": {
    "get": {
     "operationId": "health_api_health_get",
