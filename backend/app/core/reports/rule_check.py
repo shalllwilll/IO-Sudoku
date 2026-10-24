@@ -43,6 +43,8 @@ def rule_check(
         out.append(RuleResult(rule=rid, description=desc, passed=n == 0, violations=n))
     ctx = Ctx(alloc.layout, pack)
     for r in rules or []:
+        if r.builtin:
+            continue
         if not r.enforced:
             out.append(
                 RuleResult(

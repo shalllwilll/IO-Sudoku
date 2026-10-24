@@ -1,0 +1,111 @@
+{
+ "default_preset": "plant-default",
+ "presets": {
+  "plant-default": [
+   {
+    "id": "PS-AB-SEP",
+    "name": "A and B segregation never share a CIOC",
+    "primitive": "separate",
+    "scope": "",
+    "parameters": {
+     "a": "segregation_family = A",
+     "b": "segregation_family = B",
+     "level": "cioc"
+    }
+   },
+   {
+    "id": "PS-CAP-BP",
+    "name": "At most 12 channels per baseplate",
+    "primitive": "capacity",
+    "scope": "",
+    "parameters": {
+     "per": "baseplate",
+     "max": 12
+    }
+   },
+   {
+    "id": "PS-CAP-CIOC",
+    "name": "At most 96 positions per CIOC",
+    "primitive": "capacity",
+    "scope": "",
+    "parameters": {
+     "per": "cioc",
+     "max": 96
+    }
+   },
+   {
+    "id": "PS-CONTIG",
+    "name": "Cable blocks are contiguous",
+    "builtin": "R-BLOCK"
+   },
+   {
+    "id": "PS-ALARM-BP",
+    "name": "First baseplate of each cabinet is reserved for cabinet alarms",
+    "builtin": "R-RESERVE"
+   },
+   {
+    "id": "PS-SPARE",
+    "name": "Spare baseplates are kept empty per cabinet",
+    "builtin": "R-RESERVE"
+   }
+  ],
+  "strict": [
+   {
+    "id": "PS-AB-SEP",
+    "name": "A and B segregation never share a CIOC",
+    "primitive": "separate",
+    "scope": "",
+    "parameters": {
+     "a": "segregation_family = A",
+     "b": "segregation_family = B",
+     "level": "cioc"
+    }
+   },
+   {
+    "id": "PS-CAP-BP",
+    "name": "At most 12 channels per baseplate",
+    "primitive": "capacity",
+    "scope": "",
+    "parameters": {
+     "per": "baseplate",
+     "max": 12
+    }
+   },
+   {
+    "id": "PS-CAP-CIOC",
+    "name": "At most 96 positions per CIOC",
+    "primitive": "capacity",
+    "scope": "",
+    "parameters": {
+     "per": "cioc",
+     "max": 96
+    }
+   },
+   {
+    "id": "PS-CONTIG",
+    "name": "Cable blocks are contiguous",
+    "builtin": "R-BLOCK"
+   },
+   {
+    "id": "PS-ALARM-BP",
+    "name": "First baseplate of each cabinet is reserved for cabinet alarms",
+    "builtin": "R-RESERVE"
+   },
+   {
+    "id": "PS-SPARE",
+    "name": "Spare baseplates are kept empty per cabinet",
+    "builtin": "R-RESERVE"
+   },
+   {
+    "id": "STRICT-LOGIC",
+    "name": "Signals sharing a Logic Number stay in one CIOC",
+    "primitive": "co_locate",
+    "scope": "logic_number != ''",
+    "parameters": {
+     "by": "logic_number",
+     "level": "cioc"
+    }
+   }
+  ]
+ }
+}

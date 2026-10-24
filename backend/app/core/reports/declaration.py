@@ -2,20 +2,38 @@ from pydantic import BaseModel, Field
 
 from app.core.model.issue import Issue
 from app.core.model.pack import Pack
+from app.core.rules.sets import RuleSet
 
 
 class Declaration(BaseModel):
     assumed: list[str] = Field(default_factory=list)
     defaulted: list[str] = Field(default_factory=list)
     not_enforced: list[str] = Field(default_factory=list)
+    rule_set: str = ""
+    rules: list[str] = Field(default_factory=list)
 
 
 def build_declaration(
-    pack: Pack, issues: list[Issue], not_enforced: list[str] | None = None
+    pack: Pack,
+    issues: list[Issue],
+    not_enforced: list[str] | None = None,
+    ruleset: RuleSet | None = None,
 ) -> Declaration:
     """What was assumed, what a default filled in, and what is not enforced."""
     cap = pack.capacity
     d = Declaration(not_enforced=list(not_enforced or []))
+    if ruleset:
+        d.rule_set = f"{ruleset.name} ({ruleset.hash[:12]})"
+        for r in ruleset.rules:
+            if r.builtin:
+                d.rules.append(f"{r.id}: {r.name} (always enforced by the engine)")
+            elif r.enforced:
+                state = "enabled" if r.enabled else "disabled"
+                d.rules.append(
+                    f"{r.id}: {r.name or r.primitive} [{r.primitive}, {r.strength}, {state}]"
+                )
+            else:
+                d.not_enforced.append(f"{r.id}: {r.name} - {r.not_enforced_reason}")
     conflicts = ", ".join("/".join(p) for p in pack.segregation.conflicts)
     d.assumed = [
         f"Hierarchy: {cap.channels_per_baseplate} channels per baseplate, "

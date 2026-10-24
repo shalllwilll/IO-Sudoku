@@ -8,6 +8,7 @@ from app.core.reports.declaration import Declaration, build_declaration
 from app.core.reports.kpi import Kpi, compute_kpi
 from app.core.reports.rule_check import RuleResult, rule_check
 from app.core.rules.schema import Rule
+from app.core.rules.sets import RuleSet
 
 
 class CompletionReport(BaseModel):
@@ -40,6 +41,9 @@ class CompletionReport(BaseModel):
             for r in self.rules
         ]
         decl = [["Kind", "Statement"]]
+        if self.declaration.rule_set:
+            decl.append(["Rule set", self.declaration.rule_set])
+        decl += [["Rule", x] for x in self.declaration.rules]
         decl += [["Assumed", s] for s in self.declaration.assumed]
         decl += [["Defaulted", s] for s in self.declaration.defaulted]
         decl += [["Not enforced", s] for s in self.declaration.not_enforced]
@@ -54,9 +58,12 @@ def build_report(
     extra_held_out: list[Signal] | None = None,
     not_enforced: list[str] | None = None,
     rules: list[Rule] | None = None,
+    ruleset: RuleSet | None = None,
 ) -> CompletionReport:
+    if ruleset is not None and rules is None:
+        rules = ruleset.rules
     return CompletionReport(
         kpi=compute_kpi(alloc, pack, extra_held_out),
         rules=rule_check(alloc, pack, signals, not_enforced, rules),
-        declaration=build_declaration(pack, issues, not_enforced),
+        declaration=build_declaration(pack, issues, not_enforced, ruleset),
     )

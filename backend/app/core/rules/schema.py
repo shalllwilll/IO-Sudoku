@@ -36,11 +36,14 @@ class Rule(BaseModel):
     enabled: bool = True
     strength: Literal["hard", "soft", "advisory"] = "hard"
     not_enforced_reason: str | None = None
+    builtin: str | None = None  # invariant the validator always enforces (e.g. R-BLOCK)
 
     @model_validator(mode="after")
     def _enforceable_or_explained(self) -> "Rule":
-        if self.primitive is None and not self.not_enforced_reason:
-            raise ValueError(f"rule {self.id}: needs a primitive or a not_enforced_reason")
+        if self.primitive is None and not self.not_enforced_reason and not self.builtin:
+            raise ValueError(
+                f"rule {self.id}: needs a primitive, a builtin or a not_enforced_reason"
+            )
         return self
 
     @property

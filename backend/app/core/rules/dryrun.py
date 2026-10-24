@@ -17,6 +17,9 @@ def dry_run(rules: list[Rule], blocks: BlockSet) -> list[DryRun]:
     """How many signals and blocks each rule's scope touches, without solving."""
     out = []
     for r in rules:
+        if r.builtin:
+            out.append(DryRun(rule_id=r.id, enforced=True, matched_signals=0, affected_blocks=0))
+            continue
         if not r.enforced:
             out.append(DryRun(rule_id=r.id, enforced=False, matched_signals=0, affected_blocks=0))
             continue

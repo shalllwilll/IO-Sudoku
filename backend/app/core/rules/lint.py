@@ -30,6 +30,8 @@ def lint(
         out.append(Finding(rule_id=rule.id, severity=sev, message=msg))
 
     for r in rules:
+        if r.builtin:
+            continue
         if not r.enforced:
             add(r, "info", f"not enforced: {r.not_enforced_reason}")
             continue

@@ -117,6 +117,12 @@ class ValueMaps(BaseModel):
     duty_keywords: dict[str, str] = {}
 
 
+class RulePresets(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    default_preset: str
+    presets: dict[str, list[dict]]
+
+
 class PackError(ValueError):
     pass
 
@@ -129,6 +135,7 @@ _PARTS = {
     "schema.json": ("schema", Schema),
     "aliases.json": ("aliases", Aliases),
     "valuemaps.json": ("valuemaps", ValueMaps),
+    "rules.json": ("rules", RulePresets),
 }
 
 
@@ -140,6 +147,7 @@ class Pack(BaseModel):
     schema_: Schema
     aliases: Aliases
     valuemaps: ValueMaps
+    rules: RulePresets
     hash: str
 
     @classmethod
@@ -172,6 +180,7 @@ class Pack(BaseModel):
             schema_=parts["schema"],
             aliases=parts["aliases"],
             valuemaps=parts["valuemaps"],
+            rules=parts["rules"],
             hash=digest,
         )
 
