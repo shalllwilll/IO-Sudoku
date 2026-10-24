@@ -1,0 +1,17 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+*.db
+backend/data/
+backend/out/
+*.xlsx
+.DS_Store
+# hackathon working documents (hackathon use only, do not share)
+HANDOFF_CONTEXT.md
+IO_Sudoku_Backend_Prompt_Book.md
+IO_Signal_Sudoku_Build_Plan_v3.md
+*.pdf
