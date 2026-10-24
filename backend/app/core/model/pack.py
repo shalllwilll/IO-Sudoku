@@ -1,8 +1,9 @@
 import hashlib
 import json
+import re
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
 
 
 class HardwareRow(BaseModel):
@@ -31,14 +32,29 @@ class NamingItem(BaseModel):
     example: str | None = None
 
 
+KINDS = ("system_cabinet", "controller", "marshalling_cabinet", "cioc", "baseplate")
+_PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
+
+
 class Naming(BaseModel):
     model_config = ConfigDict(extra="forbid")
     placeholders: list[str]
+    padding: dict[str, int] = {}
+    default_area: str = "AR1"
+    default_unit: str = "100"
     system_cabinet: NamingItem
     controller: NamingItem
     marshalling_cabinet: NamingItem
     cioc: NamingItem
     baseplate: NamingItem
+
+    @model_validator(mode="after")
+    def _templates_use_known_placeholders(self) -> "Naming":
+        for kind in KINDS:
+            for name in _PLACEHOLDER.findall(getattr(self, kind).template):
+                if name not in self.placeholders:
+                    raise ValueError(f"{kind} template uses unknown placeholder '{{{name}}}'")
+        return self
 
 
 class SegregationCode(BaseModel):
@@ -133,7 +149,10 @@ class Pack(BaseModel):
             except json.JSONDecodeError as e:
                 raise PackError(f"{fname}: invalid JSON ({e})") from e
             except ValidationError as e:
-                fields = ", ".join(".".join(map(str, err["loc"])) for err in e.errors())
+                fields = ", ".join(
+                    ".".join(map(str, err["loc"])) or err["msg"].removeprefix("Value error, ")
+                    for err in e.errors()
+                )
                 raise PackError(f"{fname}: invalid field(s) {fields}") from e
             raw[fname] = data
         canonical = json.dumps(raw, sort_keys=True, separators=(",", ":"))

@@ -1,8 +1,35 @@
 {
-  "placeholders": ["Area", "Unit", "Seq", "CIOC no", "n"],
-  "system_cabinet": {"template": "{Area}-DCS-{Unit}-{Seq}", "example": "AR1-DCS-100-01"},
-  "controller": {"template": "{Area}CTL{Unit}{Seq}", "example": "AR1CTL10001"},
-  "marshalling_cabinet": {"template": "{Area}-DCM-{Unit}-{Seq}", "example": "AR1-DCM-100-01"},
-  "cioc": {"template": "{Area}CIOC{Unit}{CIOC no}", "example": "AR1CIOC100001"},
-  "baseplate": {"template": "{Seq}-CBP-{n}", "example": "001-CBP-1"}
+ "placeholders": [
+  "Area",
+  "Unit",
+  "Seq",
+  "CIOC no",
+  "n"
+ ],
+ "system_cabinet": {
+  "template": "{Area}-DCS-{Unit}-{Seq}",
+  "example": "AR1-DCS-100-01"
+ },
+ "controller": {
+  "template": "{Area}CTL{Unit}{Seq}",
+  "example": "AR1CTL10001"
+ },
+ "marshalling_cabinet": {
+  "template": "{Area}-DCM-{Unit}-{Seq}",
+  "example": "AR1-DCM-100-01"
+ },
+ "cioc": {
+  "template": "{Area}CIOC{Unit}{CIOC no}",
+  "example": "AR1CIOC100001"
+ },
+ "baseplate": {
+  "template": "{CIOC no}-CBP-{n}",
+  "example": "001-CBP-1"
+ },
+ "padding": {
+  "Seq": 2,
+  "CIOC no": 3
+ },
+ "default_area": "AR1",
+ "default_unit": "100"
 }
