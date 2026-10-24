@@ -52,7 +52,8 @@ describe("model and report", () => {
     expect(model.layout.cabinets).toHaveLength(3);
     expect(model.layout.ciocs).toHaveLength(12);
     expect(model.signalCount).toBe(189);
-    expect(model.usedBaseplates.size).toBe(18);
+    // BP-1 and BP-2 hold the signals and wired spares; BP-8 of each CIOC holds its cabinet alarm.
+    expect(model.usedBaseplates.size).toBe(36);
   });
   it("cross-check passes on consistent data and fails on a mismatch", () => {
     expect(crossCheck(r.report, model)).toEqual([]);

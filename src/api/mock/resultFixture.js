@@ -6,8 +6,18 @@ const CABINETS = 3;
 const CIOCS_PER_CABINET = 4;
 const BASEPLATES = 8;
 const CHANNELS = 12;
-const SIGNALS = 189;
+// The dataset's own split, used as the scene invariants of Phase 6:
+// 177 field + 12 cabinet alarm = 189 signals, 22 wired spares, 941 spare slots, 1,152 positions.
+const FIELD = 177;
+const WIRED_SPARES = 22;
+const ALARM_BASEPLATE = BASEPLATES; // BP-8 of every CIOC is reserved for cabinet alarms
 const IO_CYCLE = ["AIR", "DIR", "AOR", "DOR"];
+
+/** Field signals and wired spares per CIOC, so the totals above come out exactly. */
+const perCioc = (index) => ({
+  field: index < 9 ? 15 : 14,
+  wired: index < 10 ? 2 : 1,
+});
 
 export function buildResult() {
   const cabinets = [];
@@ -27,53 +37,70 @@ export function buildResult() {
           n: i + 1,
           name: `BP-${i + 1}`,
           cioc_no: no,
-          reserved: no === 1 && i + 1 === BASEPLATES ? "alarm" : null,
+          reserved: i + 1 === ALARM_BASEPLATE ? "alarm" : null,
         })),
       });
     }
     cabinets.push({ no: c, name: `CAB-${String(c).padStart(2, "0")}`, ciocs: list });
   }
 
-  // Fill baseplates 1 and 2 of each CIOC in order: signals, with every 12th position a wired spare.
+  // Each CIOC fills BP-1 and BP-2 with field signals then its wired spares, and holds one
+  // cabinet alarm on its reserved BP-8. Every other position is a spare slot.
   const placements = [];
   let placedSignals = 0;
-  let position = 0;
-  outer: for (const cioc of ciocs) {
-    for (let bp = 1; bp <= 2; bp++) {
-      for (let ch = 1; ch <= CHANNELS; ch++) {
-        if (placedSignals >= SIGNALS) break outer;
-        position++;
-        if (position % 12 === 0) {
-          placements.push({ cioc_no: cioc.no, baseplate: bp, channel: ch, kind: "wired_spare", io_type: "AIR", pair: (position % 6) + 1, group: null, signal: null });
-          continue;
-        }
-        placedSignals++;
-        const n = placedSignals;
-        const io = IO_CYCLE[n % 4];
-        placements.push({
-          cioc_no: cioc.no,
-          baseplate: bp,
-          channel: ch,
-          kind: "field",
-          duty_class: io === "DOR" ? "SOV" : null,
-          group: n % 5 === 0 ? "CONTROL" : null,
+  ciocs.forEach((cioc, index) => {
+    const want = perCioc(index);
+    let slot = 0;
+    const next = () => ({ baseplate: Math.floor(slot / CHANNELS) + 1, channel: (slot++ % CHANNELS) + 1 });
+    for (let i = 0; i < want.field; i++) {
+      const n = ++placedSignals;
+      const io = IO_CYCLE[n % 4];
+      placements.push({
+        cioc_no: cioc.no,
+        ...next(),
+        kind: "field",
+        duty_class: io === "DOR" ? "SOV" : null,
+        group: n % 5 === 0 ? "CONTROL" : null,
+        pair: (n % 6) + 1,
+        signal: {
+          tag: `MOCK-${io}-${String(n).padStart(4, "0")}`,
+          instrument_description: `Sample signal ${n}`,
+          io_type: io,
+          signal_type: io.startsWith("A") ? "4-20mA" : "24VDC",
+          cable: `CBL-${Math.ceil(n / 6)}`,
           pair: (n % 6) + 1,
-          signal: {
-            tag: `MOCK-${io}-${String(n).padStart(4, "0")}`,
-            instrument_description: `Sample signal ${n}`,
-            io_type: io,
-            signal_type: io.startsWith("A") ? "4-20mA" : "24VDC",
-            cable: `CBL-${Math.ceil(n / 6)}`,
-            pair: (n % 6) + 1,
-            source_file: "sample.xlsx",
-            source_row: n + 4,
-            area: "Area 1",
-            status: "Field",
-          },
-        });
-      }
+          source_file: "sample.xlsx",
+          source_row: n + 4,
+          area: "Area 1",
+          status: "Field",
+        },
+      });
     }
-  }
+    for (let i = 0; i < want.wired; i++) {
+      placements.push({ cioc_no: cioc.no, ...next(), kind: "wired_spare", io_type: "AIR", pair: i + 1, group: null, signal: null });
+    }
+    placements.push({
+      cioc_no: cioc.no,
+      baseplate: ALARM_BASEPLATE,
+      channel: 1,
+      kind: "cabinet_alarm",
+      group: null,
+      pair: null,
+      signal: {
+        tag: `MOCK-ALM-${String(cioc.no).padStart(2, "0")}`,
+        instrument_description: "Cabinet alarm",
+        io_type: "DIR",
+        signal_type: "24VDC",
+        cabinet_alarm: true,
+        cable: `ALM-${String(cioc.no).padStart(2, "0")}`,
+        pair: 1,
+        source_file: "sample.xlsx",
+        source_row: 200 + cioc.no,
+        area: "Area 1",
+        status: "Cabinet Alarm",
+      },
+    });
+  });
 
   const key = (n) => `sample.xlsx:${n + 4}`;
   const tqs = [
@@ -87,8 +114,8 @@ export function buildResult() {
   const kpi = {
     cabinets: new Set(placements.map((p) => Math.ceil(p.cioc_no / CIOCS_PER_CABINET))).size,
     ciocs: new Set(placements.map((p) => p.cioc_no)).size,
-    signals_total: SIGNALS + 1,
-    allocated: placedSignals,
+    signals_total: placements.filter((p) => p.kind !== "wired_spare").length + 1, // one row is held out
+    allocated: placements.filter((p) => p.kind !== "wired_spare").length,
     by_io_type: {},
     controllers: CABINETS,
     held_out: 1,
@@ -98,7 +125,7 @@ export function buildResult() {
     baseplates: CABINETS * CIOCS_PER_CABINET * BASEPLATES,
     baseplates_used: used.size,
     empty_baseplates: CABINETS * CIOCS_PER_CABINET * BASEPLATES - used.size,
-    wired_spare_pairs: placements.filter((p) => p.kind === "wired_spare").length,
+    wired_spare_pairs: WIRED_SPARES,
     free_slots_on_used_baseplates: used.size * CHANNELS - placements.length,
     spares: {
       cabinets: cabinets.map((cab) => {

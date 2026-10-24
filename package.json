@@ -13,9 +13,12 @@
     "check": "npm run lint && npm run test -- --run && npm run build"
   },
   "dependencies": {
+    "@react-three/drei": "^9.117.3",
+    "@react-three/fiber": "^8.17.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.4",
+    "three": "^0.172.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
