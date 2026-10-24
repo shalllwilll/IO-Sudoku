@@ -107,3 +107,42 @@ def test_split_grouping(pack_dir):
     assert split_grouping("-", pack) == (None, None)
     assert split_grouping("A-FEED1", pack) == ("FEED1", "A")
     assert split_grouping("Q", pack) == (None, "Q")
+
+
+def _rows(**cols):
+    n = len(next(iter(cols.values())))
+    return [{k: v[i] for k, v in cols.items()} for i in range(n)]
+
+
+def test_common_header_wordings_map_required_fields(pack_dir):
+    pack = _pack(pack_dir)
+    for tag, io, cable, pair in [
+        ("Tag ID", "I/O", "Cable ID", "Pair No"),
+        ("Tag", "IO", "Multicore Cable", "Wire Pair"),
+        ("Tag", "IO Type", "Cable", "Pair"),
+    ]:
+        rows = _rows(**{tag: ["T1", "T2"], io: ["AIR", "DIR"], cable: ["C1", "C1"], pair: [1, 2]})
+        m = map_columns([tag, io, cable, pair], rows, pack)
+        assert [m.matches[f].column for f in REQ] == [tag, io, cable, pair]
+        assert not [i for i in m.issues if i.severity == "blocking"]
+
+
+def test_group_column_holding_segregation_codes_is_read_as_combined(pack_dir):
+    pack = _pack(pack_dir)
+    headers = ["Tag", "IO Type", "Cable", "Pair", "Group"]
+    rows = _rows(
+        Tag=["T1", "T2", "T3"],
+        **{"IO Type": ["AIR", "AIR", "DIR"], "Cable": ["C1", "C1", "C2"], "Pair": [1, 2, 1]},
+        Group=["A-PUMPS", "A-PUMPS", "B-VALVES"],
+    )
+    m = map_columns(headers, rows, pack)
+    assert m.matches["io_grouping"].column == "Group" and "group" not in m.matches
+    assert m.grouping_mode == "combined"
+    assert any("Group" in i.message and i.code == "TQ-MAP" for i in m.issues)
+
+
+def test_missing_segregation_source_is_flagged_not_silent(pack_dir):
+    pack = _pack(pack_dir)
+    rows = _rows(Tag=["T1"], **{"IO Type": ["AIR"], "Cable": ["C1"], "Pair": [1]})
+    m = map_columns(["Tag", "IO Type", "Cable", "Pair"], rows, pack)
+    assert any(i.data.get("field") == "segregation" for i in m.issues)

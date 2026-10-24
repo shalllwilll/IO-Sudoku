@@ -11,7 +11,8 @@
    "Tag Name",
    "Tag",
    "Instrument Tag",
-   "Instrument Tag No"
+   "Instrument Tag No",
+   "Tag ID"
   ],
   "tag_compact": [
    "TagNumber"
@@ -26,7 +27,9 @@
    "IO Type",
    "I/O Type",
    "IO Type Name",
-   "Signal IO Type"
+   "Signal IO Type",
+   "I/O",
+   "IO"
   ],
   "io_type_2": [
    "I/O Type Name 2",
@@ -52,7 +55,10 @@
    "Cable No",
    "Cable Number",
    "Cable Tag",
-   "Cable Name"
+   "Cable Name",
+   "Cable ID",
+   "Multicore Cable",
+   "Cable"
   ],
   "cable_formation": [
    "Multi-cable / Cable",

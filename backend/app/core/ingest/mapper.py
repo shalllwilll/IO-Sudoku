@@ -172,11 +172,55 @@ def map_columns(
                 )
             )
 
+    _rescue_combined_grouping(mapping, samples, pack)
     if "group" in mapping.matches or "segregation" in mapping.matches:
         mapping.grouping_mode = "two_column"
     elif "io_grouping" in mapping.matches:
         mapping.grouping_mode = "combined"
     return mapping
+
+
+def _rescue_combined_grouping(
+    mapping: "Mapping", samples: dict[str, list[str]], pack: Pack
+) -> None:
+    """Catch a combined grouping column that was matched as a plain group, or not matched at all.
+
+    Segregation lives in the combined "IO Grouping" cell (for example "A-PUMPS"). If the column
+    was mapped as `group` only, the code inside it would be ignored and A/B signals could share a
+    CIOC without any warning, so a column whose values carry known segregation codes is treated as
+    combined and the engineer is asked to confirm. When no segregation source exists, say so.
+    """
+    if "segregation" in mapping.matches or "io_grouping" in mapping.matches:
+        return
+    codes = {c.code for c in pack.segregation.codes}
+    grp = mapping.matches.get("group")
+    if grp is not None and grp.method != "confirmed":
+        vals = [v for v in samples.get(grp.column, []) if v not in ("", "-")]
+        hits = sum(1 for v in vals if split_grouping(v, pack)[1] in codes)
+        if vals and hits / len(vals) >= 0.5:
+            mapping.matches.pop("group")
+            mapping.matches["io_grouping"] = ColumnMatch(
+                field="io_grouping", column=grp.column, confidence=grp.confidence, method="value"
+            )
+            mapping.issues.append(
+                Issue(
+                    code="TQ-MAP",
+                    severity="warning",
+                    message=f"column '{grp.column}' holds segregation codes; mapped as the "
+                    "combined IO grouping column. Please confirm.",
+                    data={"field": "io_grouping", "column": grp.column},
+                )
+            )
+            return
+    mapping.issues.append(
+        Issue(
+            code="TQ-MAP",
+            severity="warning",
+            message="no segregation or IO grouping column was found; segregation cannot be "
+            "enforced until one is mapped",
+            data={"field": "segregation"},
+        )
+    )
 
 
 def split_grouping(value: object, pack: Pack) -> tuple[str | None, str | None]:
