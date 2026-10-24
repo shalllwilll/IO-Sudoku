@@ -5,6 +5,7 @@ A small recursive-descent parser. Rule text is never passed to eval or exec.
 
 import re
 from dataclasses import dataclass
+from functools import lru_cache
 
 from app.core.model.signal import Signal
 
@@ -175,12 +176,17 @@ def _norm(v: object) -> str:
     return str(v).strip().lower()
 
 
+@lru_cache(maxsize=4096)
+def _wanted(node: Cmp) -> frozenset[str]:
+    return frozenset(_norm(v) for v in node.values)
+
+
 def matches(node, signal: Signal, group: str | None = None) -> bool:
     if isinstance(node, Everything):
         return True
     if isinstance(node, Cmp):
         got = group if node.field == "group" else getattr(signal, node.field, None)
-        hit = _norm(got) in {_norm(v) for v in node.values}
+        hit = _norm(got) in _wanted(node)
         return not hit if node.negate else hit
     if isinstance(node, Not):
         return not matches(node.inner, signal, group)

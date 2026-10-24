@@ -164,8 +164,13 @@ def pack_blocks(
     pinned: dict[str, list[Cell]] | None = None,
     prefs: dict[str, list[Cell | None]] | None = None,
     fixed=None,
+    order: dict[str, int] | None = None,
+    cioc_pref: dict[str, int] | None = None,
 ) -> Allocation:
     """First-fit-decreasing into a fixed layout. Never mutates its inputs.
+
+    `order` (block -> priority, higher first) and `cioc_pref` (block -> the CIOC tried first) let
+    the QIGA stage steer the same packer; without them the behaviour is unchanged.
 
     Revisions pass `pinned` (block -> cells it keeps), `prefs` (cells a block tries first) and
     `fixed` (a function that seeds the cabinet alarms and held-out signals instead of the
@@ -190,7 +195,8 @@ def pack_blocks(
             groups[cno].add(block.group or block.id)
             alloc.placements.extend(_make_placements(block, cno, cells, block_hw(block)))
 
-    for block in sorted(blocks.blocks, key=lambda b: (-b.size, b.id)):
+    rank = order or {}
+    for block in sorted(blocks.blocks, key=lambda b: (-rank.get(b.id, 0), -b.size, b.id)):
         if block.id in pinned:
             continue
         bad = block_ok(block, pack)
@@ -198,10 +204,14 @@ def pack_blocks(
             _unplace(alloc, block, "TQ-SEG", bad)
             continue
         hosts = [c.no for c in layout.ciocs if block.group in groups[c.no]]
-        order = hosts + [c.no for c in layout.ciocs if c.no not in hosts]
+        tries = hosts + [c.no for c in layout.ciocs if c.no not in hosts]
+        first = (cioc_pref or {}).get(block.id)
+        if first in tries:
+            tries = [first, *[c for c in tries if c != first]]
         hw = block_hw(block)
 
         rejected_by: set[str] = set()
+        seen: dict[str, int] = {}  # per-rule violations of what is placed so far
         chosen: tuple[int, list[Placement], list[tuple[int, int]]] | None = None
         want = (prefs or {}).get(block.id)
         if want and all(w is not None for w in want) and len({w[0] for w in want}) == 1:
@@ -213,14 +223,14 @@ def pack_blocks(
                 and compatible(families[cno], bool(groups[cno]), block, pack)
             ):
                 new_ps = _make_placements(block, cno, cells2, hw)
-                if not _rule_rejections(active, ctx, alloc.placements, new_ps):
+                if not _rule_rejections(active, ctx, alloc.placements, new_ps, seen):
                     chosen = (cno, new_ps, cells2)
-        for cno in [] if chosen else order:
+        for cno in [] if chosen else tries:
             if not compatible(families[cno], bool(groups[cno]), block, pack):
                 continue
             for cells2 in grid.candidates(cno, block.size):
                 new_ps = _make_placements(block, cno, cells2, hw)
-                bad = _rule_rejections(active, ctx, alloc.placements, new_ps)
+                bad = _rule_rejections(active, ctx, alloc.placements, new_ps, seen)
                 if bad:
                     rejected_by |= bad
                     continue
@@ -275,13 +285,23 @@ def _make_placements(
 
 
 def _rule_rejections(
-    rules: list[Rule], ctx: Ctx, placed: list[Placement], new: list[Placement]
+    rules: list[Rule],
+    ctx: Ctx,
+    placed: list[Placement],
+    new: list[Placement],
+    seen: dict[str, int] | None = None,
 ) -> set[str]:
-    """Ids of the hard rules a hypothetical placement would break (new violations only)."""
+    """Ids of the hard rules a hypothetical placement would break (new violations only).
+
+    `seen` holds the violation count of `placed` per rule; the caller keeps it only while `placed`
+    does not change.
+    """
+    seen = {} if seen is None else seen
     out = set()
     for r in rules:
-        before = len(check_rule(r, placed, ctx))
-        if len(check_rule(r, [*placed, *new], ctx)) > before:
+        if r.id not in seen:
+            seen[r.id] = len(check_rule(r, placed, ctx))
+        if len(check_rule(r, [*placed, *new], ctx)) > seen[r.id]:
             out.add(r.id)
     return out
 

@@ -70,7 +70,8 @@ class Service:
         pl = Pipeline(
             paths, self.pack, s.get("area"), s.get("unit"), self.rules(project),
             overrides=self.overrides(project), confirmed=s.get("confirmed") or {},
-            cpsat_enabled=params.get("cpsat"), labels=labels, **overrides,
+            cpsat_enabled=params.get("cpsat"), qiga_enabled=params.get("qiga"),
+            labels=labels, **overrides,
         )  # fmt: skip
         if pid in self._pipelines:
             pl.inherit(self._pipelines[pid])

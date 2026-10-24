@@ -98,6 +98,7 @@ class Pipeline:
         confirmed: dict[str, dict[str, str]] | None = None,
         cache: ResultCache | None = None,
         cpsat_enabled: bool | None = None,
+        qiga_enabled: bool | None = None,
         labels: dict[str, str] | None = None,
         **chain_overrides,
     ):
@@ -110,6 +111,7 @@ class Pipeline:
         self.cache = cache
         self.labels = labels or {}
         self.cpsat_enabled = cpsat_enabled
+        self.qiga_enabled = qiga_enabled
         self.chain_overrides = chain_overrides
         self._done: dict[str, tuple[str, object]] = {}
 
@@ -254,10 +256,11 @@ class Pipeline:
         unit = c.names.get("unit", self.unit)
         chain: ChainResult = stage(
             "pack",
-            [eff.hash, rhash, area, unit, self.cpsat_enabled, self.chain_overrides],
+            [eff.hash, rhash, area, unit, self.cpsat_enabled, self.qiga_enabled, self.chain_overrides],
             lambda: run_chain(
                 blocks, eff, area, unit, rules, ruleset_hash=rhash, cache=self.cache,
-                cpsat_enabled=self.cpsat_enabled, **self.chain_overrides,
+                cpsat_enabled=self.cpsat_enabled, qiga_enabled=self.qiga_enabled,
+                **self.chain_overrides,
             ),
         )  # fmt: skip
 

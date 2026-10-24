@@ -111,8 +111,17 @@ def main() -> None:
         "improvement. Models above `cpsat_max_options` (30000 placement options) skip CP-SAT and keep",
         "the greedy answer, because the table shows no gain there for the time spent.",
     ]
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.out).write_text("\n".join(lines) + "\n")
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    text = "\n".join(lines) + "\n"
+    if out.exists() and "<!-- qiga:start -->" in (old := out.read_text()):  # bench_qiga.py's part
+        keep = (
+            "<!-- qiga:start -->"
+            + old.partition("<!-- qiga:start -->")[2].partition("<!-- qiga:end -->")[0]
+            + "<!-- qiga:end -->"
+        )
+        text += "\n" + keep + "\n"
+    out.write_text(text)
     print(f"wrote {args.out}")
 
 

@@ -1,4 +1,4 @@
-"""Solver chain: CP-SAT, then greedy, then the TQ list. Every output passes the validator."""
+"""Solver chain: CP-SAT, greedy, QIGA, then the TQ list. Every output passes the validator."""
 
 from dataclasses import asdict, dataclass, field
 
@@ -13,13 +13,14 @@ from app.core.rules.sets import make_ruleset
 from app.core.solve import cpsat
 from app.core.solve.cache import ResultCache, make_key
 from app.core.solve.greedy import solve_greedy
+from app.core.solve.qiga import solve_qiga
 
 PROBE_DETERMINISTIC_TIME = 2.0
 
 
 @dataclass
 class Event:
-    stage: str  # cpsat | greedy | tq | rules | cache
+    stage: str  # cpsat | greedy | qiga | tq | rules | cache
     status: str
     message: str = ""
 
@@ -27,7 +28,7 @@ class Event:
 @dataclass
 class ChainResult:
     allocation: Allocation
-    solver: str  # cpsat | greedy | tq
+    solver: str  # cpsat | greedy | qiga | tq
     events: list[Event] = field(default_factory=list)
     cached: bool = False
     key: str = ""
@@ -101,14 +102,17 @@ def run_chain(
     ruleset_hash: str | None = None,
     cache: ResultCache | None = None,
     cpsat_enabled: bool | None = None,
+    qiga_enabled: bool | None = None,
     versions: dict[str, str] | None = None,
     **overrides,
 ) -> ChainResult:
-    enabled = Settings.from_env().cpsat_enabled if cpsat_enabled is None else cpsat_enabled
+    settings = Settings.from_env()
+    enabled = settings.cpsat_enabled if cpsat_enabled is None else cpsat_enabled
+    qiga_on = settings.qiga_enabled if qiga_enabled is None else qiga_enabled
     rhash = ruleset_hash or make_ruleset("run", list(rules or [])).hash
     cap = pack.capacity
     key = make_key(
-        blocks, pack.hash, rhash, versions, area=area, unit=unit, cpsat=enabled,
+        blocks, pack.hash, rhash, versions, area=area, unit=unit, cpsat=enabled, qiga=qiga_on,
         seed=overrides.get("seed", cap.cpsat_seed),
         det=overrides.get("deterministic_time", cap.cpsat_deterministic_time),
     )  # fmt: skip
@@ -125,6 +129,8 @@ def run_chain(
         events.append(Event("cpsat", "skipped", "disabled in settings"))
     if chosen is None:
         chosen = _try_greedy(blocks, pack, area, unit, rules, events)
+        if chosen.solver == "greedy" and _improvable(chosen.allocation):
+            chosen = _try_qiga(chosen, blocks, pack, rules, events, qiga_on)
     chosen.events, chosen.key = events, key
     if any(i.code == "TQ-RULE" for i in chosen.allocation.issues):
         _explain_rule_failure(chosen, blocks, pack, area, unit, rules)
@@ -159,6 +165,33 @@ def _try_greedy(blocks, pack, area, unit, rules, events) -> ChainResult:
         return _tq(blocks, events, f"no solver produced a valid allocation ({bad[0].message})")
     events.append(Event("greedy", "used", f"{len(alloc.placements)} positions"))
     return ChainResult(alloc, "greedy")
+
+
+def _improvable(alloc: Allocation) -> bool:
+    """Signals left over for want of room or a rule, which a different packing might place."""
+    return any(i.code in ("TQ-CAP", "TQ-RULE") for u in alloc.unplaced for i in u.issues)
+
+
+def _try_qiga(chosen: ChainResult, blocks, pack, rules, events, on: bool) -> ChainResult:
+    """Search for a packing of the greedy layout that leaves fewer signals on the TQ list."""
+    if not on:
+        events.append(Event("qiga", "skipped", "disabled in settings"))
+        return chosen
+    alloc = chosen.allocation
+    try:
+        r = solve_qiga(
+            blocks, alloc.layout, pack, rules, alloc,
+            gate=lambda a: cpsat.gate(a, blocks, pack, rules),
+        )  # fmt: skip
+    except Exception as e:  # noqa: BLE001 - a failed search keeps the greedy answer
+        events.append(Event("qiga", "fallback", f"{type(e).__name__}: {e}"))
+        return chosen
+    if r.allocation is None:
+        status = "fallback" if r.status == "rejected" else r.status.replace("no_gain", "kept")
+        events.append(Event("qiga", status, r.message))
+        return chosen
+    events.append(Event("qiga", "used", f"{r.message} in {r.evaluated} decodes"))
+    return ChainResult(r.allocation, "qiga")
 
 
 def _tq(blocks: BlockSet, events: list[Event], reason: str) -> ChainResult:

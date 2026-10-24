@@ -9,6 +9,7 @@ when a block does not fit around the pins. The layout is the baseline's, never r
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from app.config import Settings
 from app.core.layout.blocks import BlockSet, build_blocks
 from app.core.model.allocation import Allocation, Placement, Unplaced
 from app.core.model.issue import Issue
@@ -20,7 +21,7 @@ from app.core.revision.match import Change, MatchResult, match_revision, normali
 from app.core.rules.primitives import Ctx
 from app.core.rules.schema import Rule
 from app.core.solve import cpsat
-from app.core.solve.chain import Event, tq_only
+from app.core.solve.chain import Event, _improvable, tq_only
 from app.core.solve.cpsat import RevisionSpec, solver_inputs
 from app.core.solve.greedy import (
     Cell,
@@ -32,6 +33,7 @@ from app.core.solve.greedy import (
     pack_blocks,
     place_fixed,
 )
+from app.core.solve.qiga import solve_qiga
 from app.core.solve.validator import Violation, validate_allocation
 
 REASONS = (
@@ -57,7 +59,7 @@ class RevisionResult:
     allocation: Allocation
     match: MatchResult
     moves: list[Move] = field(default_factory=list)
-    solver: str = ""  # cpsat | greedy-pin | tq
+    solver: str = ""  # cpsat | greedy-pin | qiga | tq
     tier: int = 0
     events: list[Event] = field(default_factory=list)
     violations: list[Violation] = field(default_factory=list)
@@ -263,6 +265,7 @@ def solve_revision(
     label: str | None = None,
     rules_changed: bool = False,
     use_cpsat: bool = True,
+    use_qiga: bool | None = None,
     match: MatchResult | None = None,
     **overrides,
 ) -> RevisionResult:
@@ -331,6 +334,10 @@ def solve_revision(
         events.append(Event("cpsat", "fallback", f"validator rejected: {bad[0].message}"))
         chosen, solver, tier = greedy, "greedy-pin", 0
         bad = gate_revision(chosen, blocks, baseline, pack, rules)
+    if not bad and _improvable(chosen):
+        chosen, solver = _qiga_overflow(
+            chosen, solver, no_alarm, blocks, baseline, pack, rules, plan, fixed, events, use_qiga
+        )
     if bad:
         events.append(Event("tq", "used", f"no valid revision allocation: {bad[0].message}"))
         chosen = tq_only(blocks, f"revision could not be validated ({bad[0].message})")
@@ -342,6 +349,31 @@ def solve_revision(
     _annotate(chosen, m, plan, result, tier, rules_changed)
     result.allocation, result.solver, result.tier, result.events = chosen, solver, tier, events
     return result
+
+
+def _qiga_overflow(
+    chosen, solver, no_alarm, blocks, baseline, pack, rules, plan, fixed, events, use_qiga
+) -> tuple[Allocation, str]:
+    """Revision overflow: seed QIGA from the answer so far, around the same pins."""
+    on = Settings.from_env().qiga_enabled if use_qiga is None else use_qiga
+    if not on:
+        events.append(Event("qiga", "skipped", "disabled in settings"))
+        return chosen, solver
+    try:
+        r = solve_qiga(
+            no_alarm, baseline.layout, pack, rules, chosen,
+            gate=lambda a: gate_revision(a, blocks, baseline, pack, rules),
+            pinned=plan.pinned, prefs=plan.prefs, fixed=fixed,
+        )  # fmt: skip
+    except Exception as e:  # noqa: BLE001 - a failed search keeps the earlier answer
+        events.append(Event("qiga", "fallback", f"{type(e).__name__}: {e}"))
+        return chosen, solver
+    if r.allocation is None:
+        status = "fallback" if r.status == "rejected" else r.status.replace("no_gain", "kept")
+        events.append(Event("qiga", status, r.message))
+        return chosen, solver
+    events.append(Event("qiga", "used", f"{r.message} in {r.evaluated} decodes"))
+    return r.allocation, "qiga"
 
 
 def _annotate(

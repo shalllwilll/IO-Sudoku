@@ -121,6 +121,7 @@ class LintOut(BaseModel):
 
 class RunCreate(BaseModel):
     cpsat: bool | None = None  # default: the server setting
+    qiga: bool | None = None  # default: the server setting
     seed: int | None = None
 
 

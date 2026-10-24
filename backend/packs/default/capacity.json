@@ -15,5 +15,9 @@
  "miner_min_support": 8,
  "miner_min_confidence": 0.95,
  "miner_min_signals": 30,
- "miner_min_groups": 3
+ "miner_min_groups": 3,
+ "qiga_seed": 1,
+ "qiga_population": 16,
+ "qiga_generations": 40,
+ "qiga_max_blocks": 400
 }

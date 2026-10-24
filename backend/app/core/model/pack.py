@@ -94,6 +94,11 @@ class Capacity(BaseModel):
     miner_min_confidence: float = 0.95
     miner_min_signals: int = 30  # a smaller reference only yields low-confidence candidates
     miner_min_groups: int = 3  # groups that must be tested for a co-location candidate
+    # QIGA third stage: a fixed budget, never a clock
+    qiga_seed: int = 1
+    qiga_population: int = 16
+    qiga_generations: int = 40
+    qiga_max_blocks: int = 400  # bigger instances skip the stage (docs/benchmark.md)
 
 
 class Schema(BaseModel):
