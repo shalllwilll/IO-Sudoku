@@ -24,10 +24,11 @@ def sigs(cable, n, formation="24PX1MM2/FR", ln=None, start=1, seg=None):
     ]  # fmt: skip
 
 
-def test_24_pair_cable_22_signals_plus_2_spares(pack):
+def test_24_pair_cable_22_signals_plus_2_protected_spare_slots(pack):
     bs = build_blocks(sigs("C1", 22), pack)
     (b,) = bs.blocks
-    assert b.size == 24 and b.wired_spares == 2 and baseplates_needed(b, pack) == 2
+    assert b.size == 24 and b.wired_spares == 0 and baseplates_needed(b, pack) == 2
+    assert [p.kind for p in b.positions[-2:]] == ["spare_slot", "spare_slot"]
     assert not single_baseplate(b, pack)
 
 
@@ -72,7 +73,7 @@ def test_sample_blocks(pack, sample_mdb_path):
     assert len(bs.alarm_signals) == 12 and not bs.held_out
     assert sum(len(b.signals) for b in bs.blocks) == 177
     assert bs.positions == sum(b.size for b in bs.blocks)
-    assert bs.positions == 177 + sum(b.wired_spares for b in bs.blocks)
+    assert bs.positions == sum(b.size for b in bs.blocks)
     print(
         f"blocks={len(bs.blocks)} positions={bs.positions} groups={len(bs.groups)}",
         [(g.id, g.positions) for g in bs.groups],

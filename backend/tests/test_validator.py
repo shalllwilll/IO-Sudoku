@@ -101,8 +101,8 @@ def test_broken_controller_or_cabinet_hierarchy(base, pack):
 def test_wired_spare_cannot_carry_a_field_signal(base, pack):
     a, s = base
     b = a.model_copy(deep=True)
-    spare = next(p for p in b.placements if p.kind == "wired_spare")
-    spare.signal = s[0]
+    spare = next(p for p in b.placements if p.kind == "spare_slot")
+    spare.kind, spare.io_type, spare.signal = "wired_spare", "AIR", s[0]
     assert "STATUS" in codes(b, pack, s)
 
 

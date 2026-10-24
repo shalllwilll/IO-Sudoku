@@ -5,7 +5,7 @@ from app.core.model.pack import Pack
 from app.core.solve.greedy import solve_greedy
 
 
-def test_sample_audit_preserves_current_or_better_reconciliation(
+def test_sample_audit_keeps_field_and_alarm_reconciliation_without_inferring_wiring_plan(
     pack_dir, sample_mdb_path, sample_alloc_path
 ):
     pack = Pack.load(pack_dir)
@@ -15,5 +15,7 @@ def test_sample_audit_preserves_current_or_better_reconciliation(
     assert audit.field_reference == 177
     assert audit.field_matched >= 176
     assert audit.alarm_matched == audit.alarm_reference == 12
-    assert audit.wired_hardware_exact >= 19
-    assert audit.wired_hardware_exact <= audit.wired_hardware_compared
+    # The MDB does not identify which unused cable pairs were physically wired. The engine must
+    # not claim a CHARM/TB match for a protected slot merely because the reference happens to use
+    # one; a confirmed spare plan is the input that enables that comparison.
+    assert audit.wired_hardware_exact == audit.wired_hardware_compared == 0

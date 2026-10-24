@@ -45,6 +45,8 @@ def build_declaration(
         f"Spare rule: {cap.spare_percent}% of baseplates kept empty per cabinet "
         f"({cap.spare_rounding} rounding); baseplate {cap.alarm_baseplate_index} of each "
         "cabinet is reserved for cabinet alarms.",
+        "A declared unused cable pair is a protected Spare Slot unless the wiring plan or "
+        "per-pair hardware facts confirm an installed Wired Spare.",
         f"Segregation conflicts: {conflicts} never share a CIOC; unknown codes get their own CIOC.",
     ]
     relay = [r for r in pack.hardware.rows if r.charm is None or r.tb is None]

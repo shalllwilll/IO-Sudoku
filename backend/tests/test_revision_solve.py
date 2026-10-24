@@ -65,7 +65,7 @@ def test_no_change_means_zero_moves(pack):
     assert cells_of(res.allocation) == cells_of(alloc)
     assert res.pinned_blocks == len(build_blocks(s, pack).blocks) and res.free_blocks == 0
     assert {p.kind for p in res.allocation.placements if p.block_id == "C1"} == {
-        "field", "wired_spare",
+        "field", "spare_slot",
     }  # fmt: skip
     valid(res, pack, s)
 
@@ -92,7 +92,7 @@ def test_new_signals_fill_the_spare_pairs_of_an_existing_cable(pack):
     spare = {
         (p.cioc_no, p.baseplate, p.channel)
         for p in alloc.placements
-        if p.block_id == "C1" and p.kind == "wired_spare"
+        if p.block_id == "C1" and p.kind == "spare_slot"
     }
     took = {
         (p.cioc_no, p.baseplate, p.channel) for p in res.allocation.placements if p.signal in fill

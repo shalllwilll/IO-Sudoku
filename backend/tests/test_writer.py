@@ -76,13 +76,18 @@ def test_extra_sheets_and_wired_spare_row(pack, template, tmp_path):
         x.model_copy(update={"signal_type": "4-20 ma HART", "signal_level": "2-Wire"})
         for x in cable("C1", 22, 24)
     ]
-    a = alloc_for(sigs, pack)
+    planned = pack.model_copy(
+        update={
+            "capacity": pack.capacity.model_copy(update={"wired_spare_pairs": {"C1": [23, 24]}})
+        }
+    )
+    a = alloc_for(sigs, planned)
     out = write_allocation(
-        a, pack, template, tmp_path / "o.xlsx", {"TQ list": [["code"], ["TQ-X"]]}
+        a, planned, template, tmp_path / "o.xlsx", {"TQ list": [["code"], ["TQ-X"]]}
     )
     wb = openpyxl.load_workbook(out)
     assert "TQ list" in wb.sheetnames
-    spare = [r for r in build_rows(a, pack) if r["tagstatus"] == "Wired Spare"]
+    spare = [r for r in build_rows(a, planned) if r["tagstatus"] == "Wired Spare"]
     assert len(spare) == 2 and spare[0]["charmtype"] == "SE4303T01"
     assert spare[0]["tagname"].startswith("100DSP")
 

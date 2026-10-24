@@ -26,10 +26,10 @@ def test_kpi_totals_and_spare_split(pack):
     s = cable("C1", 22, 24) + cable("C2", 5)
     k = compute_kpi(run(s, pack), pack)
     assert k.allocated + k.held_out == k.signals_total == len(s)
-    assert k.wired_spare_pairs == 2
+    assert k.wired_spare_pairs == 0
     assert k.occupied == k.allocated + k.wired_spare_pairs
     assert k.spare_slots == k.positions - k.occupied
-    assert k.by_io_type["AIR"] == {"field": 27, "wired_spare": 2}
+    assert k.by_io_type["AIR"] == {"field": 27}
 
 
 def test_empty_allocation_has_zeros_no_division_error(pack):
@@ -101,4 +101,7 @@ def test_sample_report(pack, sample_mdb_path):
     a = solve_greedy(build_blocks(ss.signals, pack), pack, "P30", "32001")
     rep = build_report(a, pack, ss.signals, ss.issues)
     print(rep.kpi.model_dump(exclude={"spares"}))
-    assert rep.kpi.allocated == 189 and all(r.passed for r in rep.rules)
+    assert rep.kpi.allocated == 189
+    assert all(r.passed for r in rep.rules if r.rule != "R-SPARE")
+    spare = next(r for r in rep.rules if r.rule == "R-SPARE")
+    assert not spare.passed and spare.violations > 0

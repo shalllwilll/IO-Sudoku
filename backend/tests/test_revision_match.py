@@ -216,7 +216,11 @@ def test_workbook_baseline_round_trips_a_written_allocation(pack, blank_template
     out = write_allocation(a, pack, blank_template_path, tmp_path / "o.xlsx")
     base = baseline_from_workbook(out, pack, label="01")
     assert base.label == "01" and base.source == "workbook:o.xlsx"
-    want = {(p.cioc_no, p.baseplate, p.channel, p.kind) for p in a.placements}
+    # The allocation workbook uses Spare Slot for every empty physical channel. The baseline
+    # keeps those positions in its layout, rather than pretending every blank has cable identity.
+    want = {
+        (p.cioc_no, p.baseplate, p.channel, p.kind) for p in a.placements if p.kind != "spare_slot"
+    }
     got = {(p.cioc_no, p.baseplate, p.channel, p.kind) for p in base.allocation.placements}
     assert got == want
     assert len(base.layout.ciocs) == len(a.layout.ciocs)

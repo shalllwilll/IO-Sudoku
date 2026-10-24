@@ -50,7 +50,7 @@ def test_big_block_starts_on_channel_one_consecutive(pack):
     assert {p.cioc_no for p in pl} == {1}
     assert sorted({p.baseplate for p in pl}) == [2, 3]
     assert [p.channel for p in pl if p.baseplate == 2] == list(range(1, 13))
-    assert sum(p.kind == "wired_spare" for p in pl) == 2
+    assert sum(p.kind == "spare_slot" for p in pl) == 2
 
 
 def test_a_and_b_never_share_a_cioc(pack):
@@ -109,11 +109,12 @@ def test_spare_report_kinds(pack):
     a = run(cable("C1", 10, 12) + cable("C2", 24, 24), pack)
     rep = spare_report(a, pack)
     cab = rep.cabinets[0]
-    assert cab.wired_spare_pairs == 2
+    assert cab.wired_spare_pairs == 0
+    assert cab.protected_spare_pairs == 2
     assert cab.required_empty_baseplates == 3 and cab.ok
     row = rep.by_controller_io[0]
-    assert row.field_signals == 34 and row.wired_spares == 2 and row.required == 3
-    assert row.shortfall == 1
+    assert row.field_signals == 34 and row.wired_spares == 0 and row.required == 3
+    assert row.shortfall == 3
 
 
 def test_wired_spare_shortfall_is_an_actionable_tq(pack):

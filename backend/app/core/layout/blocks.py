@@ -104,13 +104,16 @@ def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
                 if p in by_pair:
                     positions.append(Position(pair=p, kind="field", signal=by_pair[p]))
                 else:
-                    planned = p in pack.capacity.wired_spare_pairs.get(cable, [])
+                    # Pair count alone reserves a position in the cable but does not establish
+                    # installed wiring. A plan or explicit hardware fact is the engineering
+                    # evidence required for a Wired Spare.
+                    hardware = pack.capacity.wired_spare_hardware.get(cable, {}).get(p)
+                    planned = p in pack.capacity.wired_spare_pairs.get(cable, []) or hardware
                     kind = (
                         "wired_spare"
                         if pack.capacity.wired_spare_policy == "declared_pairs" or planned
                         else "spare_slot"
                     )
-                    hardware = pack.capacity.wired_spare_hardware.get(cable, {}).get(p)
                     positions.append(
                         Position(
                             pair=p,
