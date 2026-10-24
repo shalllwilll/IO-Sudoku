@@ -37,7 +37,37 @@ def cabinets_needed(blocks: BlockSet, pack: Pack) -> int:
     by_alarms = math.ceil(len(blocks.alarm_signals) / cap.channels_per_baseplate)
     plan = class_plan(blocks, pack)
     by_classes = math.ceil(sum(v for k, v in plan.items() if k != "-") / cap.ciocs_per_cabinet)
-    return max(1, by_positions, by_alarms, by_classes)
+    return max(1, by_positions, by_alarms, by_classes, len(cabinet_owner_plan(blocks, pack)))
+
+
+def cabinet_owner_plan(blocks: BlockSet, pack: Pack) -> list[str | None]:
+    """Minimum cabinets per known owner; unknown context keeps the legacy shared bucket."""
+    cap = pack.capacity
+    per_cab = usable_baseplates_per_cabinet(pack) * cap.channels_per_baseplate
+    positions: dict[str | None, int] = {}
+    alarms: dict[str | None, int] = {}
+    for block in blocks.blocks:
+        positions[block.owner] = positions.get(block.owner, 0) + block.size
+    for signal in blocks.alarm_signals:
+        owner = (
+            " | ".join(
+                (signal.technical_room or "-", signal.operating_area or "-", signal.area or "-")
+            )
+            if (signal.technical_room or signal.operating_area or signal.area)
+            else None
+        )
+        alarms[owner] = alarms.get(owner, 0) + 1
+    owners = sorted(
+        set(positions) | set(alarms), key=lambda value: (value is not None, value or "")
+    )
+    out: list[str | None] = []
+    for owner in owners:
+        need = max(
+            math.ceil(positions.get(owner, 0) / per_cab) if per_cab else 1,
+            math.ceil(alarms.get(owner, 0) / cap.channels_per_baseplate),
+        )
+        out.extend([owner] * need)
+    return out
 
 
 def derive_layout(
@@ -52,7 +82,8 @@ def derive_layout(
     layout = Layout(
         spare_baseplates_per_cabinet=spare_baseplates(pack), class_plan=class_plan(blocks, pack)
     )
-    n_cab = cabinets if cabinets is not None else cabinets_needed(blocks, pack)
+    owners = cabinet_owner_plan(blocks, pack)
+    n_cab = cabinets if cabinets is not None else max(cabinets_needed(blocks, pack), len(owners))
     if cap.max_cabinets is not None and n_cab > cap.max_cabinets:
         layout.issues.append(
             Issue(
@@ -62,6 +93,14 @@ def derive_layout(
             )
         )
         n_cab = cap.max_cabinets
+    if len(owners) < n_cab:
+        fallback = max(
+            owners,
+            key=lambda owner: sum(b.size for b in blocks.blocks if b.owner == owner),
+            default=None,
+        )
+        owners.extend([fallback] * (n_cab - len(owners)))
+    owners = owners[:n_cab]
     namer = Namer(pack.naming)
     spare_from = cap.baseplates_per_cioc - layout.spare_baseplates_per_cabinet  # in last CIOC
     per_ctl = cap.ciocs_per_controller
@@ -69,7 +108,7 @@ def derive_layout(
     for c in range(1, n_cab + 1):
         cab_name = namer.name_for("marshalling_cabinet", area, unit, seq=c)
         layout.issues.extend(cab_name.issues if c == 1 else [])
-        cab = Cabinet(no=c, name=cab_name.name, ciocs=[])
+        cab = Cabinet(no=c, name=cab_name.name, ciocs=[], owner=owners[c - 1] if owners else None)
         for k in range(1, cap.ciocs_per_cabinet + 1):
             cioc_no += 1
             ctl_no = (cioc_no - 1) // per_ctl + 1

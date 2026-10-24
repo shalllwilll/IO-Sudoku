@@ -136,6 +136,7 @@ class _Build:
         self.ch = pack.capacity.channels_per_baseplate
         self.rules = _active(rules)
         self.ctx = Ctx(layout, pack)
+        self.cab_owner = {cab.no: cab.owner for cab in layout.cabinets}
         self.model = cp_model.CpModel()
         self.usable = {
             c.no: [b.n for b in c.baseplates if b.reserved is None] for c in layout.ciocs
@@ -163,6 +164,9 @@ class _Build:
                 if span[-1] - span[0] == k - 1:
                     rest = size - ch * (k - 1)
                     yield c, [(n, ch) for n in span[:-1]] + [(span[-1], rest)]
+
+    def _owns_cioc(self, block: Block, cioc_no: int) -> bool:
+        return block.owner is None or self.cab_owner[self.ctx.cab_of[cioc_no]] == block.owner
 
     def _violates_placement_rules(self, block: Block, units: list[tuple[int, int]]) -> set[str]:
         """Rules (assign, reserve) that forbid this option outright."""
@@ -194,6 +198,8 @@ class _Build:
         """Every cell set a block may take, channel by channel (first-fit order)."""
         ch, size = self.ch, block.size
         for c, usable in self.usable.items():
+            if not self._owns_cioc(block, c):
+                continue
             if size <= ch:
                 for n in usable:
                     for start in range(1, ch - size + 2):
@@ -256,6 +262,8 @@ class _Build:
                 continue
             opts: list[_Option] = []
             for c, span in self._spans(block.size):
+                if not self._owns_cioc(block, c):
+                    continue
                 units: list[tuple[int, int]] = []
                 for n, cnt in span:
                     units += [(c, n)] * cnt
@@ -794,7 +802,10 @@ def solve_cpsat(
     alarm_cabs = -(-len(blocks.alarm_signals) // build.ch)
     used = max([*placed_cabs, alarm_cabs, 0])
     final_layout = layout
-    if 0 < used < len(layout.cabinets):
+    # A trailing owner-specific cabinet cannot be dropped merely because the CP objective did
+    # not place a field block there: it may own a cabinet alarm and preserves a distinct MDB
+    # context. Legacy unowned layouts still trim exactly as before.
+    if 0 < used < len(layout.cabinets) and not any(c.owner is not None for c in layout.cabinets):
         final_layout = derive_layout(blocks, pack, area, unit, cabinets=used)
     alloc = _to_allocation(build, solver, final_layout, area, unit, blocks)
     res.violations = gate(alloc, blocks, pack, rules)

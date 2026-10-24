@@ -381,6 +381,17 @@
      "no": {
       "title": "No",
       "type": "integer"
+     },
+     "owner": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Owner"
      }
     },
     "required": [

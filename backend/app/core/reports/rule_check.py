@@ -18,6 +18,7 @@ BUILTIN = [
      {"BLOCK"}),
     ("R-SEG", "Conflicting segregation families never share a CIOC", {"SEGREGATION"}),
     ("R-RESERVE", "Alarm and spare baseplates are used only as reserved", {"RESERVED"}),
+    ("R-OWNER", "Signals stay in their MDB ownership context when one is supplied", {"OWNERSHIP"}),
 ]  # fmt: skip
 
 

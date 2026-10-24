@@ -6,6 +6,7 @@ from app.core.layout.derive import cabinets_needed, derive_layout
 from app.core.layout.reserve import spare_baseplates, usable_baseplates_per_cabinet
 from app.core.model.pack import Pack
 from app.core.model.signal import Signal
+from app.core.solve.greedy import solve_greedy
 
 
 @pytest.fixture
@@ -83,6 +84,55 @@ def test_class_plan_counts_segregation(pack):
     ]
     lay = derive_layout(build_blocks(s, pack), pack, "AR1", "100")
     assert lay.class_plan == {"A": 1, "B": 1}
+
+
+def test_known_ownership_contexts_get_separate_cabinets_and_alarm_slots(pack):
+    left = [
+        x.model_copy(update={"technical_room": "TR-A", "operating_area": "OA-A", "area": "RA-A"})
+        for x in cables(1)
+    ]
+    right = [
+        x.model_copy(
+            update={
+                "cable": "R" + x.cable,
+                "technical_room": "TR-B",
+                "operating_area": "OA-B",
+                "area": "RA-B",
+            }
+        )
+        for x in cables(1)
+    ]
+    alarms = [
+        Signal(
+            tag="AL-A",
+            io_type="DIR",
+            cabinet_alarm=True,
+            technical_room="TR-A",
+            operating_area="OA-A",
+            area="RA-A",
+        ),
+        Signal(
+            tag="AL-B",
+            io_type="DIR",
+            cabinet_alarm=True,
+            technical_room="TR-B",
+            operating_area="OA-B",
+            area="RA-B",
+        ),
+    ]
+    blocks = build_blocks([*left, *right, *alarms], pack)
+    alloc = solve_greedy(blocks, pack, "AR1", "100")
+    assert len(alloc.layout.cabinets) == 2
+    owner = {cab.no: cab.owner for cab in alloc.layout.cabinets}
+    cab_of = {c.no: c.cabinet for c in alloc.layout.ciocs}
+    assert {owner[cab_of[p.cioc_no]] for p in alloc.placements if p.block_id} == {
+        "TR-A | OA-A | RA-A",
+        "TR-B | OA-B | RA-B",
+    }
+    assert {owner[cab_of[p.cioc_no]] for p in alloc.placements if p.kind == "cabinet_alarm"} == {
+        "TR-A | OA-A | RA-A",
+        "TR-B | OA-B | RA-B",
+    }
 
 
 def test_sample_layout(pack, sample_mdb_path):

@@ -169,6 +169,22 @@ def validate_allocation(
         unknown = {f for f in fs if f.startswith("UNKNOWN:")}
         if unknown and (len(fs) > 1 or cno in occupied_by_neutral):
             v("SEGREGATION", f"CIOC {cioc_by_no[cno].name} shares a CIOC with unknown {unknown}")
+    # Ownership is a placement constraint when the MDB gives one consistent context. CP-SAT does
+    # not model it natively yet, so this gate safely routes such cases through the owner-aware
+    # greedy fallback rather than accepting a mixed cabinet.
+    cab_owner = {cab.no: cab.owner for cab in lay.cabinets}
+    for p in alloc.placements:
+        if p.kind not in ("field", "cabinet_alarm") or p.signal is None:
+            continue
+        s = p.signal
+        owner = (
+            " | ".join((s.technical_room or "-", s.operating_area or "-", s.area or "-"))
+            if (s.technical_room or s.operating_area or s.area)
+            else None
+        )
+        actual = cab_owner.get(cioc_by_no[p.cioc_no].cabinet)
+        if owner is not None and actual is not None and actual != owner:
+            v("OWNERSHIP", f"signal {s.tag} is in cabinet owned by {actual or '-'}, not {owner}")
     # rule primitives: hard rules are violations; soft and advisory ones are reported by rule_check
     if rules:
         ctx = Ctx(lay, pack)

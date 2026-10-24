@@ -10,6 +10,18 @@ from app.core.model.signal import Signal
 _FAMILY_NEUTRAL = (None,)
 
 
+def owner_key(signals: list[Signal]) -> str | None:
+    """Return one stable ownership context, or None when the MDB does not establish one."""
+    values = {
+        (s.technical_room or "-", s.operating_area or "-", s.area or "-")
+        for s in signals
+        if s.technical_room or s.operating_area or s.area
+    }
+    if len(values) != 1:
+        return None
+    return " | ".join(next(iter(values)))
+
+
 class BlockSet(BaseModel):
     blocks: list[Block] = Field(default_factory=list)
     groups: list[Group] = Field(default_factory=list)
@@ -108,7 +120,20 @@ def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
             positions=positions,
             families=sorted({s.segregation_family for s in sigs if s.segregation_family}),
             logic_numbers=sorted({s.logic_number for s in sigs if s.logic_number}),
+            owner=owner_key(sigs),
         )
+        if (
+            any(s.technical_room or s.operating_area or s.area for s in sigs)
+            and block.owner is None
+        ):
+            out.issues.append(
+                Issue(
+                    code="TQ-DATA",
+                    severity="warning",
+                    message=f"cable {cable} spans multiple ownership contexts; allocation may not infer a cabinet owner",
+                    data={"cable": cable},
+                )
+            )
         if block.size > cioc_positions:
             iss = Issue(
                 code="TQ-CAP",

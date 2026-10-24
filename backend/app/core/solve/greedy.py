@@ -107,17 +107,24 @@ def place_fixed(alloc: Allocation, blocks: BlockSet, layout: Layout, pack: Pack)
     """Cabinet alarms (reserved baseplates, cabinet order) and held-out signals: no choices."""
     width = pack.capacity.channels_per_baseplate
     # cabinet alarms go into each cabinet's reserved baseplate, in cabinet order
-    slots = [
-        (cab.ciocs[0], bp.n)
-        for cab in layout.cabinets
-        for bp in layout.cioc(cab.ciocs[0]).baseplates
-        if bp.reserved == "alarm"
-    ]
+    slots: dict[str | None, list[tuple[int, int, int]]] = defaultdict(list)
+    for cab in layout.cabinets:
+        slots[cab.owner].extend(
+            (cab.ciocs[0], bp.n, k)
+            for bp in layout.cioc(cab.ciocs[0]).baseplates
+            if bp.reserved == "alarm"
+            for k in range(1, width + 1)
+        )
     alarms = sorted(blocks.alarm_signals, key=lambda s: (s.service or "", s.tag or ""))
-    cells = [(c, n, k) for c, n in slots for k in range(1, width + 1)]
-    for i, s in enumerate(alarms):
-        if i < len(cells):
-            c, n, k = cells[i]
+    for s in alarms:
+        owner = (
+            " | ".join((s.technical_room or "-", s.operating_area or "-", s.area or "-"))
+            if (s.technical_room or s.operating_area or s.area)
+            else None
+        )
+        candidates = slots.get(owner) or (slots.get(None) if owner is None else None) or []
+        if candidates:
+            c, n, k = candidates.pop(0)
             alloc.placements.append(
                 Placement(cioc_no=c, baseplate=n, channel=k, kind="cabinet_alarm", signal=s)
             )
@@ -207,6 +214,9 @@ def pack_blocks(
             continue
         hosts = [c.no for c in layout.ciocs if block.group in groups[c.no]]
         tries = hosts + [c.no for c in layout.ciocs if c.no not in hosts]
+        if block.owner is not None:
+            owners = {cab.no: cab.owner for cab in layout.cabinets}
+            tries = [cno for cno in tries if owners[layout.cioc(cno).cabinet] == block.owner]
         first = (cioc_pref or {}).get(block.id)
         if first in tries:
             tries = [first, *[c for c in tries if c != first]]

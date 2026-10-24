@@ -23,6 +23,7 @@ class Block(BaseModel):
     families: list[str] = Field(default_factory=list)  # segregation families present, sorted
     logic_numbers: list[str] = Field(default_factory=list)
     group: str | None = None
+    owner: str | None = None  # canonical technical-room / operating-area / risk-area context
 
     @property
     def size(self) -> int:
@@ -71,6 +72,7 @@ class Cabinet(BaseModel):
     no: int
     name: str
     ciocs: list[int]
+    owner: str | None = None
 
 
 class Layout(BaseModel):
