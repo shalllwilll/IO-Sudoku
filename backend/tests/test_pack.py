@@ -38,7 +38,7 @@ def test_invalid_pack_names_file_and_field(pack_dir, tmp_path):
 
 def test_relay_row_present_and_empty(pack_dir):
     rows = Pack.load(pack_dir).hardware.rows
-    relay = [r for r in rows if r.match.get("duty") == "RELAY"]
+    relay = [r for r in rows if r.match.get("duty_class") == "relay"]
     assert relay and relay[0].charm is None and relay[0].tb is None
 
 
