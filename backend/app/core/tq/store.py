@@ -14,7 +14,7 @@ _COLUMNS = list(TQ.model_fields)
 
 class TqStore:
     def __init__(self, path: str = ":memory:"):
-        self.db = sqlite3.connect(path)
+        self.db = sqlite3.connect(path, check_same_thread=False)  # callers serialise access
         cols = ", ".join(f"{c} TEXT" + (" PRIMARY KEY" if c == "id" else "") for c in _COLUMNS)
         self.db.execute(f"CREATE TABLE IF NOT EXISTS tq ({cols})")
 

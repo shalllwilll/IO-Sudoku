@@ -1,0 +1,4013 @@
+{
+ "components": {
+  "schemas": {
+   "AllocationOut": {
+    "properties": {
+     "issues": {
+      "items": {
+       "$ref": "#/components/schemas/Issue"
+      },
+      "title": "Issues",
+      "type": "array"
+     },
+     "placements": {
+      "items": {
+       "$ref": "#/components/schemas/Placement"
+      },
+      "title": "Placements",
+      "type": "array"
+     },
+     "rows": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     },
+     "solver": {
+      "title": "Solver",
+      "type": "string"
+     },
+     "unplaced": {
+      "items": {
+       "$ref": "#/components/schemas/Unplaced"
+      },
+      "title": "Unplaced",
+      "type": "array"
+     },
+     "utilisation": {
+      "additionalProperties": true,
+      "title": "Utilisation",
+      "type": "object"
+     }
+    },
+    "required": [
+     "run_id",
+     "solver",
+     "utilisation",
+     "placements",
+     "unplaced",
+     "issues",
+     "rows"
+    ],
+    "title": "AllocationOut",
+    "type": "object"
+   },
+   "Answer": {
+    "properties": {
+     "at": {
+      "default": "",
+      "title": "At",
+      "type": "string"
+     },
+     "author": {
+      "default": "engineer",
+      "title": "Author",
+      "type": "string"
+     },
+     "effect": {
+      "default": "note",
+      "title": "Effect",
+      "type": "string"
+     },
+     "fields": {
+      "additionalProperties": true,
+      "title": "Fields",
+      "type": "object"
+     },
+     "option": {
+      "title": "Option",
+      "type": "string"
+     },
+     "scope": {
+      "default": "everywhere",
+      "enum": [
+       "row",
+       "cable",
+       "everywhere"
+      ],
+      "title": "Scope",
+      "type": "string"
+     },
+     "seq": {
+      "default": 0,
+      "title": "Seq",
+      "type": "integer"
+     },
+     "target": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Target"
+     },
+     "tq_id": {
+      "title": "Tq Id",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "tq_id",
+     "option"
+    ],
+    "title": "Answer",
+    "type": "object"
+   },
+   "AnswerIn": {
+    "properties": {
+     "author": {
+      "default": "engineer",
+      "maxLength": 80,
+      "title": "Author",
+      "type": "string"
+     },
+     "fields": {
+      "additionalProperties": true,
+      "title": "Fields",
+      "type": "object"
+     },
+     "option": {
+      "title": "Option",
+      "type": "string"
+     },
+     "scope": {
+      "default": "everywhere",
+      "title": "Scope",
+      "type": "string"
+     },
+     "target": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Target"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "option"
+    ],
+    "title": "AnswerIn",
+    "type": "object"
+   },
+   "AnswerOut": {
+    "properties": {
+     "answer": {
+      "$ref": "#/components/schemas/Answer"
+     },
+     "history": {
+      "items": {
+       "$ref": "#/components/schemas/Answer"
+      },
+      "title": "History",
+      "type": "array"
+     },
+     "tq": {
+      "$ref": "#/components/schemas/TQ"
+     }
+    },
+    "required": [
+     "answer",
+     "tq",
+     "history"
+    ],
+    "title": "AnswerOut",
+    "type": "object"
+   },
+   "Baseplate": {
+    "properties": {
+     "cioc_no": {
+      "title": "Cioc No",
+      "type": "integer"
+     },
+     "n": {
+      "title": "N",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "reserved": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reserved"
+     }
+    },
+    "required": [
+     "name",
+     "cioc_no",
+     "n"
+    ],
+    "title": "Baseplate",
+    "type": "object"
+   },
+   "Body_upload_api_projects__pid__uploads_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_upload_api_projects__pid__uploads_post",
+    "type": "object"
+   },
+   "Cabinet": {
+    "properties": {
+     "ciocs": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Ciocs",
+      "type": "array"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "no": {
+      "title": "No",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "no",
+     "name",
+     "ciocs"
+    ],
+    "title": "Cabinet",
+    "type": "object"
+   },
+   "CabinetSpares": {
+    "properties": {
+     "cabinet": {
+      "title": "Cabinet",
+      "type": "string"
+     },
+     "empty_baseplates": {
+      "title": "Empty Baseplates",
+      "type": "integer"
+     },
+     "free_slots_on_used_baseplates": {
+      "title": "Free Slots On Used Baseplates",
+      "type": "integer"
+     },
+     "required_empty_baseplates": {
+      "title": "Required Empty Baseplates",
+      "type": "integer"
+     },
+     "wired_spare_pairs": {
+      "title": "Wired Spare Pairs",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "cabinet",
+     "wired_spare_pairs",
+     "free_slots_on_used_baseplates",
+     "empty_baseplates",
+     "required_empty_baseplates"
+    ],
+    "title": "CabinetSpares",
+    "type": "object"
+   },
+   "Cioc": {
+    "properties": {
+     "baseplates": {
+      "items": {
+       "$ref": "#/components/schemas/Baseplate"
+      },
+      "title": "Baseplates",
+      "type": "array"
+     },
+     "cabinet": {
+      "title": "Cabinet",
+      "type": "integer"
+     },
+     "controller": {
+      "title": "Controller",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "no": {
+      "title": "No",
+      "type": "integer"
+     },
+     "seq_in_cabinet": {
+      "title": "Seq In Cabinet",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "no",
+     "name",
+     "cabinet",
+     "seq_in_cabinet",
+     "controller",
+     "baseplates"
+    ],
+    "title": "Cioc",
+    "type": "object"
+   },
+   "ColumnMatch": {
+    "properties": {
+     "column": {
+      "title": "Column",
+      "type": "string"
+     },
+     "confidence": {
+      "title": "Confidence",
+      "type": "number"
+     },
+     "field": {
+      "title": "Field",
+      "type": "string"
+     },
+     "method": {
+      "title": "Method",
+      "type": "string"
+     }
+    },
+    "required": [
+     "field",
+     "column",
+     "confidence",
+     "method"
+    ],
+    "title": "ColumnMatch",
+    "type": "object"
+   },
+   "CompletionReport": {
+    "properties": {
+     "declaration": {
+      "$ref": "#/components/schemas/Declaration"
+     },
+     "kpi": {
+      "$ref": "#/components/schemas/Kpi"
+     },
+     "rules": {
+      "items": {
+       "$ref": "#/components/schemas/RuleResult"
+      },
+      "title": "Rules",
+      "type": "array"
+     }
+    },
+    "required": [
+     "kpi",
+     "rules",
+     "declaration"
+    ],
+    "title": "CompletionReport",
+    "type": "object"
+   },
+   "Controller": {
+    "properties": {
+     "ciocs": {
+      "items": {
+       "type": "integer"
+      },
+      "title": "Ciocs",
+      "type": "array"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "no": {
+      "title": "No",
+      "type": "integer"
+     },
+     "system_cabinet": {
+      "title": "System Cabinet",
+      "type": "string"
+     }
+    },
+    "required": [
+     "no",
+     "name",
+     "system_cabinet",
+     "ciocs"
+    ],
+    "title": "Controller",
+    "type": "object"
+   },
+   "Declaration": {
+    "properties": {
+     "assumed": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Assumed",
+      "type": "array"
+     },
+     "defaulted": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Defaulted",
+      "type": "array"
+     },
+     "not_enforced": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Not Enforced",
+      "type": "array"
+     },
+     "rule_set": {
+      "default": "",
+      "title": "Rule Set",
+      "type": "string"
+     },
+     "rules": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Rules",
+      "type": "array"
+     }
+    },
+    "title": "Declaration",
+    "type": "object"
+   },
+   "DryRun": {
+    "properties": {
+     "affected_blocks": {
+      "title": "Affected Blocks",
+      "type": "integer"
+     },
+     "enforced": {
+      "title": "Enforced",
+      "type": "boolean"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "matched_signals": {
+      "title": "Matched Signals",
+      "type": "integer"
+     },
+     "rule_id": {
+      "title": "Rule Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "rule_id",
+     "enforced",
+     "matched_signals",
+     "affected_blocks"
+    ],
+    "title": "DryRun",
+    "type": "object"
+   },
+   "ErrorBody": {
+    "properties": {
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "details": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "items": {},
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Details"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     }
+    },
+    "required": [
+     "code",
+     "message"
+    ],
+    "title": "ErrorBody",
+    "type": "object"
+   },
+   "Finding": {
+    "properties": {
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "rule_id": {
+      "title": "Rule Id",
+      "type": "string"
+     },
+     "severity": {
+      "title": "Severity",
+      "type": "string"
+     }
+    },
+    "required": [
+     "rule_id",
+     "severity",
+     "message"
+    ],
+    "title": "Finding",
+    "type": "object"
+   },
+   "Group": {
+    "properties": {
+     "cables": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Cables",
+      "type": "array"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "positions": {
+      "title": "Positions",
+      "type": "integer"
+     },
+     "signals": {
+      "title": "Signals",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "cables",
+     "positions",
+     "signals"
+    ],
+    "title": "Group",
+    "type": "object"
+   },
+   "GroupsOut": {
+    "properties": {
+     "groups": {
+      "items": {
+       "$ref": "#/components/schemas/Group"
+      },
+      "title": "Groups",
+      "type": "array"
+     },
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "run_id",
+     "groups"
+    ],
+    "title": "GroupsOut",
+    "type": "object"
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "title": "Detail",
+      "type": "array"
+     }
+    },
+    "title": "HTTPValidationError",
+    "type": "object"
+   },
+   "ImpactOut": {
+    "properties": {
+     "available": {
+      "title": "Available",
+      "type": "boolean"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "run_id",
+     "available"
+    ],
+    "title": "ImpactOut",
+    "type": "object"
+   },
+   "IoSpares": {
+    "properties": {
+     "controller": {
+      "title": "Controller",
+      "type": "string"
+     },
+     "field_signals": {
+      "title": "Field Signals",
+      "type": "integer"
+     },
+     "io_type": {
+      "title": "Io Type",
+      "type": "string"
+     },
+     "required": {
+      "title": "Required",
+      "type": "integer"
+     },
+     "wired_spares": {
+      "title": "Wired Spares",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "controller",
+     "io_type",
+     "field_signals",
+     "wired_spares",
+     "required"
+    ],
+    "title": "IoSpares",
+    "type": "object"
+   },
+   "Issue": {
+    "description": "A recorded doubt (later promoted to a full TQ record in the TQ subsystem).",
+    "properties": {
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "data": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "default": {},
+      "title": "Data",
+      "type": "object"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "severity": {
+      "default": "info",
+      "title": "Severity",
+      "type": "string"
+     },
+     "source_file": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source File"
+     },
+     "source_row": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Row"
+     }
+    },
+    "required": [
+     "code",
+     "message"
+    ],
+    "title": "Issue",
+    "type": "object"
+   },
+   "Kpi": {
+    "properties": {
+     "allocated": {
+      "title": "Allocated",
+      "type": "integer"
+     },
+     "baseplates": {
+      "title": "Baseplates",
+      "type": "integer"
+     },
+     "baseplates_used": {
+      "title": "Baseplates Used",
+      "type": "integer"
+     },
+     "by_io_type": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "integer"
+       },
+       "type": "object"
+      },
+      "title": "By Io Type",
+      "type": "object"
+     },
+     "cabinets": {
+      "title": "Cabinets",
+      "type": "integer"
+     },
+     "ciocs": {
+      "title": "Ciocs",
+      "type": "integer"
+     },
+     "controllers": {
+      "title": "Controllers",
+      "type": "integer"
+     },
+     "empty_baseplates": {
+      "title": "Empty Baseplates",
+      "type": "integer"
+     },
+     "free_slots_on_used_baseplates": {
+      "title": "Free Slots On Used Baseplates",
+      "type": "integer"
+     },
+     "held_out": {
+      "title": "Held Out",
+      "type": "integer"
+     },
+     "occupied": {
+      "title": "Occupied",
+      "type": "integer"
+     },
+     "positions": {
+      "title": "Positions",
+      "type": "integer"
+     },
+     "signals_total": {
+      "title": "Signals Total",
+      "type": "integer"
+     },
+     "spare_slots": {
+      "title": "Spare Slots",
+      "type": "integer"
+     },
+     "spares": {
+      "$ref": "#/components/schemas/SpareReport"
+     },
+     "utilisation": {
+      "title": "Utilisation",
+      "type": "number"
+     },
+     "wired_spare_pairs": {
+      "title": "Wired Spare Pairs",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "signals_total",
+     "allocated",
+     "held_out",
+     "cabinets",
+     "ciocs",
+     "baseplates",
+     "baseplates_used",
+     "controllers",
+     "positions",
+     "occupied",
+     "spare_slots",
+     "utilisation",
+     "wired_spare_pairs",
+     "free_slots_on_used_baseplates",
+     "empty_baseplates",
+     "by_io_type",
+     "spares"
+    ],
+    "title": "Kpi",
+    "type": "object"
+   },
+   "Layout": {
+    "description": "A plan of empty slots; the packer fills it, so solvers stay interchangeable.",
+    "properties": {
+     "cabinets": {
+      "items": {
+       "$ref": "#/components/schemas/Cabinet"
+      },
+      "title": "Cabinets",
+      "type": "array"
+     },
+     "ciocs": {
+      "items": {
+       "$ref": "#/components/schemas/Cioc"
+      },
+      "title": "Ciocs",
+      "type": "array"
+     },
+     "class_plan": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Class Plan",
+      "type": "object"
+     },
+     "controllers": {
+      "items": {
+       "$ref": "#/components/schemas/Controller"
+      },
+      "title": "Controllers",
+      "type": "array"
+     },
+     "issues": {
+      "items": {
+       "$ref": "#/components/schemas/Issue"
+      },
+      "title": "Issues",
+      "type": "array"
+     },
+     "spare_baseplates_per_cabinet": {
+      "default": 0,
+      "title": "Spare Baseplates Per Cabinet",
+      "type": "integer"
+     }
+    },
+    "title": "Layout",
+    "type": "object"
+   },
+   "LayoutOut": {
+    "properties": {
+     "cioc_labels": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Cioc Labels",
+      "type": "object"
+     },
+     "layout": {
+      "$ref": "#/components/schemas/Layout"
+     },
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "run_id",
+     "layout",
+     "cioc_labels"
+    ],
+    "title": "LayoutOut",
+    "type": "object"
+   },
+   "LintIn": {
+    "properties": {
+     "rules": {
+      "anyOf": [
+       {
+        "items": {
+         "additionalProperties": true,
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rules"
+     }
+    },
+    "title": "LintIn",
+    "type": "object"
+   },
+   "LintOut": {
+    "properties": {
+     "dry_run": {
+      "anyOf": [
+       {
+        "items": {
+         "$ref": "#/components/schemas/DryRun"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Dry Run"
+     },
+     "findings": {
+      "items": {
+       "$ref": "#/components/schemas/Finding"
+      },
+      "title": "Findings",
+      "type": "array"
+     }
+    },
+    "required": [
+     "findings"
+    ],
+    "title": "LintOut",
+    "type": "object"
+   },
+   "MappingIn": {
+    "properties": {
+     "confirmed": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "string"
+       },
+       "type": "object"
+      },
+      "title": "Confirmed",
+      "type": "object"
+     }
+    },
+    "required": [
+     "confirmed"
+    ],
+    "title": "MappingIn",
+    "type": "object"
+   },
+   "MappingOut": {
+    "properties": {
+     "confirmed": {
+      "additionalProperties": {
+       "additionalProperties": {
+        "type": "string"
+       },
+       "type": "object"
+      },
+      "title": "Confirmed",
+      "type": "object"
+     },
+     "fields": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Fields",
+      "type": "array"
+     },
+     "required": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Required",
+      "type": "array"
+     },
+     "sheets": {
+      "items": {
+       "$ref": "#/components/schemas/MappingSheet"
+      },
+      "title": "Sheets",
+      "type": "array"
+     }
+    },
+    "required": [
+     "sheets",
+     "fields",
+     "required",
+     "confirmed"
+    ],
+    "title": "MappingOut",
+    "type": "object"
+   },
+   "MappingSheet": {
+    "properties": {
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Columns",
+      "type": "array"
+     },
+     "file": {
+      "title": "File",
+      "type": "string"
+     },
+     "grouping_mode": {
+      "title": "Grouping Mode",
+      "type": "string"
+     },
+     "issues": {
+      "items": {
+       "$ref": "#/components/schemas/Issue"
+      },
+      "title": "Issues",
+      "type": "array"
+     },
+     "matches": {
+      "additionalProperties": {
+       "$ref": "#/components/schemas/ColumnMatch"
+      },
+      "title": "Matches",
+      "type": "object"
+     },
+     "sheet": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sheet"
+     }
+    },
+    "required": [
+     "file",
+     "columns",
+     "matches",
+     "grouping_mode",
+     "issues"
+    ],
+    "title": "MappingSheet",
+    "type": "object"
+   },
+   "Placement": {
+    "description": "One occupied CHARM position. Everything not listed here is a spare slot.",
+    "properties": {
+     "baseplate": {
+      "title": "Baseplate",
+      "type": "integer"
+     },
+     "block_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Block Id"
+     },
+     "change": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Change"
+     },
+     "channel": {
+      "title": "Channel",
+      "type": "integer"
+     },
+     "cioc_no": {
+      "title": "Cioc No",
+      "type": "integer"
+     },
+     "duty_class": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duty Class"
+     },
+     "group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Group"
+     },
+     "io_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Io Type"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "pair": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pair"
+     },
+     "signal": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Signal"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "signal_level": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signal Level"
+     },
+     "signal_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signal Type"
+     }
+    },
+    "required": [
+     "cioc_no",
+     "baseplate",
+     "channel",
+     "kind"
+    ],
+    "title": "Placement",
+    "type": "object"
+   },
+   "ProjectCreate": {
+    "properties": {
+     "area": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Area"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     },
+     "preset": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Preset"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "ProjectCreate",
+    "type": "object"
+   },
+   "ProjectOut": {
+    "properties": {
+     "area": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Area"
+     },
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "preset": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Preset"
+     },
+     "runs": {
+      "default": 0,
+      "title": "Runs",
+      "type": "integer"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     },
+     "uploads": {
+      "default": 0,
+      "title": "Uploads",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "created_at"
+    ],
+    "title": "ProjectOut",
+    "type": "object"
+   },
+   "ProjectUpdate": {
+    "properties": {
+     "area": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Area"
+     },
+     "name": {
+      "anyOf": [
+       {
+        "maxLength": 120,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Name"
+     },
+     "preset": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Preset"
+     },
+     "unit": {
+      "anyOf": [
+       {
+        "maxLength": 40,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Unit"
+     }
+    },
+    "title": "ProjectUpdate",
+    "type": "object"
+   },
+   "ReportOut": {
+    "properties": {
+     "report": {
+      "$ref": "#/components/schemas/CompletionReport"
+     },
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "run_id",
+     "report"
+    ],
+    "title": "ReportOut",
+    "type": "object"
+   },
+   "RuleResult": {
+    "properties": {
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "enforced": {
+      "default": true,
+      "title": "Enforced",
+      "type": "boolean"
+     },
+     "passed": {
+      "title": "Passed",
+      "type": "boolean"
+     },
+     "rule": {
+      "title": "Rule",
+      "type": "string"
+     },
+     "strength": {
+      "default": "hard",
+      "title": "Strength",
+      "type": "string"
+     },
+     "violations": {
+      "title": "Violations",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "rule",
+     "description",
+     "passed",
+     "violations"
+    ],
+    "title": "RuleResult",
+    "type": "object"
+   },
+   "RulesIn": {
+    "properties": {
+     "preset": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Preset"
+     },
+     "rules": {
+      "anyOf": [
+       {
+        "items": {
+         "additionalProperties": true,
+         "type": "object"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rules"
+     }
+    },
+    "title": "RulesIn",
+    "type": "object"
+   },
+   "RulesOut": {
+    "properties": {
+     "custom": {
+      "title": "Custom",
+      "type": "boolean"
+     },
+     "preset": {
+      "title": "Preset",
+      "type": "string"
+     },
+     "presets": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Presets",
+      "type": "array"
+     },
+     "rules": {
+      "items": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "title": "Rules",
+      "type": "array"
+     }
+    },
+    "required": [
+     "preset",
+     "presets",
+     "custom",
+     "rules"
+    ],
+    "title": "RulesOut",
+    "type": "object"
+   },
+   "RunCreate": {
+    "properties": {
+     "cpsat": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cpsat"
+     },
+     "seed": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seed"
+     }
+    },
+    "title": "RunCreate",
+    "type": "object"
+   },
+   "RunOut": {
+    "properties": {
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "download_ready": {
+      "default": false,
+      "title": "Download Ready",
+      "type": "boolean"
+     },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
+     "finished_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Finished At"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "project_id": {
+      "title": "Project Id",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "summary": {
+      "additionalProperties": true,
+      "title": "Summary",
+      "type": "object"
+     }
+    },
+    "required": [
+     "id",
+     "project_id",
+     "status",
+     "created_at"
+    ],
+    "title": "RunOut",
+    "type": "object"
+   },
+   "SheetInfo": {
+    "properties": {
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Columns",
+      "type": "array"
+     },
+     "deleted": {
+      "default": 0,
+      "title": "Deleted",
+      "type": "integer"
+     },
+     "header_row": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Header Row"
+     },
+     "out_of_scope": {
+      "default": 0,
+      "title": "Out Of Scope",
+      "type": "integer"
+     },
+     "rows": {
+      "default": 0,
+      "title": "Rows",
+      "type": "integer"
+     },
+     "sheet": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Sheet"
+     }
+    },
+    "title": "SheetInfo",
+    "type": "object"
+   },
+   "Signal": {
+    "description": "Canonical signal record. Anything the pack does not name rides along in `extras`.",
+    "properties": {
+     "area": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Area"
+     },
+     "cabinet_alarm": {
+      "default": false,
+      "title": "Cabinet Alarm",
+      "type": "boolean"
+     },
+     "cable": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cable"
+     },
+     "cable_formation": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cable Formation"
+     },
+     "cable_pairs": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cable Pairs"
+     },
+     "change_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Change Type"
+     },
+     "contact_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Contact Type"
+     },
+     "deleted": {
+      "default": false,
+      "title": "Deleted",
+      "type": "boolean"
+     },
+     "duty": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duty"
+     },
+     "duty_class": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Duty Class"
+     },
+     "equipment_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Equipment Name"
+     },
+     "execution": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Execution"
+     },
+     "external_power": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "External Power"
+     },
+     "extras": {
+      "additionalProperties": true,
+      "title": "Extras",
+      "type": "object"
+     },
+     "group": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Group"
+     },
+     "instrument_description": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Instrument Description"
+     },
+     "instrument_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Instrument Type"
+     },
+     "internal_wiring": {
+      "default": false,
+      "title": "Internal Wiring",
+      "type": "boolean"
+     },
+     "io_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Io Type"
+     },
+     "io_type_2": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Io Type 2"
+     },
+     "logic_number": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Logic Number"
+     },
+     "loop_name": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Loop Name"
+     },
+     "old_tag": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Old Tag"
+     },
+     "operating_area": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Operating Area"
+     },
+     "out_of_scope": {
+      "default": false,
+      "title": "Out Of Scope",
+      "type": "boolean"
+     },
+     "pair": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pair"
+     },
+     "pair_label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pair Label"
+     },
+     "remarks": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Remarks"
+     },
+     "revision": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Revision"
+     },
+     "segregation": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Segregation"
+     },
+     "segregation_family": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Segregation Family"
+     },
+     "service": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Service"
+     },
+     "service_short": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Service Short"
+     },
+     "signal_level": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signal Level"
+     },
+     "signal_type": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Signal Type"
+     },
+     "source_file": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source File"
+     },
+     "source_row": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Row"
+     },
+     "status": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Status"
+     },
+     "tag": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tag"
+     },
+     "technical_room": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Technical Room"
+     }
+    },
+    "title": "Signal",
+    "type": "object"
+   },
+   "SpareReport": {
+    "properties": {
+     "by_controller_io": {
+      "items": {
+       "$ref": "#/components/schemas/IoSpares"
+      },
+      "title": "By Controller Io",
+      "type": "array"
+     },
+     "cabinets": {
+      "items": {
+       "$ref": "#/components/schemas/CabinetSpares"
+      },
+      "title": "Cabinets",
+      "type": "array"
+     }
+    },
+    "required": [
+     "cabinets",
+     "by_controller_io"
+    ],
+    "title": "SpareReport",
+    "type": "object"
+   },
+   "TQ": {
+    "properties": {
+     "answer": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Answer"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "data": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Data",
+      "type": "object"
+     },
+     "default_applied": {
+      "default": "",
+      "title": "Default Applied",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "options": {
+      "items": {
+       "$ref": "#/components/schemas/TqOption"
+      },
+      "title": "Options",
+      "type": "array"
+     },
+     "scope": {
+      "default": "signal",
+      "title": "Scope",
+      "type": "string"
+     },
+     "severity": {
+      "enum": [
+       "blocking",
+       "assumed",
+       "info"
+      ],
+      "title": "Severity",
+      "type": "string"
+     },
+     "signal_keys": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Signal Keys",
+      "type": "array"
+     },
+     "source_file": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source File"
+     },
+     "source_row": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Source Row"
+     },
+     "status": {
+      "default": "open",
+      "title": "Status",
+      "type": "string"
+     },
+     "subject": {
+      "title": "Subject",
+      "type": "string"
+     }
+    },
+    "required": [
+     "id",
+     "code",
+     "severity",
+     "category",
+     "subject",
+     "message"
+    ],
+    "title": "TQ",
+    "type": "object"
+   },
+   "TqOption": {
+    "properties": {
+     "consequence": {
+      "title": "Consequence",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     }
+    },
+    "required": [
+     "label",
+     "consequence"
+    ],
+    "title": "TqOption",
+    "type": "object"
+   },
+   "UnknownValueOut": {
+    "properties": {
+     "count": {
+      "title": "Count",
+      "type": "integer"
+     },
+     "field": {
+      "title": "Field",
+      "type": "string"
+     },
+     "suggestion": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Suggestion"
+     },
+     "value": {
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "field",
+     "value",
+     "count"
+    ],
+    "title": "UnknownValueOut",
+    "type": "object"
+   },
+   "Unplaced": {
+    "properties": {
+     "issues": {
+      "items": {
+       "$ref": "#/components/schemas/Issue"
+      },
+      "title": "Issues",
+      "type": "array"
+     },
+     "signal": {
+      "$ref": "#/components/schemas/Signal"
+     }
+    },
+    "required": [
+     "signal",
+     "issues"
+    ],
+    "title": "Unplaced",
+    "type": "object"
+   },
+   "UploadOut": {
+    "properties": {
+     "created_at": {
+      "title": "Created At",
+      "type": "string"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "sha256": {
+      "title": "Sha256",
+      "type": "string"
+     },
+     "sheets": {
+      "items": {
+       "$ref": "#/components/schemas/SheetInfo"
+      },
+      "title": "Sheets",
+      "type": "array"
+     },
+     "size": {
+      "title": "Size",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "size",
+     "sha256",
+     "created_at"
+    ],
+    "title": "UploadOut",
+    "type": "object"
+   },
+   "ValidationError": {
+    "properties": {
+     "ctx": {
+      "title": "Context",
+      "type": "object"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "title": "Location",
+      "type": "array"
+     },
+     "msg": {
+      "title": "Message",
+      "type": "string"
+     },
+     "type": {
+      "title": "Error Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError",
+    "type": "object"
+   },
+   "ValueMaps": {
+    "properties": {
+     "duty_classes": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Duty Classes",
+      "type": "object"
+     },
+     "io_types": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Io Types",
+      "type": "object"
+     },
+     "segregation": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Segregation",
+      "type": "object"
+     }
+    },
+    "title": "ValueMaps",
+    "type": "object"
+   },
+   "ValuesOut": {
+    "properties": {
+     "allowed": {
+      "additionalProperties": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "title": "Allowed",
+      "type": "object"
+     },
+     "overrides": {
+      "$ref": "#/components/schemas/ValueMaps"
+     },
+     "unknown": {
+      "items": {
+       "$ref": "#/components/schemas/UnknownValueOut"
+      },
+      "title": "Unknown",
+      "type": "array"
+     }
+    },
+    "required": [
+     "unknown",
+     "overrides",
+     "allowed"
+    ],
+    "title": "ValuesOut",
+    "type": "object"
+   }
+  }
+ },
+ "info": {
+  "title": "IO Signal Sudoku",
+  "version": "0.1.0"
+ },
+ "openapi": "3.1.0",
+ "paths": {
+  "/api/health": {
+   "get": {
+    "operationId": "health_api_health_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response Health Api Health Get",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Health"
+   }
+  },
+  "/api/projects": {
+   "get": {
+    "operationId": "list_projects_api_projects_get",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ProjectOut"
+         },
+         "title": "Response List Projects Api Projects Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "List Projects"
+   },
+   "post": {
+    "operationId": "create_project_api_projects_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProjectCreate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProjectOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Create Project"
+   }
+  },
+  "/api/projects/{pid}": {
+   "get": {
+    "operationId": "get_project_api_projects__pid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProjectOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Project"
+   },
+   "patch": {
+    "operationId": "update_project_api_projects__pid__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ProjectUpdate"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ProjectOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Update Project"
+   }
+  },
+  "/api/projects/{pid}/lint": {
+   "post": {
+    "operationId": "lint_rules_api_projects__pid__lint_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/LintIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LintOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
+     }
+    },
+    "summary": "Lint Rules"
+   }
+  },
+  "/api/projects/{pid}/mapping": {
+   "get": {
+    "operationId": "get_mapping_api_projects__pid__mapping_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MappingOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Mapping"
+   },
+   "put": {
+    "operationId": "put_mapping_api_projects__pid__mapping_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MappingIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MappingOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
+     }
+    },
+    "summary": "Put Mapping"
+   }
+  },
+  "/api/projects/{pid}/rules": {
+   "get": {
+    "operationId": "get_rules_api_projects__pid__rules_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RulesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Rules"
+   },
+   "put": {
+    "operationId": "put_rules_api_projects__pid__rules_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RulesIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RulesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
+     }
+    },
+    "summary": "Put Rules"
+   }
+  },
+  "/api/projects/{pid}/rules/compile": {
+   "post": {
+    "operationId": "compile_rules_api_projects__pid__rules_compile_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     },
+     "501": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Compile Rules"
+   }
+  },
+  "/api/projects/{pid}/rules/mine": {
+   "post": {
+    "operationId": "mine_rules_api_projects__pid__rules_mine_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     },
+     "501": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Mine Rules"
+   }
+  },
+  "/api/projects/{pid}/runs": {
+   "get": {
+    "operationId": "list_runs_api_projects__pid__runs_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/RunOut"
+         },
+         "title": "Response List Runs Api Projects  Pid  Runs Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Runs"
+   },
+   "post": {
+    "operationId": "start_run_api_projects__pid__runs_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/RunCreate"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Start Run"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}": {
+   "get": {
+    "operationId": "get_run_api_projects__pid__runs__rid__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Run"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/allocation": {
+   "get": {
+    "operationId": "allocation_api_projects__pid__runs__rid__allocation_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AllocationOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Allocation"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/download": {
+   "get": {
+    "operationId": "download_api_projects__pid__runs__rid__download_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Download"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/groups": {
+   "get": {
+    "operationId": "groups_api_projects__pid__runs__rid__groups_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GroupsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Groups"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/impact": {
+   "get": {
+    "operationId": "impact_api_projects__pid__runs__rid__impact_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ImpactOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Impact"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/layout": {
+   "get": {
+    "operationId": "layout_api_projects__pid__runs__rid__layout_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/LayoutOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Layout"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/report": {
+   "get": {
+    "operationId": "report_api_projects__pid__runs__rid__report_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Report"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/tqs": {
+   "get": {
+    "operationId": "run_tqs_api_projects__pid__runs__rid__tqs_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/TQ"
+         },
+         "title": "Response Run Tqs Api Projects  Pid  Runs  Rid  Tqs Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Run Tqs"
+   }
+  },
+  "/api/projects/{pid}/tqs": {
+   "get": {
+    "operationId": "project_tqs_api_projects__pid__tqs_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "in": "query",
+      "name": "code",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Code"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/TQ"
+         },
+         "title": "Response Project Tqs Api Projects  Pid  Tqs Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Project Tqs"
+   }
+  },
+  "/api/projects/{pid}/tqs/{tid}/answer": {
+   "post": {
+    "operationId": "answer_api_projects__pid__tqs__tid__answer_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "tid",
+      "required": true,
+      "schema": {
+       "title": "Tid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnswerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/AnswerOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
+     }
+    },
+    "summary": "Answer"
+   }
+  },
+  "/api/projects/{pid}/uploads": {
+   "get": {
+    "operationId": "list_uploads_api_projects__pid__uploads_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/UploadOut"
+         },
+         "title": "Response List Uploads Api Projects  Pid  Uploads Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "List Uploads"
+   },
+   "post": {
+    "operationId": "upload_api_projects__pid__uploads_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_upload_api_projects__pid__uploads_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UploadOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "400": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Bad Request"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "413": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Content Too Large"
+     },
+     "415": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unsupported Media Type"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Upload"
+   }
+  },
+  "/api/projects/{pid}/values": {
+   "get": {
+    "operationId": "get_values_api_projects__pid__values_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ValuesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Get Values"
+   },
+   "put": {
+    "operationId": "put_values_api_projects__pid__values_put",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ValueMaps"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ValuesOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
+     }
+    },
+    "summary": "Put Values"
+   }
+  }
+ }
+}

@@ -96,6 +96,7 @@ class Pipeline:
         confirmed: dict[str, dict[str, str]] | None = None,
         cache: ResultCache | None = None,
         cpsat_enabled: bool | None = None,
+        labels: dict[str, str] | None = None,
         **chain_overrides,
     ):
         self.paths = sorted(Path(p) for p in paths)
@@ -105,9 +106,15 @@ class Pipeline:
         self.base_overrides = overrides or ValueMapOverrides()
         self.base_confirmed = confirmed or {}
         self.cache = cache
+        self.labels = labels or {}
         self.cpsat_enabled = cpsat_enabled
         self.chain_overrides = chain_overrides
         self._done: dict[str, tuple[str, object]] = {}
+
+    def inherit(self, other: "Pipeline") -> "Pipeline":
+        """Reuse another pipeline's stage cache; the stage hashes decide what is still valid."""
+        self._done = other._done
+        return self
 
     def forget(self) -> None:
         self._done.clear()
@@ -171,7 +178,9 @@ class Pipeline:
 
         confirmed = self._confirmed(c)
         files = [(p.name, _file_hash(p)) for p in self.paths]
-        reads = stage("ingest", [files, confirmed], lambda: read_files(self.paths))
+        reads = stage(
+            "ingest", [files, confirmed, self.labels], lambda: read_files(self.paths, self.labels)
+        )
         mappings = stage(
             "map",
             [pack.aliases.model_dump(), pack.schema_.model_dump()],

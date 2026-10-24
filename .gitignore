@@ -8,6 +8,9 @@ dist/
 *.db
 backend/data/
 backend/out/
+backend/uploads/
+backend/outputs/
+backend/projects/
 *.xlsx
 .DS_Store
 # hackathon working documents (hackathon use only, do not share)

@@ -53,9 +53,24 @@ class SignalSet(BaseModel):
         return any(i.severity == "blocking" for i in self.issues)
 
 
-def read_files(paths: list[str | Path]) -> list[ReadResult]:
-    """Stage 1: read every sheet of every file (name order)."""
-    return [res for path in sorted(Path(p) for p in paths) for res in read_workbook(path)]
+def read_files(paths: list[str | Path], labels: dict[str, str] | None = None) -> list[ReadResult]:
+    """Stage 1: read every sheet of every file (name order).
+
+    `labels` maps a file's stored name to the name shown in issues and TQs (uploads are stored
+    under generated names, so the client's name is only ever a label).
+    """
+    out: list[ReadResult] = []
+    for path in sorted(Path(p) for p in paths):
+        for res in read_workbook(path):
+            label = (labels or {}).get(path.name)
+            if label:
+                res.summary.source_file = label
+                for row in res.rows:
+                    row.source_file = label
+                for iss in res.issues:
+                    iss.source_file = label
+            out.append(res)
+    return out
 
 
 def map_files(
