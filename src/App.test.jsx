@@ -72,8 +72,11 @@ describe("landing and sign-in", () => {
 
   it("gives one generic error for a rejected sign-in", async () => {
     render(<App />);
+    const user = userEvent.setup();
+    await user.type(screen.getByLabelText("Email"), "a@example-company.test");
+    await user.type(screen.getByLabelText("Password"), "pw");
     mockControls.failNext = "server";
-    await signIn("a@example-company.test");
+    await user.click(screen.getByRole("button", { name: "Sign in" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Wrong email or password.");
   });
 
