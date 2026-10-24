@@ -15,7 +15,7 @@ const RuleShape = z
     builtin: z.string().max(80).nullable().optional(),
     scope: z.string().max(80),
     strength: z.string().max(40),
-    parameters: z.record(z.union([z.string(), z.number(), z.boolean(), z.null()])),
+    parameters: z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()])),
     not_enforced_reason: z.string().nullable().optional(),
   })
   .strict();

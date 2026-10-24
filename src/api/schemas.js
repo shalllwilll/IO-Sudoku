@@ -32,20 +32,20 @@ export const RunSchema = loose({
 export const MappingSchema = loose({
   fields: z.array(z.string()),
   required: z.array(z.string()),
-  confirmed: z.record(z.any()),
+  confirmed: z.record(z.string(), z.any()),
   sheets: z.array(
     loose({
       file: z.string(),
       sheet: z.string().nullable(),
       columns: z.array(z.string()),
-      matches: z.record(z.any()),
+      matches: z.record(z.string(), z.any()),
     }),
   ),
 });
 
 export const ValuesSchema = loose({
-  allowed: z.record(z.any()),
-  overrides: z.record(z.any()),
+  allowed: z.record(z.string(), z.any()),
+  overrides: z.record(z.string(), z.any()),
   unknown: z.array(loose({ field: z.string(), value: z.string(), count: z.number().int() })),
 });
 
@@ -53,7 +53,7 @@ export const RulesSchema = loose({
   preset: z.string(),
   presets: z.array(z.string()),
   custom: z.boolean(),
-  rules: z.array(loose({ id: z.string(), name: z.string(), enabled: z.boolean(), parameters: z.record(z.any()) })),
+  rules: z.array(loose({ id: z.string(), name: z.string(), enabled: z.boolean(), parameters: z.record(z.string(), z.any()) })),
 });
 
 export const LintSchema = loose({
@@ -64,7 +64,7 @@ export const RulePreviewSchema = loose({
   status: z.string(),
   message: z.string(),
   applied: z.boolean(),
-  rule: z.record(z.any()).nullable(),
+  rule: z.record(z.string(), z.any()).nullable(),
 });
 
 export const AllocationSchema = loose({
@@ -150,7 +150,7 @@ const ImpactDetailSchema = loose({
   total_baseline: z.number().int().optional(),
   total_revised: z.number().int().optional(),
   solver: z.string().optional(),
-  moves_by_reason: z.record(z.number().int()).optional(),
+  moves_by_reason: z.record(z.string(), z.number().int()).optional(),
   // Mock-only convenience field (docs/contract-gaps.md): the real Impact model has no
   // naive-reallocation figure. Optional so a real backend response still validates.
   naive_moved: z.number().int().optional(),

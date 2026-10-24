@@ -19,7 +19,7 @@ below is a candidate for the mismatch list in `backend/docs/integration-notes.md
 
 ## Still open
 
-- The live adapter (`src/api/live/index.js`) is a stub until Phase 8; only the wire vocabulary is done.
+- The live adapter (`src/api/live/index.js`) remains a stub pending finalized endpoint and authentication details (Phase 8.1); the known wire vocabulary is implemented in the adapter's wire conversion layer.
 - Mapping: the wire cannot say "ignore this auto-matched column", and it keys by file name, not sheet. The UI treats a saved file entry as the whole truth; whether the backend does the same is unverified. A field mapped to two columns keeps the first.
 - The pipeline has 6 stages (`ingest`, `map`, `normalise`, `hardware`, `layout`, `pack`). Progress counts `stage.finished` events against that list.
 - Answer values: some options need `value` (map-pick, capacity, value maps) or `fields` (hardware part numbers, naming, rule changes). The UI sends `value` as typed and `fields` empty; the hardware, naming and rule-revise options need a dedicated form.

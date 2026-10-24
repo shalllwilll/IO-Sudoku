@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test": "vitest",
     "e2e": "playwright test",
+    "check-contrast": "node scripts/check-contrast.mjs",
     "verify-output": "node scripts/verify-output.mjs",
     "check": "npm run lint && npm run test -- --run && npm run build"
   },
@@ -20,9 +21,10 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.18.4",
     "three": "^0.172.0",
-    "zod": "^3.25.76"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
