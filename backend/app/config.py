@@ -13,6 +13,7 @@ class Settings:
     qiga_enabled: bool = True
     max_upload_bytes: int = 25 * 1024 * 1024
     template_path: str | None = None
+    cors_origins: tuple[str, ...] = ()  # empty: any local dev origin; set for release
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -28,6 +29,11 @@ class Settings:
             not in ("0", "false", "off", "no"),
             max_upload_bytes=int(float(os.environ.get("MAX_UPLOAD_MB") or 25) * 1024 * 1024),
             template_path=os.environ.get("TEMPLATE_PATH") or None,
+            cors_origins=tuple(
+                o.strip().rstrip("/")
+                for o in (os.environ.get("CORS_ORIGINS") or "").split(",")
+                if o.strip()
+            ),
         )
 
     def resolve_template(self) -> str | None:

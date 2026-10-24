@@ -8,6 +8,7 @@ from app.core.model.allocation import Placement, Unplaced
 from app.core.model.issue import Issue
 from app.core.model.layout import Group, Layout
 from app.core.reports import CompletionReport
+from app.core.revision.impact import DiffRow, Impact
 from app.core.rules.dryrun import DryRun
 from app.core.rules.lint import Finding
 from app.core.tq.answers import Answer
@@ -125,6 +126,25 @@ class RunCreate(BaseModel):
     seed: int | None = None
 
 
+class RevisionCreate(BaseModel):
+    label: str | None = None  # default: the next number after the chain's latest label
+    cpsat: bool | None = None  # default: the server setting
+    qiga: bool | None = None  # default: the server setting
+    seed: int | None = None
+
+
+class BaselineFromRun(BaseModel):
+    run_id: str
+    label: str = "00"
+
+
+class BaselineOut(BaseModel):
+    label: str
+    chain_run_id: str  # the stored run that heads the chain
+    signals: int
+    placed: int
+
+
 class RunOut(BaseModel):
     id: str
     project_id: str
@@ -166,6 +186,8 @@ class ImpactOut(BaseModel):
     run_id: str
     available: bool
     reason: str | None = None
+    impact: Impact | None = None
+    diff: list[DiffRow] = Field(default_factory=list)
 
 
 class AnswerIn(BaseModel):

@@ -243,6 +243,52 @@
     "title": "AnswerOut",
     "type": "object"
    },
+   "BaselineFromRun": {
+    "properties": {
+     "label": {
+      "default": "00",
+      "title": "Label",
+      "type": "string"
+     },
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "run_id"
+    ],
+    "title": "BaselineFromRun",
+    "type": "object"
+   },
+   "BaselineOut": {
+    "properties": {
+     "chain_run_id": {
+      "title": "Chain Run Id",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "placed": {
+      "title": "Placed",
+      "type": "integer"
+     },
+     "signals": {
+      "title": "Signals",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "label",
+     "chain_run_id",
+     "signals",
+     "placed"
+    ],
+    "title": "BaselineOut",
+    "type": "object"
+   },
    "Baseplate": {
     "properties": {
      "cioc_no": {
@@ -275,6 +321,20 @@
      "n"
     ],
     "title": "Baseplate",
+    "type": "object"
+   },
+   "Body_baseline_from_issued_api_projects__pid__baseline_upload_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_baseline_from_issued_api_projects__pid__baseline_upload_post",
     "type": "object"
    },
    "Body_mine_upload_api_projects__pid__rules_mine_upload_post": {
@@ -411,6 +471,61 @@
     "title": "Candidate",
     "type": "object"
    },
+   "ChainEntry": {
+    "properties": {
+     "created_at": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Created At"
+     },
+     "impact": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Impact"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "parent_label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Parent Label"
+     },
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     },
+     "seq": {
+      "title": "Seq",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "seq",
+     "label",
+     "run_id"
+    ],
+    "title": "ChainEntry",
+    "type": "object"
+   },
    "Cioc": {
     "properties": {
      "baseplates": {
@@ -478,6 +593,56 @@
      "method"
     ],
     "title": "ColumnMatch",
+    "type": "object"
+   },
+   "Comparison": {
+    "properties": {
+     "added": {
+      "default": 0,
+      "title": "Added",
+      "type": "integer"
+     },
+     "deltas": {
+      "items": {
+       "$ref": "#/components/schemas/SignalDelta"
+      },
+      "title": "Deltas",
+      "type": "array"
+     },
+     "from_label": {
+      "title": "From Label",
+      "type": "string"
+     },
+     "modified": {
+      "default": 0,
+      "title": "Modified",
+      "type": "integer"
+     },
+     "moved": {
+      "default": 0,
+      "title": "Moved",
+      "type": "integer"
+     },
+     "removed": {
+      "default": 0,
+      "title": "Removed",
+      "type": "integer"
+     },
+     "to_label": {
+      "title": "To Label",
+      "type": "string"
+     },
+     "unchanged": {
+      "default": 0,
+      "title": "Unchanged",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "from_label",
+     "to_label"
+    ],
+    "title": "Comparison",
     "type": "object"
    },
    "CompileIn": {
@@ -564,6 +729,68 @@
     "title": "Controller",
     "type": "object"
    },
+   "CumulativeRow": {
+    "properties": {
+     "cable": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cable"
+     },
+     "changes": {
+      "title": "Changes",
+      "type": "integer"
+     },
+     "first_label": {
+      "title": "First Label",
+      "type": "string"
+     },
+     "last_changed_label": {
+      "title": "Last Changed Label",
+      "type": "string"
+     },
+     "pair": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pair"
+     },
+     "slot": {
+      "title": "Slot",
+      "type": "string"
+     },
+     "tag": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tag"
+     }
+    },
+    "required": [
+     "tag",
+     "slot",
+     "first_label",
+     "last_changed_label",
+     "changes"
+    ],
+    "title": "CumulativeRow",
+    "type": "object"
+   },
    "Declaration": {
     "properties": {
      "assumed": {
@@ -601,6 +828,91 @@
      }
     },
     "title": "Declaration",
+    "type": "object"
+   },
+   "DiffRow": {
+    "properties": {
+     "cable": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cable"
+     },
+     "change": {
+      "title": "Change",
+      "type": "string"
+     },
+     "detail": {
+      "default": "",
+      "title": "Detail",
+      "type": "string"
+     },
+     "fields": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Fields",
+      "type": "array"
+     },
+     "new_slot": {
+      "default": "-",
+      "title": "New Slot",
+      "type": "string"
+     },
+     "old_slot": {
+      "default": "-",
+      "title": "Old Slot",
+      "type": "string"
+     },
+     "old_tag": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Old Tag"
+     },
+     "pair": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pair"
+     },
+     "reason": {
+      "default": "",
+      "title": "Reason",
+      "type": "string"
+     },
+     "tag": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tag"
+     }
+    },
+    "required": [
+     "tag",
+     "change"
+    ],
+    "title": "DiffRow",
     "type": "object"
    },
    "DryRun": {
@@ -764,11 +1076,186 @@
     "title": "HTTPValidationError",
     "type": "object"
    },
+   "HistoryEntry": {
+    "properties": {
+     "change": {
+      "title": "Change",
+      "type": "string"
+     },
+     "detail": {
+      "default": "",
+      "title": "Detail",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "new_slot": {
+      "title": "New Slot",
+      "type": "string"
+     },
+     "old_slot": {
+      "title": "Old Slot",
+      "type": "string"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     }
+    },
+    "required": [
+     "label",
+     "change",
+     "old_slot",
+     "new_slot",
+     "reason"
+    ],
+    "title": "HistoryEntry",
+    "type": "object"
+   },
+   "Impact": {
+    "properties": {
+     "added": {
+      "default": 0,
+      "title": "Added",
+      "type": "integer"
+     },
+     "baseline_label": {
+      "title": "Baseline Label",
+      "type": "string"
+     },
+     "cabinets_used_after": {
+      "default": 0,
+      "title": "Cabinets Used After",
+      "type": "integer"
+     },
+     "cabinets_used_before": {
+      "default": 0,
+      "title": "Cabinets Used Before",
+      "type": "integer"
+     },
+     "ciocs_used_after": {
+      "default": 0,
+      "title": "Ciocs Used After",
+      "type": "integer"
+     },
+     "ciocs_used_before": {
+      "default": 0,
+      "title": "Ciocs Used Before",
+      "type": "integer"
+     },
+     "deleted": {
+      "default": 0,
+      "title": "Deleted",
+      "type": "integer"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "modified": {
+      "default": 0,
+      "title": "Modified",
+      "type": "integer"
+     },
+     "moved": {
+      "default": 0,
+      "title": "Moved",
+      "type": "integer"
+     },
+     "moves_by_reason": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Moves By Reason",
+      "type": "object"
+     },
+     "solver": {
+      "default": "",
+      "title": "Solver",
+      "type": "string"
+     },
+     "spare_slots_after": {
+      "default": 0,
+      "title": "Spare Slots After",
+      "type": "integer"
+     },
+     "spare_slots_before": {
+      "default": 0,
+      "title": "Spare Slots Before",
+      "type": "integer"
+     },
+     "total_baseline": {
+      "default": 0,
+      "title": "Total Baseline",
+      "type": "integer"
+     },
+     "total_revised": {
+      "default": 0,
+      "title": "Total Revised",
+      "type": "integer"
+     },
+     "total_signals": {
+      "default": 0,
+      "title": "Total Signals",
+      "type": "integer"
+     },
+     "tq_rev": {
+      "default": 0,
+      "title": "Tq Rev",
+      "type": "integer"
+     },
+     "unchanged": {
+      "default": 0,
+      "title": "Unchanged",
+      "type": "integer"
+     },
+     "unplaced_after": {
+      "default": 0,
+      "title": "Unplaced After",
+      "type": "integer"
+     },
+     "wired_spares_after": {
+      "default": 0,
+      "title": "Wired Spares After",
+      "type": "integer"
+     },
+     "wired_spares_before": {
+      "default": 0,
+      "title": "Wired Spares Before",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "label",
+     "baseline_label"
+    ],
+    "title": "Impact",
+    "type": "object"
+   },
    "ImpactOut": {
     "properties": {
      "available": {
       "title": "Available",
       "type": "boolean"
+     },
+     "diff": {
+      "items": {
+       "$ref": "#/components/schemas/DiffRow"
+      },
+      "title": "Diff",
+      "type": "array"
+     },
+     "impact": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Impact"
+       },
+       {
+        "type": "null"
+       }
+      ]
      },
      "reason": {
       "anyOf": [
@@ -1581,6 +2068,56 @@
      "report"
     ],
     "title": "ReportOut",
+    "type": "object"
+   },
+   "RevisionCreate": {
+    "properties": {
+     "cpsat": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cpsat"
+     },
+     "label": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Label"
+     },
+     "qiga": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Qiga"
+     },
+     "seed": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Seed"
+     }
+    },
+    "title": "RevisionCreate",
     "type": "object"
    },
    "Rule": {
@@ -2411,6 +2948,70 @@
     "title": "Signal",
     "type": "object"
    },
+   "SignalDelta": {
+    "properties": {
+     "cable": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cable"
+     },
+     "fields": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Fields",
+      "type": "array"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "new_slot": {
+      "default": "-",
+      "title": "New Slot",
+      "type": "string"
+     },
+     "old_slot": {
+      "default": "-",
+      "title": "Old Slot",
+      "type": "string"
+     },
+     "pair": {
+      "anyOf": [
+       {
+        "type": "integer"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Pair"
+     },
+     "tag": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Tag"
+     }
+    },
+    "required": [
+     "tag",
+     "kind"
+    ],
+    "title": "SignalDelta",
+    "type": "object"
+   },
    "SpareReport": {
     "properties": {
      "by_controller_io": {
@@ -3075,6 +3676,176 @@
     "summary": "Update Project"
    }
   },
+  "/api/projects/{pid}/baseline": {
+   "post": {
+    "description": "Make a finished run of this project the first issue of its revision chain.",
+    "operationId": "baseline_from_run_api_projects__pid__baseline_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BaselineFromRun"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaselineOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Baseline From Run"
+   }
+  },
+  "/api/projects/{pid}/baseline/upload": {
+   "post": {
+    "description": "Make an issued allocation workbook the first issue of the revision chain.",
+    "operationId": "baseline_from_issued_api_projects__pid__baseline_upload_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "label",
+      "required": false,
+      "schema": {
+       "default": "00",
+       "title": "Label",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_baseline_from_issued_api_projects__pid__baseline_upload_post"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BaselineOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "413": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Content Too Large"
+     },
+     "415": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unsupported Media Type"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
+     }
+    },
+    "summary": "Baseline From Issued"
+   }
+  },
   "/api/projects/{pid}/lint": {
    "post": {
     "operationId": "lint_rules_api_projects__pid__lint_post",
@@ -3238,6 +4009,315 @@
      }
     },
     "summary": "Put Mapping"
+   }
+  },
+  "/api/projects/{pid}/revisions": {
+   "get": {
+    "description": "The chain, oldest first: label, parent, run and impact of every issue.",
+    "operationId": "revisions_api_projects__pid__revisions_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/ChainEntry"
+         },
+         "title": "Response Revisions Api Projects  Pid  Revisions Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Revisions"
+   },
+   "post": {
+    "description": "Allocate the project's current uploads as the next revision of the chain.\n\nThe answer is a run like any other: poll or stream it, then read its impact at\n/runs/{id}/impact. The chain gains the revision when the run finishes.",
+    "operationId": "start_revision_api_projects__pid__revisions_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "anyOf": [
+         {
+          "$ref": "#/components/schemas/RevisionCreate"
+         },
+         {
+          "type": "null"
+         }
+        ],
+        "title": "Body"
+       }
+      }
+     }
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Start Revision"
+   }
+  },
+  "/api/projects/{pid}/revisions/compare": {
+   "get": {
+    "description": "What differs between two issues (`from` is the older side).",
+    "operationId": "compare_api_projects__pid__revisions_compare_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": true,
+      "schema": {
+       "title": "From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": true,
+      "schema": {
+       "title": "To",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Comparison"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Compare"
+   }
+  },
+  "/api/projects/{pid}/revisions/cumulative": {
+   "get": {
+    "description": "The current slot of every signal, with when it last changed and how often.",
+    "operationId": "cumulative_api_projects__pid__revisions_cumulative_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/CumulativeRow"
+         },
+         "title": "Response Cumulative Api Projects  Pid  Revisions Cumulative Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Cumulative"
+   }
+  },
+  "/api/projects/{pid}/revisions/{label}": {
+   "get": {
+    "operationId": "revision_api_projects__pid__revisions__label__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "label",
+      "required": true,
+      "schema": {
+       "title": "Label",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ChainEntry"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Revision"
    }
   },
   "/api/projects/{pid}/rules": {
@@ -4352,6 +5432,70 @@
     "summary": "Run Tqs"
    }
   },
+  "/api/projects/{pid}/signals/history": {
+   "get": {
+    "description": "Every recorded change of one tag, oldest first (a rename is followed).",
+    "operationId": "signal_history_api_projects__pid__signals_history_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "tag",
+      "required": true,
+      "schema": {
+       "minLength": 1,
+       "title": "Tag",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/HistoryEntry"
+         },
+         "title": "Response Signal History Api Projects  Pid  Signals History Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Signal History"
+   }
+  },
   "/api/projects/{pid}/tqs": {
    "get": {
     "operationId": "project_tqs_api_projects__pid__tqs_get",
@@ -4702,6 +5846,58 @@
      }
     },
     "summary": "Upload"
+   }
+  },
+  "/api/projects/{pid}/uploads/{uid}": {
+   "delete": {
+    "description": "Remove an upload from the project (finished runs keep their results).",
+    "operationId": "delete_upload_api_projects__pid__uploads__uid__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "uid",
+      "required": true,
+      "schema": {
+       "title": "Uid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Delete Upload"
    }
   },
   "/api/projects/{pid}/values": {

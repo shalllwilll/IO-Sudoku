@@ -59,8 +59,9 @@ class Baseline(BaseModel):
 class RunStore:
     """Runs and their allocations. Creation is idempotent and stamped with a schema version."""
 
-    def __init__(self, path: str = ":memory:"):
-        self.db = sqlite3.connect(path)
+    def __init__(self, path: str = ":memory:", shared: bool = False):
+        """`shared`: the connection is used from several threads (the caller serialises access)."""
+        self.db = sqlite3.connect(path, check_same_thread=not shared)
         self.db.executescript(
             """
             CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL);

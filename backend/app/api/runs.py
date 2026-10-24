@@ -109,11 +109,14 @@ def report(pid: str, rid: str, request: Request):
 @router.get("/projects/{pid}/runs/{rid}/impact", response_model=ImpactOut,
             responses={404: ERRORS, 409: ERRORS})  # fmt: skip
 def impact(pid: str, rid: str, request: Request):
-    _finished(run_of(request, pid, rid))
-    return ImpactOut(
-        run_id=rid, available=False,
-        reason="this is an initial allocation; revision impact appears on revision runs",
-    )  # fmt: skip
+    r = _finished(run_of(request, pid, rid))
+    rev = r["data"].get("revision")
+    if rev is None:
+        return ImpactOut(
+            run_id=rid, available=False,
+            reason="this is an initial allocation; revision impact appears on revision runs",
+        )  # fmt: skip
+    return ImpactOut(run_id=rid, available=True, impact=rev["impact"], diff=rev["diff"])
 
 
 @router.get("/projects/{pid}/runs/{rid}/tqs", response_model=list[TQ],

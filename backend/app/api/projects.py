@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, File, Request, UploadFile
 from pydantic import BaseModel
 
 from app.api.deps import project_of, run_of, service
-from app.api.errors import ApiError, ErrorBody
+from app.api.errors import ApiError, ErrorBody, not_found
 from app.api.models import (
     CompileIn,
     ConfirmRuleIn,
@@ -178,6 +178,18 @@ def list_uploads(pid: str, request: Request, svc: Service = Depends(service)):
         UploadOut(**{k: u[k] for k in ("id", "name", "size", "sha256", "created_at", "sheets")})
         for u in svc.store.uploads(pid)
     ]
+
+
+@router.delete(
+    "/projects/{pid}/uploads/{uid}", status_code=204, responses={404: ERRORS}
+)  # fmt: skip
+def delete_upload(pid: str, uid: str, request: Request, svc: Service = Depends(service)):
+    """Remove an upload from the project (finished runs keep their results)."""
+    project_of(request, pid)
+    stored = svc.store.remove_upload(pid, uid)
+    if stored is None:
+        raise not_found("upload")
+    (svc.store.upload_dir(pid) / stored).unlink(missing_ok=True)
 
 
 # -- mapping -------------------------------------------------------------------------------

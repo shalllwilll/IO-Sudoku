@@ -7,6 +7,8 @@ import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 
+from app.core.revision.baseline import RunStore
+from app.core.revision.history import RevisionChain
 from app.core.tq.answers import AnswerStore
 
 
@@ -42,6 +44,7 @@ class ApiStore:
             """
         )
         self._tq: dict[str, AnswerStore] = {}
+        self._chains: dict[str, RevisionChain] = {}
 
     # -- folders ---------------------------------------------------------------------------
 
@@ -62,6 +65,15 @@ class ApiStore:
                 d.mkdir(parents=True, exist_ok=True)
                 self._tq[pid] = AnswerStore(str(d / "tq.db"))
             return self._tq[pid]
+
+    def chain(self, pid: str) -> RevisionChain:
+        """The project's revision chain; callers hold `self.lock` while they use it."""
+        with self.lock:
+            if pid not in self._chains:
+                d = self.root / "projects" / pid
+                d.mkdir(parents=True, exist_ok=True)
+                self._chains[pid] = RevisionChain(RunStore(str(d / "revisions.db"), shared=True))
+            return self._chains[pid]
 
     # -- projects --------------------------------------------------------------------------
 
@@ -118,6 +130,15 @@ class ApiStore:
                 (uid, pid, seq, label, stored, size, sha, now(), json.dumps(info)),
             )
         return self.upload(pid, uid)  # type: ignore[return-value]
+
+    def remove_upload(self, pid: str, uid: str) -> str | None:
+        """Forget an upload; returns its stored file name (None if there is no such upload)."""
+        up = self.upload(pid, uid)
+        if up is None:
+            return None
+        with self.lock, self.db:
+            self.db.execute("DELETE FROM api_uploads WHERE id=? AND project_id=?", (uid, pid))
+        return up["stored_name"]
 
     def next_seq(self, pid: str) -> int:
         with self.lock:

@@ -30,6 +30,13 @@ CONTRACT = [
     ("post", "/api/projects/{pid}/tqs/{tid}/answer"),
     ("get", "/api/projects/{pid}/runs/{rid}/download"),
     ("get", "/api/projects/{pid}/runs/{rid}/events"),
+    ("delete", "/api/projects/{pid}/uploads/{uid}"),
+    ("post", "/api/projects/{pid}/baseline"), ("post", "/api/projects/{pid}/baseline/upload"),
+    ("post", "/api/projects/{pid}/revisions"), ("get", "/api/projects/{pid}/revisions"),
+    ("get", "/api/projects/{pid}/revisions/{label}"),
+    ("get", "/api/projects/{pid}/revisions/compare"),
+    ("get", "/api/projects/{pid}/revisions/cumulative"),
+    ("get", "/api/projects/{pid}/signals/history"),
     ("get", "/api/health"),
     ("get", "/api/ai/status"),
 ]  # fmt: skip
