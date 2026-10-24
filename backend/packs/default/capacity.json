@@ -10,5 +10,6 @@
  "max_cabinets": null,
  "cpsat_seed": 1,
  "cpsat_deterministic_time": 10.0,
- "cpsat_wall_seconds": 60.0
+ "cpsat_wall_seconds": 60.0,
+ "cpsat_max_options": 30000
 }

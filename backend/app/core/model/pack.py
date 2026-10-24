@@ -88,6 +88,7 @@ class Capacity(BaseModel):
     cpsat_seed: int = 1
     cpsat_deterministic_time: float = 10.0  # primary stop: reproducible across machines
     cpsat_wall_seconds: float = 60.0  # backstop only; never the normal stop
+    cpsat_max_options: int = 30000  # larger models keep the greedy answer (see docs/benchmark.md)
 
 
 class Schema(BaseModel):

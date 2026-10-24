@@ -119,6 +119,7 @@ class _Build:
         self.bp_index = {u: i for i, u in enumerate(order)}
         self.options: dict[str, list[_Option]] = {}
         self.unplaced_var: dict[str, object] = {}
+        self.hinted = False
         self.rejected: dict[str, str] = {}
         self.rule_blocked: dict[str, set[str]] = defaultdict(set)
         self.nodes = {r.id: parse_scope(r.scope) for r in self.rules}
@@ -386,6 +387,16 @@ class _Build:
                 vs = self.expr_in(b.id, lambda cc, c=c: cc == c.no)
                 if vs:
                     m.Add(cioc_used[c.no] >= sum(vs))
+        for c in lay.ciocs:  # aggregate load: the strong bound on how many CIOCs are needed
+            load = [
+                o.var * o.load[u]
+                for opts in self.options.values()
+                for o in opts
+                for u in o.load
+                if u[0] == c.no
+            ]
+            if load:
+                m.Add(sum(load) <= len(self.usable[c.no]) * self.ch * cioc_used[c.no])
         for cab in lay.cabinets:
             for cno in cab.ciocs:
                 m.AddImplication(cioc_used[cno], cab_used[cab.no])
@@ -526,6 +537,7 @@ def _hint(build: _Build, base: Allocation | None) -> None:
     """Warm start from a placed allocation (one value per option variable)."""
     if base is None:
         return
+    build.hinted = True
     where: dict[str, tuple[int, int]] = {}
     for p in sorted(base.placements, key=lambda p: (p.cioc_no, p.baseplate, p.channel)):
         if p.block_id and p.block_id not in where:
@@ -538,16 +550,39 @@ def _hint(build: _Build, base: Allocation | None) -> None:
             build.model.AddHint(build.unplaced_var[bid], 0 if want else 1)
 
 
+def _complete_hint(build: _Build, pack: Pack) -> None:
+    """Turn the greedy option hint into a hint for every variable.
+
+    A partial hint is often not followed (the solver can fail to rebuild a feasible start in its
+    budget). Solving once with the option variables fixed is nearly free and yields values for the
+    auxiliary variables; the full solution then seeds the real solve.
+    """
+    m = build.model
+    m.Minimize(build.stage1)
+    s0 = make_solver(pack, deterministic_time=5.0, wall_seconds=10.0)
+    s0.parameters.fix_variables_to_their_hinted_value = True
+    if s0.Solve(m) not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        return  # the warm start does not satisfy the model (e.g. a rule it cannot see): go cold
+    m.ClearHints()
+    hint = m.Proto().solution_hint
+    values = list(s0.response_proto.solution)
+    hint.vars.extend(range(len(values)))
+    hint.values.extend(values)
+
+
 def _staged_solve(build: _Build, pack: Pack, overrides: dict):
     """Stage 1 minimises unallocated/cabinets/CIOCs; stage 2 (held to stage 1's value) the rest.
 
     Splitting the lexicographic objective keeps the important levels provable; fragmentation and
     the stable tie-break then use whatever deterministic-time budget is left.
-    Returns (status, solver, deterministic time used, primary_value, primary_optimal).
+    Returns (status, solver, deterministic time used, primary_value, primary_optimal, final).
+    `final` is the stage-2 objective, or None when stage 2 found nothing better than stage 1.
     """
     m = build.model
     total = float(overrides.get("deterministic_time", pack.capacity.cpsat_deterministic_time))
     wall = float(overrides.get("wall_seconds", pack.capacity.cpsat_wall_seconds))
+    if build.hinted:
+        _complete_hint(build, pack)
     m.Minimize(build.stage1)
     s1 = make_solver(
         pack, **{**overrides, "deterministic_time": total / 2, "wall_seconds": wall / 2}
@@ -555,7 +590,7 @@ def _staged_solve(build: _Build, pack: Pack, overrides: dict):
     st1 = s1.Solve(m)
     det = s1.deterministic_time
     if st1 not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        return st1, s1, det, None, False
+        return st1, s1, det, None, False, None
     best = round(s1.ObjectiveValue())
     m.Add(build.stage1 <= best)
     m.ClearHints()
@@ -573,9 +608,10 @@ def _staged_solve(build: _Build, pack: Pack, overrides: dict):
     det += s2.deterministic_time
     primary = st1 == cp_model.OPTIMAL
     if st2 not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        return st1, s1, det, best, primary  # keep the stage-1 solution
+        return st1, s1, det, best, primary, None  # keep the stage-1 solution
     both = st1 == cp_model.OPTIMAL and st2 == cp_model.OPTIMAL
-    return (cp_model.OPTIMAL if both else cp_model.FEASIBLE), s2, det, best, primary
+    status = cp_model.OPTIMAL if both else cp_model.FEASIBLE
+    return status, s2, det, best, primary, round(s2.ObjectiveValue())
 
 
 def solve_cpsat(
@@ -600,13 +636,20 @@ def solve_cpsat(
     build = _Build(blocks, layout, pack, rules)
     try:
         build.add_options(strict)
+        n_options = sum(len(v) for v in build.options.values())
+        if n_options > overrides.get("max_options", pack.capacity.cpsat_max_options):
+            return CpsatResult(
+                status="SKIPPED",
+                wall_seconds=time.perf_counter() - t0,
+                message=f"model too large ({n_options} placement options)",
+            )
         build.add_capacity()
         build.add_segregation()
         gate_only = build.add_rules()
         build.add_objective()
         if not strict:
             _hint(build, base)
-        status, solver, det, primary_value, primary = _staged_solve(build, pack, overrides)
+        status, solver, det, primary_value, primary, final = _staged_solve(build, pack, overrides)
     except CpsatError:
         raise
     except Exception as e:  # noqa: BLE001 - the chain must not crash on a solver failure
@@ -620,22 +663,21 @@ def solve_cpsat(
     )
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
         return res
-    res.objective = int(solver.ObjectiveValue())
+    res.objective = final
     res.proven_optimal = status == cp_model.OPTIMAL
     res.primary_optimal, res.primary_objective = primary, primary_value
-    used = sum(
-        1
-        for k in layout.cabinets
-        if any(
-            solver.Value(o.var) and build.ctx.cab_of[o.start[0]] == k.no
-            for opts in build.options.values()
-            for o in opts
-        )
-        or (blocks.alarm_signals and k.no <= -(-len(blocks.alarm_signals) // build.ch))
-    )
+    # trim empty trailing cabinets; numbering stays valid because cabinets fill in order
+    placed_cabs = [
+        build.ctx.cab_of[o.start[0]]
+        for opts in build.options.values()
+        for o in opts
+        if solver.Value(o.var)
+    ]
+    alarm_cabs = -(-len(blocks.alarm_signals) // build.ch)
+    used = max([*placed_cabs, alarm_cabs, 0])
     final_layout = layout
-    if used < len(layout.cabinets):
-        final_layout = derive_layout(blocks, pack, area, unit, cabinets=used) if used else layout
+    if 0 < used < len(layout.cabinets):
+        final_layout = derive_layout(blocks, pack, area, unit, cabinets=used)
     alloc = _to_allocation(build, solver, final_layout, area, unit, blocks)
     res.violations = gate(alloc, blocks, pack, rules)
     if res.violations:
