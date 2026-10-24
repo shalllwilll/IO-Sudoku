@@ -1,0 +1,52 @@
+{
+ "blank_rows": 0,
+ "cables": [
+  {
+   "declared": 12,
+   "duty": null,
+   "group": "G1",
+   "io": "DI",
+   "logic": null,
+   "name": "PLC-A-001",
+   "seg": "A",
+   "used": 12
+  },
+  {
+   "declared": 10,
+   "duty": "SOV",
+   "group": null,
+   "io": "DO",
+   "logic": null,
+   "name": "PLC-A-002",
+   "seg": "B",
+   "used": 8
+  },
+  {
+   "declared": 6,
+   "duty": "RELAY",
+   "group": null,
+   "io": "DO",
+   "logic": null,
+   "name": "PLC-A-003",
+   "seg": null,
+   "used": 6
+  },
+  {
+   "declared": 4,
+   "duty": null,
+   "group": null,
+   "io": "AI",
+   "logic": "L1",
+   "name": "PLC-A-004",
+   "seg": "A",
+   "used": 4
+  }
+ ],
+ "combined_grouping": false,
+ "composite_io": true,
+ "drop": [],
+ "extra_columns": 1,
+ "files": 1,
+ "header_style": "alt",
+ "shuffle_seed": null
+}

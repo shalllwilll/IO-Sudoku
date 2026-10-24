@@ -31,6 +31,39 @@ def baseplates_needed(block: Block, pack: Pack) -> int:
     return -(-block.size // ch)
 
 
+def _usable_pairs(cable: str, sigs: list[Signal], out: BlockSet) -> list[Signal]:
+    """Keep one signal per pair number >= 1; hold the rest out with a TQ-DATA, never drop them."""
+    kept: list[Signal] = []
+    seen: set[int] = set()
+    for s in sigs:
+        why = None
+        if s.pair is None or s.pair < 1:
+            why = f"pair number {s.pair} is not valid"
+        elif s.pair in seen:
+            why = f"pair {s.pair} is used by more than one signal"
+        if why is None:
+            seen.add(s.pair)
+            kept.append(s)
+            continue
+        iss = Issue(
+            code="TQ-DATA",
+            severity="blocking",
+            message=f"cable {cable}: {why}; signal {s.tag} is held out",
+            data={"cable": cable},
+        )
+        out.issues.append(iss)
+        out.held_out.append(
+            HeldOut(
+                source_file=s.source_file or "",
+                source_row=s.source_row or 0,
+                tag=s.tag,
+                issues=[iss],
+                signal=s,
+            )
+        )
+    return kept
+
+
 def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
     """One block per cable. Wired spares fill the pairs a cable declares but does not use."""
     out = BlockSet()
@@ -46,6 +79,10 @@ def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
 
     for cable, sigs in sorted(by_cable.items()):
         sigs.sort(key=lambda s: (s.pair if s.pair is not None else 0, s.tag or ""))
+        if not cable.startswith("INTERNAL:"):
+            sigs = _usable_pairs(cable, sigs, out)
+            if not sigs:
+                continue
         declared = max((s.cable_pairs for s in sigs if s.cable_pairs), default=None)
         positions: list[Position] = []
         if declared and not cable.startswith("INTERNAL:"):

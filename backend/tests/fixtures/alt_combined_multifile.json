@@ -1,0 +1,52 @@
+{
+ "blank_rows": 2,
+ "cables": [
+  {
+   "declared": 24,
+   "duty": null,
+   "group": "G7",
+   "io": "DI",
+   "logic": null,
+   "name": "PNL-01",
+   "seg": "B",
+   "used": 24
+  },
+  {
+   "declared": 12,
+   "duty": null,
+   "group": "G7",
+   "io": "DI",
+   "logic": null,
+   "name": "PNL-02",
+   "seg": "B",
+   "used": 10
+  },
+  {
+   "declared": 6,
+   "duty": null,
+   "group": null,
+   "io": "AO",
+   "logic": null,
+   "name": "PNL-03",
+   "seg": "A",
+   "used": 5
+  },
+  {
+   "declared": 4,
+   "duty": null,
+   "group": null,
+   "io": "DI",
+   "logic": null,
+   "name": "PNL-04",
+   "seg": null,
+   "used": 3
+  }
+ ],
+ "combined_grouping": true,
+ "composite_io": false,
+ "drop": [],
+ "extra_columns": 2,
+ "files": 3,
+ "header_style": "alt",
+ "shuffle_seed": 17
+}

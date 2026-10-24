@@ -1,0 +1,49 @@
+{
+ "blank_rows": 0,
+ "cables": [
+  {
+   "declared": 8,
+   "duty": null,
+   "group": null,
+   "io": "DI",
+   "logic": null,
+   "name": "S-1",
+   "seg": null,
+   "used": 7
+  },
+  {
+   "declared": 3,
+   "duty": null,
+   "group": null,
+   "io": "DO",
+   "logic": null,
+   "name": "S-2",
+   "seg": null,
+   "used": 3
+  },
+  {
+   "declared": 5,
+   "duty": null,
+   "group": null,
+   "io": "DI",
+   "logic": null,
+   "name": "S-3",
+   "seg": "A",
+   "used": 5
+  }
+ ],
+ "combined_grouping": false,
+ "composite_io": false,
+ "drop": [
+  "group",
+  "logic",
+  "formation",
+  "status",
+  "level",
+  "signal_type"
+ ],
+ "extra_columns": 0,
+ "files": 1,
+ "header_style": "default",
+ "shuffle_seed": 3
+}

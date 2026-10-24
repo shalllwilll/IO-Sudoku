@@ -25,6 +25,8 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not nightly'"
+markers = ["nightly: large generated sweeps; run with pytest -m nightly"]
 
 [tool.ruff]
 line-length = 100
