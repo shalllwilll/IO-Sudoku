@@ -25,5 +25,12 @@
   "/",
   " "
  ],
- "default_duty_class": "standard"
+ "default_duty_class": "standard",
+ "duty_keywords": {
+  "SOLENOID": "high_current",
+  "HORN": "high_current",
+  "BEACON": "high_current",
+  "SOUNDER": "high_current",
+  "ANNUNCIATOR": "high_current"
+ }
 }

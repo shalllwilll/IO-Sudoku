@@ -7,11 +7,13 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 
 class HardwareRow(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    match: dict[str, str | list[str]]
+    id: str
+    match: dict[str, str | bool | list[str]] = {}
     charm: str | None = None
     charm_name: str | None = None
     tb: str | None = None
-    tb_terminals: str | None = None
+    tb_name: str | None = None
+    tb_terminals: str | None = None  # TB1,TB2,TB3 separated by commas; '-' means unused
     loop_typical: str | None = None
 
 
@@ -20,6 +22,7 @@ class Hardware(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     rows: list[HardwareRow]
+    spare_slot: HardwareRow
 
 
 class NamingItem(BaseModel):
@@ -66,6 +69,7 @@ class Schema(BaseModel):
     required: list[str]
     optional: list[str]
     internal_cable_markers: list[str] = []
+    cabinet_alarm_service_regex: str | None = None
 
 
 class Thresholds(BaseModel):
@@ -87,6 +91,7 @@ class ValueMaps(BaseModel):
     duty_classes: dict[str, str]
     composite_separators: list[str]
     default_duty_class: str
+    duty_keywords: dict[str, str] = {}
 
 
 class PackError(ValueError):

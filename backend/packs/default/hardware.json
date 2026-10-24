@@ -1,12 +1,170 @@
 {
-  "rows": [
-    {
-      "match": {"io_type": "DOR", "duty": "RELAY"},
-      "charm": null,
-      "charm_name": null,
-      "tb": null,
-      "tb_terminals": null,
-      "loop_typical": null
-    }
-  ]
+ "rows": [
+  {
+   "id": "HW-ALARM-RTD",
+   "match": {
+    "cabinet_alarm": true,
+    "io_type": "AIR",
+    "signal_type": "RTD"
+   },
+   "charm": "SE4303T03",
+   "charm_name": "RTD Input Charm",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,4",
+   "loop_typical": "SA-AMI-530-4EME-000041 - LT-03"
+  },
+  {
+   "id": "HW-ALARM-DI-ICE",
+   "match": {
+    "cabinet_alarm": true,
+    "io_type": "DIR",
+    "internal_wiring": false
+   },
+   "charm": "SE4301T02",
+   "charm_name": "DISCRETE INPUT CHARM; 24 VDC DRY CONTACT: LOW SIDE SENSE",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,-",
+   "loop_typical": "SA-AMI-530-4EME-000041 - LT-05"
+  },
+  {
+   "id": "HW-ALARM-DI",
+   "match": {
+    "cabinet_alarm": true,
+    "io_type": "DIR",
+    "internal_wiring": true
+   },
+   "charm": "SE4301T02",
+   "charm_name": "DISCRETE INPUT CHARM; 24 VDC DRY CONTACT: LOW SIDE SENSE",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,-",
+   "loop_typical": "SA-AMI-530-4EME-000029 SH.16"
+  },
+  {
+   "id": "HW-AIR-RTD",
+   "match": {
+    "io_type": "AIR",
+    "signal_type": "RTD"
+   },
+   "charm": "SE4303T03",
+   "charm_name": "RTD Input Charm",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,4",
+   "loop_typical": null
+  },
+  {
+   "id": "HW-AIR-2W",
+   "match": {
+    "io_type": "AIR",
+    "signal_type": [
+     "4-20 ma HART",
+     "4-20 ma"
+    ],
+    "signal_level": "2-Wire"
+   },
+   "charm": "SE4303T01",
+   "charm_name": "AI 4-20 MA HART CHARM",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,-",
+   "loop_typical": "HW-TYP-41 - LT-01"
+  },
+  {
+   "id": "HW-AIR-4W",
+   "match": {
+    "io_type": "AIR",
+    "signal_type": [
+     "4-20 ma HART",
+     "4-20 ma"
+    ],
+    "signal_level": "4-Wire"
+   },
+   "charm": "SE4303T01",
+   "charm_name": "AI 4-20 MA HART CHARM",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "-,2,4",
+   "loop_typical": "HW-TYP-41 - LT-02B"
+  },
+  {
+   "id": "HW-AOR",
+   "match": {
+    "io_type": "AOR",
+    "signal_type": [
+     "4-20 ma HART",
+     "4-20 ma"
+    ]
+   },
+   "charm": "SE4304T01",
+   "charm_name": "AO 4-20 MA HART CHARM",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,-",
+   "loop_typical": "HW-TYP-41 - LT-04"
+  },
+  {
+   "id": "HW-DIR",
+   "match": {
+    "io_type": "DIR"
+   },
+   "charm": "SE4301T02",
+   "charm_name": "DISCRETE INPUT CHARM; 24 VDC DRY CONTACT: LOW SIDE SENSE",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,-",
+   "loop_typical": "HW-TYP-41 - LT-05"
+  },
+  {
+   "id": "HW-DOR-RELAY",
+   "match": {
+    "io_type": "DOR",
+    "duty_class": "relay"
+   },
+   "charm": null,
+   "charm_name": null,
+   "tb": null,
+   "tb_name": null,
+   "tb_terminals": null,
+   "loop_typical": null
+  },
+  {
+   "id": "HW-DOR-HIGH",
+   "match": {
+    "io_type": "DOR",
+    "duty_class": "high_current"
+   },
+   "charm": "SE4302T02",
+   "charm_name": "DO 24V DC Isolated",
+   "tb": "SE4502",
+   "tb_name": "Fused-Injected-Power Terminal Block",
+   "tb_terminals": "-,2,4",
+   "loop_typical": "HW-TYP-41 - LT-08A"
+  },
+  {
+   "id": "HW-DOR-STD",
+   "match": {
+    "io_type": "DOR",
+    "duty_class": "standard"
+   },
+   "charm": "SE4302T01",
+   "charm_name": "DISCRETE OUTPUT CHARM; 24 VDC; HIGH SIDE",
+   "tb": "SE4501",
+   "tb_name": "Standard CHARM Terminal Block",
+   "tb_terminals": "1,2,-",
+   "loop_typical": "HW-TYP-41 - LT-07"
+  }
+ ],
+ "spare_slot": {
+  "id": "HW-SPARE-SLOT",
+  "match": {},
+  "charm": "SE6103",
+  "charm_name": "CHARM PROTECTION COVER",
+  "tb": "SE4501",
+  "tb_name": "Standard CHARM Terminal Block",
+  "tb_terminals": "-,-,-",
+  "loop_typical": null
+ }
 }

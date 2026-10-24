@@ -36,6 +36,7 @@ class Signal(BaseModel):
     remarks: str | None = None
     status: str | None = None
     internal_wiring: bool = False
+    cabinet_alarm: bool = False
     deleted: bool = False
     out_of_scope: bool = False
     source_file: str | None = None

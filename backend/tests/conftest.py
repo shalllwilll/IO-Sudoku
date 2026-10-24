@@ -6,11 +6,15 @@ import pytest
 PACK_DIR = Path(__file__).resolve().parent.parent / "packs" / "default"
 
 
-def _data_file(name_hint: str) -> Path:
+def _data_file(name_hint: str, exclude: str = "\0") -> Path:
     d = os.environ.get("SUDOKU_DATA_DIR")
     if not d:
         pytest.skip("SUDOKU_DATA_DIR is not set; hackathon sample files are unavailable")
-    matches = sorted(p for p in Path(d).glob("*.xlsx") if name_hint.lower() in p.name.lower())
+    matches = sorted(
+        p
+        for p in Path(d).glob("*.xlsx")
+        if name_hint.lower() in p.name.lower() and exclude not in p.name.lower()
+    )
     if not matches:
         pytest.skip(f"no '{name_hint}' workbook found in SUDOKU_DATA_DIR={d}")
     return matches[0]
@@ -33,4 +37,4 @@ def blank_template_path() -> Path:
 
 @pytest.fixture
 def sample_alloc_path() -> Path:
-    return _data_file("alloc")
+    return _data_file("alloc", exclude="blank")

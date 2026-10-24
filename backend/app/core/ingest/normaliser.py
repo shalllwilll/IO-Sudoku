@@ -123,6 +123,10 @@ def normalise(
         )
         for f in _TEXT_FIELDS:
             setattr(sig, f, clean(col(row, f)))
+        if pack.schema_.cabinet_alarm_service_regex and sig.service:
+            sig.cabinet_alarm = bool(
+                re.search(pack.schema_.cabinet_alarm_service_regex, sig.service)
+            )
         mapped_cols = {m.column for m in mapping.matches.values()}
         sig.extras = {k: v for k, v in row.values.items() if k not in mapped_cols and v is not None}
 
@@ -141,8 +145,12 @@ def normalise(
                 sig.io_type, sig.duty = io_map[base], duty
                 if sig.io_type == "DOR":
                     key = (duty or "").upper()
+                    text = f"{sig.instrument_description or ''} {sig.instrument_type or ''}".upper()
+                    keyword = next((k for k in vm.duty_keywords if not key and k in text), None)
                     if key in duty_map:
                         sig.duty_class = duty_map[key]
+                    elif keyword:
+                        sig.duty_class = vm.duty_keywords[keyword]
                     else:
                         sig.duty_class = vm.default_duty_class
                         if duty:
