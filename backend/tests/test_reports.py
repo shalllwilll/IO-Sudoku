@@ -73,6 +73,7 @@ def test_declaration_lists_defaults(pack):
     rep = build_report(a, pack, s, a.issues)
     assert any("TQ-NAME" in d for d in rep.declaration.defaulted)
     assert any("relay" in x.lower() or "HW-DOR-RELAY" in x for x in rep.declaration.assumed)
+    assert any("boundaries are derived" in x for x in rep.declaration.assumed)
 
 
 def test_kpi_matches_output_sheet_and_json(pack, blank_template_path, tmp_path):

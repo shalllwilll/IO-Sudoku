@@ -42,6 +42,8 @@ def build_declaration(
         f"CIOCs per controller is {cap.ciocs_per_controller} (parameter, not confirmed).",
         f"Controllers per system cabinet is {cap.controllers_per_system_cabinet} "
         "(parameter, not confirmed).",
+        "Controller and marshalling-cabinet boundaries are derived from capacity and supplied "
+        "ownership context; an approved boundary map was not supplied by the MDB.",
         f"Spare rule: {cap.spare_percent}% of baseplates kept empty per cabinet "
         f"({cap.spare_rounding} rounding); baseplate {cap.alarm_baseplate_index} of each "
         "cabinet is reserved for cabinet alarms.",
