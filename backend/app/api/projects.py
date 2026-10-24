@@ -11,6 +11,7 @@ from app.api.errors import ApiError, ErrorBody, not_found
 from app.api.models import (
     CompileIn,
     ConfirmRuleIn,
+    IntentIn,
     LintIn,
     LintOut,
     MappingIn,
@@ -30,6 +31,7 @@ from app.api.models import (
 from app.api.service import Service
 from app.api.store import new_id
 from app.core.ai.features import RulePreview, classify_value, compile_rule, mapping_hint
+from app.core.ai.intent import IntentPreview, propose_intent
 from app.core.ingest.reader import ReaderError, read_workbook
 from app.core.layout.blocks import build_blocks
 from app.core.model.allocation import Allocation
@@ -381,6 +383,21 @@ def compile_rules(pid: str, body: CompileIn, request: Request, svc: Service = De
         signals, blocks = ss.signals, build_blocks(ss.signals, svc.pack)
         groups = {b.id: b.group for b in blocks.blocks if b.group}
     return compile_rule(svc.gateway, body.request, existing, signals, blocks, groups)
+
+
+@router.post("/projects/{pid}/intent", response_model=IntentPreview, responses={404: ERRORS})
+def propose_project_intent(
+    pid: str, body: IntentIn, request: Request, svc: Service = Depends(service)
+):
+    """Turn a natural-language request into a checked preview; it never applies a change."""
+    project = project_of(request, pid)
+    existing = {r.id for r in svc.rules(project)}
+    signals = blocks = groups = None
+    if svc.store.uploads(pid):
+        _, _, ss = svc.preview(project)
+        signals, blocks = ss.signals, build_blocks(ss.signals, svc.pack)
+        groups = {b.id: b.group for b in blocks.blocks if b.group}
+    return propose_intent(svc.gateway, body.request, existing, signals, blocks, groups)
 
 
 @router.post(

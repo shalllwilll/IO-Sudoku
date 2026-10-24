@@ -3,6 +3,7 @@
 from pydantic import BaseModel, Field
 
 from app.core.ai.features import RulePreview, Suggestion, TqWording
+from app.core.ai.intent import IntentPreview
 from app.core.ingest.mapper import ColumnMatch
 from app.core.model.allocation import Placement, Unplaced
 from app.core.model.issue import Issue
@@ -209,8 +210,12 @@ class CompileIn(BaseModel):
     request: str = Field(min_length=3, max_length=600)
 
 
+class IntentIn(BaseModel):
+    request: str = Field(min_length=3, max_length=600)
+
+
 class ConfirmRuleIn(BaseModel):
     rule: dict
 
 
-__all__ = ["RulePreview", "TqWording"]
+__all__ = ["IntentPreview", "RulePreview", "TqWording"]

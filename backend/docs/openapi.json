@@ -1296,6 +1296,83 @@
     "title": "ImpactOut",
     "type": "object"
    },
+   "IntentIn": {
+    "properties": {
+     "request": {
+      "maxLength": 600,
+      "minLength": 3,
+      "title": "Request",
+      "type": "string"
+     }
+    },
+    "required": [
+     "request"
+    ],
+    "title": "IntentIn",
+    "type": "object"
+   },
+   "IntentPreview": {
+    "properties": {
+     "intent": {
+      "enum": [
+       "rule",
+       "explain",
+       "goal",
+       "clarify",
+       "unknown",
+       "conflict"
+      ],
+      "title": "Intent",
+      "type": "string"
+     },
+     "locked_rules": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Locked Rules",
+      "type": "array"
+     },
+     "message": {
+      "title": "Message",
+      "type": "string"
+     },
+     "questions": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Questions",
+      "type": "array"
+     },
+     "rule_preview": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/RulePreview"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "state": {
+      "enum": [
+       "preview",
+       "conflict",
+       "clarify",
+       "unknown",
+       "unavailable"
+      ],
+      "title": "State",
+      "type": "string"
+     }
+    },
+    "required": [
+     "state",
+     "intent",
+     "message"
+    ],
+    "title": "IntentPreview",
+    "type": "object"
+   },
    "IoSpares": {
     "properties": {
      "controller": {
@@ -3865,6 +3942,66 @@
      }
     },
     "summary": "Baseline From Issued"
+   }
+  },
+  "/api/projects/{pid}/intent": {
+   "post": {
+    "description": "Turn a natural-language request into a checked preview; it never applies a change.",
+    "operationId": "propose_project_intent_api_projects__pid__intent_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/IntentIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/IntentPreview"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Propose Project Intent"
    }
   },
   "/api/projects/{pid}/lint": {
