@@ -219,9 +219,9 @@ def normalise(
                 unknown[("segregation", seg)] += 1
                 issues.append(
                     Issue(
-                        code="TQ-VALUE",
+                        code="TQ-SEG",
                         severity="warning",
-                        message=f"unknown segregation code '{seg}'; given its own CIOC",
+                        message=f"unknown segregation code '{seg}'; isolated in its own CIOC pending confirmation",
                         data={"field": "segregation", "value": seg, "cable": sig.cable or ""},
                         **loc,
                     )

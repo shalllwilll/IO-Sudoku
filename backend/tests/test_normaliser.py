@@ -55,8 +55,10 @@ def test_unknown_io_type_held_out(pack):
 
 
 def test_unknown_segregation_own_cioc(pack):
-    (s,) = run(pack, [row("AI", seg="Q")]).signals
+    r = run(pack, [row("AI", seg="Q")])
+    (s,) = r.signals
     assert s.segregation_family == "UNKNOWN:Q"
+    assert [i.code for i in r.issues] == ["TQ-SEG"]
 
 
 def test_known_segregation_family(pack):
