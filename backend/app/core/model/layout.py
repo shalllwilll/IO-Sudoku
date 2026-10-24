@@ -5,10 +5,10 @@ from app.core.model.signal import Signal
 
 
 class Position(BaseModel):
-    """One CHARM position a block needs: a real signal or a wired spare pair."""
+    """One channel reserved by a cable: a real signal, wired spare, or protected spare slot."""
 
     pair: int
-    kind: str  # field | wired_spare
+    kind: str  # field | wired_spare | spare_slot
     signal: Signal | None = None
     io_type: str | None = None  # wired spares take it from the block when packed
 

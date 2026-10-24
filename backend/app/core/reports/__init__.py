@@ -24,7 +24,8 @@ class CompletionReport(BaseModel):
             for name in (
                 "signals_total", "allocated", "held_out", "cabinets", "ciocs", "baseplates",
                 "baseplates_used", "controllers", "positions", "occupied", "spare_slots",
-                "utilisation", "wired_spare_pairs", "free_slots_on_used_baseplates",
+                "utilisation", "wired_spare_pairs", "protected_spare_pairs",
+                "free_slots_on_used_baseplates",
                 "empty_baseplates",
             )
         ]  # fmt: skip

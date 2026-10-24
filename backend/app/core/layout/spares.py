@@ -10,6 +10,7 @@ from app.core.model.pack import Pack
 class CabinetSpares(BaseModel):
     cabinet: str
     wired_spare_pairs: int
+    protected_spare_pairs: int
     free_slots_on_used_baseplates: int
     empty_baseplates: int
     required_empty_baseplates: int
@@ -40,28 +41,35 @@ def spare_report(alloc: Allocation, pack: Pack) -> SpareReport:
     """Count the three spare kinds separately, plus the 10% wired-spare rule per IO type."""
     cap = pack.capacity
     occupied: dict[tuple[int, int], int] = Counter(
-        (p.cioc_no, p.baseplate) for p in alloc.placements
+        (p.cioc_no, p.baseplate) for p in alloc.placements if p.kind != "spare_slot"
+    )
+    protected_cells: dict[tuple[int, int], int] = Counter(
+        (p.cioc_no, p.baseplate) for p in alloc.placements if p.kind == "spare_slot"
     )
     cabinets: list[CabinetSpares] = []
     required = spare_baseplates(pack)
     for cab in alloc.layout.cabinets:
-        wired = free = empty = 0
+        wired = protected = free = empty = 0
         for cno in cab.ciocs:
             for bp in alloc.layout.cioc(cno).baseplates:
                 n = occupied.get((cno, bp.n), 0)
+                protected_here = protected_cells.get((cno, bp.n), 0)
                 if bp.reserved == "alarm":
                     continue
-                if n == 0:
+                if n == 0 and protected_here == 0:
                     empty += 1
-                else:
-                    free += cap.channels_per_baseplate - n
+                elif n:
+                    free += cap.channels_per_baseplate - n - protected_here
         for p in alloc.placements:
             if p.kind == "wired_spare" and p.cioc_no in cab.ciocs:
                 wired += 1
+            if p.kind == "spare_slot" and p.cioc_no in cab.ciocs:
+                protected += 1
         cabinets.append(
             CabinetSpares(
                 cabinet=cab.name,
                 wired_spare_pairs=wired,
+                protected_spare_pairs=protected,
                 free_slots_on_used_baseplates=free,
                 empty_baseplates=empty,
                 required_empty_baseplates=required,
@@ -73,7 +81,7 @@ def spare_report(alloc: Allocation, pack: Pack) -> SpareReport:
     wired: dict[tuple[int, str], int] = defaultdict(int)
     for p in alloc.placements:
         t = p.signal.io_type if p.signal else p.io_type
-        if t is None or p.kind == "cabinet_alarm":
+        if t is None or p.kind not in {"field", "wired_spare"}:
             continue
         key = (ctl_of[p.cioc_no], t)
         (wired if p.kind == "wired_spare" else field)[key] += 1

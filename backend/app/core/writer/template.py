@@ -15,7 +15,12 @@ from app.core.model.signal import Signal
 from app.core.naming.engine import Namer
 
 DASH = "-"
-STATUS = {"field": "Field", "wired_spare": "Wired Spare", "cabinet_alarm": "Cabinet Alarm"}
+STATUS = {
+    "field": "Field",
+    "wired_spare": "Wired Spare",
+    "cabinet_alarm": "Cabinet Alarm",
+    "spare_slot": "Spare Slot",
+}
 
 
 class WriterError(ValueError):
@@ -73,7 +78,7 @@ def _cabinet_context(alloc: Allocation) -> dict[int, dict]:
 
 
 def _hardware(p: Placement | None, pack: Pack) -> HardwareResult:
-    if p is None:
+    if p is None or p.kind == "spare_slot":
         return spare_slot_hardware(pack)
     probe = p.signal or Signal(
         io_type=p.io_type,
@@ -107,13 +112,14 @@ def build_rows(
                 for channel in range(1, ch + 1):
                     p = at.get((cno, bp.n, channel))
                     s = p.signal if p else None
+                    active = p if p and p.kind != "spare_slot" else None
                     hw = _hardware(p, pack)
                     c = ctx[cab.no]
                     status = STATUS[p.kind] if p else "Spare Slot"
                     internal = bool(s and s.internal_wiring)
                     terms = hw.tb_terminals + [DASH] * (3 - len(hw.tb_terminals))
                     tag = s.tag if s else DASH
-                    if p and p.kind == "wired_spare" and pack.naming.wired_spare_tag:
+                    if active and active.kind == "wired_spare" and pack.naming.wired_spare_tag:
                         tag = namer.name_for(
                             "wired_spare_tag",
                             unit=_unit_text(c),
@@ -125,7 +131,7 @@ def build_rows(
                     f = {
                         "srno": len(rows) + 1,
                         "revisionno": (s.revision if s and s.revision else "00")
-                        if p and p.kind in ("field", "wired_spare")
+                        if active and active.kind in ("field", "wired_spare")
                         else 0,
                         "tagname": tag,
                         "technicalroom": (s.technical_room if s else None) or c["technical_room"],
@@ -138,12 +144,17 @@ def build_rows(
                         "dstname": dst_name(tag if status != "Spare Slot" else None),
                         "servicedescription": (s.service_short or s.service)
                         if s
-                        else ("SPARE " + (p.io_type or "")[:2] if p else None),
+                        else ("SPARE " + (active.io_type or "")[:2] if active else None),
                         "location": (s.extras.get("Location") if s else None),
-                        "iotype": (s.io_type if s else (p.io_type if p else None)),
-                        "signaltype": (s.signal_type if s else (p.signal_type if p else None)),
-                        "signallevel": (s.signal_level if s else (p.signal_level if p else None)),
-                        "nonisis": (s.execution if s else None) or (None if not p else "NON-IS"),
+                        "iotype": (s.io_type if s else (active.io_type if active else None)),
+                        "signaltype": (
+                            s.signal_type if s else (active.signal_type if active else None)
+                        ),
+                        "signallevel": (
+                            s.signal_level if s else (active.signal_level if active else None)
+                        ),
+                        "nonisis": (s.execution if s else None)
+                        or (None if not active else "NON-IS"),
                         "equipmentname": s.equipment_name if s else None,
                         "externalpower": s.external_power if s else None,
                         "systemcabinet": ctl.system_cabinet,
@@ -162,12 +173,16 @@ def build_rows(
                         "charmtb3": terms[2],
                         "fieldcableno": s.cable
                         if s and not internal
-                        else (p.block_id if p and p.kind == "wired_spare" else None),
+                        else (active.block_id if active and active.kind == "wired_spare" else None),
                         "fieldcablesize": s.cable_formation if s and not internal else None,
                         "fieldcablepair": (
                             s.pair_label
                             if s and not internal
-                            else (f"Pair {p.pair}" if p and p.kind == "wired_spare" else None)
+                            else (
+                                f"Pair {active.pair}"
+                                if active and active.kind == "wired_spare"
+                                else None
+                            )
                         ),
                         "tagstatus": status,
                         "remarks": alloc.slot_remarks.get(f"{cno}/{bp.n}/{channel}")
@@ -178,11 +193,11 @@ def build_rows(
                             if s
                             else None
                         ),
-                        "changetype": (p.change if p else None)
+                        "changetype": (active.change if active else None)
                         or ("Deleted" if f"{cno}/{bp.n}/{channel}" in alloc.slot_remarks else None)
                         or (s.change_type if s else None),
                         "batch": batch,
-                        "hwlooptypical": hw.loop_typical if p else None,
+                        "hwlooptypical": hw.loop_typical if active else None,
                         "system2": s.extras.get("System 2") if s else None,
                         "oldtag": s.old_tag if s else None,
                         "instrumenttype": s.instrument_description if s else None,

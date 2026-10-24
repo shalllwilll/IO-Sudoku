@@ -65,7 +65,7 @@ def _usable_pairs(cable: str, sigs: list[Signal], out: BlockSet) -> list[Signal]
 
 
 def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
-    """One block per cable. Wired spares fill the pairs a cable declares but does not use."""
+    """One block per cable, preserving declared unused pairs as wired or protected spares."""
     out = BlockSet()
     cap = pack.capacity
     cioc_positions = cap.channels_per_baseplate * cap.baseplates_per_cioc
@@ -92,7 +92,13 @@ def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
                 if p in by_pair:
                     positions.append(Position(pair=p, kind="field", signal=by_pair[p]))
                 else:
-                    positions.append(Position(pair=p, kind="wired_spare"))
+                    planned = p in pack.capacity.wired_spare_pairs.get(cable, [])
+                    kind = (
+                        "wired_spare"
+                        if pack.capacity.wired_spare_policy == "declared_pairs" or planned
+                        else "spare_slot"
+                    )
+                    positions.append(Position(pair=p, kind=kind))
         else:
             positions = [Position(pair=s.pair or 0, kind="field", signal=s) for s in sigs]
         block = Block(

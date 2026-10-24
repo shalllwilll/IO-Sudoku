@@ -6,6 +6,8 @@
  "alarm_baseplate_index": 1,
  "spare_percent": 10,
  "spare_rounding": "floor",
+ "wired_spare_policy": "declared_pairs",
+ "wired_spare_pairs": {},
  "controllers_per_system_cabinet": 1,
  "max_cabinets": null,
  "cpsat_seed": 1,

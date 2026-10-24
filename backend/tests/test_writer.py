@@ -87,6 +87,33 @@ def test_extra_sheets_and_wired_spare_row(pack, template, tmp_path):
     assert spare[0]["tagname"].startswith("100DSP")
 
 
+def test_protected_spare_slot_does_not_claim_wired_spare_hardware(pack, template, tmp_path):
+    planned = pack.model_copy(
+        update={
+            "capacity": pack.capacity.model_copy(
+                update={"wired_spare_policy": "explicit_pairs", "wired_spare_pairs": {"C1": [12]}}
+            )
+        }
+    )
+    a = alloc_for(cable("C1", 10, 12), planned)
+    protected = next(p for p in a.placements if p.kind == "spare_slot")
+    rows = build_rows(a, planned)
+    slot = next(
+        r for r in rows if r["tagstatus"] == "Spare Slot" and r["charmno"] == protected.charm_no
+    )
+    assert slot["iotype"] is None and slot["fieldcableno"] is None
+    assert slot["charmtype"] == planned.hardware.spare_slot.charm
+    out = write_allocation(a, planned, template, tmp_path / "o.xlsx")
+    ws = openpyxl.load_workbook(out).worksheets[0]
+    headers = [c.value for c in ws[1]]
+    row = next(
+        dict(zip(headers, [c.value for c in cells], strict=False))
+        for cells in ws.iter_rows(min_row=2)
+        if cells[headers.index("CHARM_No")].value == protected.charm_no
+    )
+    assert row["Tag Status"] == "Spare Slot" and row["IO Type"] == "-"
+
+
 def test_sample_signal_columns_match_sample_allocation(
     pack, sample_mdb_path, sample_alloc_path, template
 ):

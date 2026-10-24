@@ -405,6 +405,10 @@
       "title": "Free Slots On Used Baseplates",
       "type": "integer"
      },
+     "protected_spare_pairs": {
+      "title": "Protected Spare Pairs",
+      "type": "integer"
+     },
      "required_empty_baseplates": {
       "title": "Required Empty Baseplates",
       "type": "integer"
@@ -417,6 +421,7 @@
     "required": [
      "cabinet",
      "wired_spare_pairs",
+     "protected_spare_pairs",
      "free_slots_on_used_baseplates",
      "empty_baseplates",
      "required_empty_baseplates"
@@ -1423,6 +1428,10 @@
       "title": "Positions",
       "type": "integer"
      },
+     "protected_spare_pairs": {
+      "title": "Protected Spare Pairs",
+      "type": "integer"
+     },
      "signals_total": {
       "title": "Signals Total",
       "type": "integer"
@@ -1457,6 +1466,7 @@
      "spare_slots",
      "utilisation",
      "wired_spare_pairs",
+     "protected_spare_pairs",
      "free_slots_on_used_baseplates",
      "empty_baseplates",
      "by_io_type",
@@ -1757,7 +1767,7 @@
     "type": "object"
    },
    "Placement": {
-    "description": "One occupied CHARM position. Everything not listed here is a spare slot.",
+    "description": "One allocated or explicitly protected CHARM position.\n\n``spare_slot`` reserves a declared cable pair in its contiguous cable block but has no\ninstalled CHARM. It is tracked so another block cannot claim the same cell.",
     "properties": {
      "baseplate": {
       "title": "Baseplate",

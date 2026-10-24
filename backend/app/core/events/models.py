@@ -64,6 +64,7 @@ class Rejection(EventModel):
 class SpareAssigned(EventModel):
     type: ClassVar[str] = "spare.assigned"
     wired_spare_pairs: int
+    protected_spare_pairs: int = 0
     spare_slots: int
     by_io_type: dict[str, dict[str, int]] = Field(default_factory=dict)
 

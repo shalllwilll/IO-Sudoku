@@ -48,7 +48,9 @@ def run_events(run: PipelineRun, report: CompletionReport) -> list[m.EventModel]
     k = report.kpi
     out.append(
         m.SpareAssigned(
-            wired_spare_pairs=k.wired_spare_pairs, spare_slots=k.spare_slots,
+            wired_spare_pairs=k.wired_spare_pairs,
+            protected_spare_pairs=k.protected_spare_pairs,
+            spare_slots=k.spare_slots,
             by_io_type=k.by_io_type,
         )
     )  # fmt: skip

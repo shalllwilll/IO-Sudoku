@@ -2,8 +2,9 @@ import hashlib
 import json
 import re
 from pathlib import Path
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, ValidationError, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 
 class HardwareRow(BaseModel):
@@ -83,6 +84,10 @@ class Capacity(BaseModel):
     alarm_baseplate_index: int
     spare_percent: int
     spare_rounding: str
+    # Declared-but-unused cable pairs are ambiguous without a wiring plan. Retain the
+    # historic prompt-book behaviour by default, but permit an explicit project plan.
+    wired_spare_policy: Literal["declared_pairs", "explicit_pairs"] = "declared_pairs"
+    wired_spare_pairs: dict[str, list[int]] = Field(default_factory=dict)
     controllers_per_system_cabinet: int = 1
     max_cabinets: int | None = None
     cpsat_seed: int = 1

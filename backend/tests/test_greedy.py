@@ -7,6 +7,7 @@ from app.core.layout.spares import spare_report
 from app.core.model.pack import Pack
 from app.core.model.signal import Signal
 from app.core.solve.greedy import pack_blocks, solve_greedy
+from app.core.solve.validator import validate_allocation
 
 
 @pytest.fixture
@@ -112,6 +113,30 @@ def test_spare_report_kinds(pack):
     row = rep.by_controller_io[0]
     assert row.field_signals == 34 and row.wired_spares == 2 and row.required == 3
     assert row.shortfall == 1
+
+
+def test_explicit_wired_spare_plan_preserves_other_declared_pairs_as_slots(pack):
+    planned = pack.model_copy(
+        update={
+            "capacity": pack.capacity.model_copy(
+                update={"wired_spare_policy": "explicit_pairs", "wired_spare_pairs": {"C1": [12]}}
+            )
+        }
+    )
+    signals = cable("C1", 10, 12)
+    blocks = build_blocks(signals, planned)
+    alloc = solve_greedy(blocks, planned)
+    c1 = [p for p in alloc.placements if p.block_id == "C1"]
+    assert [(p.pair, p.kind) for p in c1] == [
+        *[(n, "field") for n in range(1, 11)],
+        (11, "spare_slot"),
+        (12, "wired_spare"),
+    ]
+    report = spare_report(alloc, planned)
+    assert report.cabinets[0].wired_spare_pairs == 1
+    assert report.cabinets[0].protected_spare_pairs == 1
+    assert report.cabinets[0].free_slots_on_used_baseplates == 0
+    assert validate_allocation(alloc, planned, signals) == []
 
 
 def test_sample_packs(pack, sample_mdb_path):

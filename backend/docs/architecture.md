@@ -36,6 +36,10 @@ app/
   reduced to distinct samples), and every suggestion waits for a human confirmation.
 - **Only hard rules are enforced.** Rules have a strength (`hard`, `soft`, `advisory`); the
   solvers and the validator enforce hard rules only.
+- **Spare intent is explicit.** `capacity.json` defaults to the original `declared_pairs`
+  policy, which treats each declared but unused cable pair as an installed wired spare. A plant
+  can instead select `explicit_pairs` and list `wired_spare_pairs` by cable; unlisted declared
+  pairs remain protected `Spare Slot` rows with no claimed CHARM hardware.
 
 ## Solver chain
 

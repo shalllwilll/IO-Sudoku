@@ -75,6 +75,8 @@ def validate_allocation(
     # positions: ranges, uniqueness, CHARM_No formula, wired spares carry an IO type
     cells: Counter = Counter()
     for p in alloc.placements:
+        if p.kind not in {"field", "wired_spare", "cabinet_alarm", "spare_slot"}:
+            v("INVARIANT", f"unknown placement kind {p.kind}")
         cioc = cioc_by_no.get(p.cioc_no)
         if cioc is None:
             v("CAPACITY", f"placement in unknown CIOC {p.cioc_no}")
@@ -93,6 +95,11 @@ def validate_allocation(
             v("CHARM_NO", f"CHARM_No {charm_no} out of range")
         if p.kind == "wired_spare" and not p.io_type:
             v("INVARIANT", f"wired spare at {p.cioc_no}/{p.baseplate}/{p.channel} has no IO type")
+        if p.kind == "spare_slot" and p.signal is not None:
+            v(
+                "INVARIANT",
+                f"protected spare slot at {p.cioc_no}/{p.baseplate}/{p.channel} has a signal",
+            )
     for cell, n in cells.items():
         if n > 1:
             v("CAPACITY", f"{n} signals share position CIOC {cell[0]} bp {cell[1]} ch {cell[2]}")

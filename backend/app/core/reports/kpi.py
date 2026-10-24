@@ -22,6 +22,7 @@ class Kpi(BaseModel):
     spare_slots: int
     utilisation: float  # occupied positions over all positions, 0 when there are none
     wired_spare_pairs: int
+    protected_spare_pairs: int
     free_slots_on_used_baseplates: int
     empty_baseplates: int
     by_io_type: dict[str, dict[str, int]]
@@ -36,8 +37,8 @@ def compute_kpi(alloc: Allocation, pack: Pack, extra_held_out: list[Signal] | No
     held = len(alloc.unplaced) + len(extra_held_out or [])
     baseplates = sum(len(c.baseplates) for c in lay.ciocs)
     positions = baseplates * ch
-    occupied = len(alloc.placements)
-    used = {(p.cioc_no, p.baseplate) for p in alloc.placements}
+    occupied = sum(p.kind != "spare_slot" for p in alloc.placements)
+    used = {(p.cioc_no, p.baseplate) for p in alloc.placements if p.kind != "spare_slot"}
     rep = spare_report(alloc, pack)
     io: dict[str, Counter] = {}
     for p in alloc.placements:
@@ -58,6 +59,7 @@ def compute_kpi(alloc: Allocation, pack: Pack, extra_held_out: list[Signal] | No
         spare_slots=positions - occupied,
         utilisation=round(occupied / positions, 4) if positions else 0.0,
         wired_spare_pairs=sum(c.wired_spare_pairs for c in rep.cabinets),
+        protected_spare_pairs=sum(c.protected_spare_pairs for c in rep.cabinets),
         free_slots_on_used_baseplates=sum(c.free_slots_on_used_baseplates for c in rep.cabinets),
         empty_baseplates=sum(c.empty_baseplates for c in rep.cabinets),
         by_io_type={k: dict(sorted(v.items())) for k, v in sorted(io.items())},
