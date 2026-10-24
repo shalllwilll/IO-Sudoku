@@ -105,7 +105,7 @@ export default function Landing() {
           tiltY={0}
           clickPulse
           intro
-          idle={false}
+          idle
         />
       </div>
       <div className={`relative z-10 flex min-h-screen w-full items-center justify-center p-6 sm:p-8 ${leaving ? "page-leave" : ""}`}>

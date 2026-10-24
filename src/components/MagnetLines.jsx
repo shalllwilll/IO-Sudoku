@@ -71,9 +71,14 @@ export default function MagnetLines({
       if (!width || !height) return;
 
       const ease = reducedMotion ? 1 : 1 - Math.pow(1 - clamp(inertia, 0.01, 1), dt * 60);
+      const autoMove = idle && !reducedMotion && !pointer.inside;
+      if (autoMove) {
+        field.idlePhase += dt * 0.45;
+        pointer.tx = width * 0.5 + Math.cos(field.idlePhase * 0.82) * width * 0.24;
+        pointer.ty = height * 0.5 + Math.sin(field.idlePhase * 0.67 + 1.3) * height * 0.28;
+      }
       pointer.x += (pointer.tx - pointer.x) * ease;
       pointer.y += (pointer.ty - pointer.y) * ease;
-      if (idle && !reducedMotion && !pointer.inside) field.idlePhase += dt * 0.45;
 
       context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
       context.clearRect(0, 0, width, height);
@@ -97,15 +102,14 @@ export default function MagnetLines({
           const dx = pointer.x - x;
           const dy = pointer.y - y;
           const distance = Math.hypot(dx, dy);
-          const proximity = pointer.inside ? clamp(1 - distance / reachRadius, 0, 1) : 0;
+          const proximity = pointer.inside || autoMove ? clamp(1 - distance / reachRadius, 0, 1) : 0;
           const influence = Math.pow(proximity, 1 + Math.max(0, fade) * 2);
           const pointerAngle = Math.atan2(dy, dx);
           const orbitAngle = pointerAngle + Math.PI / 2;
           const desiredAngle = mode === "orbit" ? orbitAngle : pointerAngle;
           const angleDelta = wrapAngle(desiredAngle - baseRadians);
           const angle = baseRadians + angleDelta * influence * clamp(stretch * 1.6, 0, 1);
-          const drift = idle && !reducedMotion ? Math.sin(field.idlePhase + index * 0.017) * 1.5 : 0;
-          const pull = influence * stretch * 18 + drift;
+          const pull = influence * stretch * 18;
           const centerX = x + Math.cos(pointerAngle) * pull;
           const centerY = y + Math.sin(pointerAngle) * pull;
           const pulseStrength = field.pulse && pulseAge < 950
