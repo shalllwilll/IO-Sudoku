@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { api } from "../../api/index.js";
 import { AuthError } from "../../api/errors.js";
+import { RUN_STATUS, TERMINAL_EVENTS } from "../../api/live/wire.js";
 import { signOutSession } from "../../auth/session.js";
 import { runStore, TERMINAL } from "./runStore.js";
 
@@ -55,7 +56,7 @@ function onMessage(frame) {
   armSilence();
   queue.push(checked.data);
   if (!flushHandle) flushHandle = schedule(flush);
-  if (checked.data.type === "run.completed" || checked.data.type === "run.failed") {
+  if (TERMINAL_EVENTS.includes(checked.data.type)) {
     // Apply right away, then close.
     flush();
     teardown();
@@ -67,8 +68,8 @@ async function reconnect() {
   const { projectId, runId } = current;
   try {
     const snapshot = await api.getRun(projectId, runId);
-    if (snapshot.status === "completed") return runStore.setTerminal("completed");
-    if (snapshot.status === "failed") return runStore.setTerminal("failed", snapshot.error ?? "The run failed.");
+    if (snapshot.status === RUN_STATUS.finished) return runStore.setTerminal(RUN_STATUS.finished);
+    if (snapshot.status === RUN_STATUS.failed) return runStore.setTerminal(RUN_STATUS.failed, snapshot.error ?? "The run failed.");
   } catch (e) {
     if (e instanceof AuthError) return expire();
   }

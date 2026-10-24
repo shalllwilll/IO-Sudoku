@@ -1,5 +1,7 @@
-// Mock run event stream with adjustable behaviour for tests and demos (provisional, MI-1).
+// Mock run event stream with adjustable behaviour for tests and demos. Events use the backend's
+// names and shapes: {seq, type, at, data}. See api/live/wire.js.
 import { AuthError } from "../errors.js";
+import { EVENT, PIPELINE_STAGES, RUN_STATUS } from "../live/wire.js";
 
 export const streamOptions = {
   intervalMs: 30,
@@ -8,7 +10,7 @@ export const streamOptions = {
   duplicateSeq: null,
   outOfOrder: false,
   malformed: false,
-  failWith: null, // message: end with run.failed
+  failWith: null, // message: end with an error event
   silent: false,
   unauthorized: false,
 };
@@ -27,15 +29,34 @@ export function resetStreamOptions() {
   });
 }
 
-const STAGES = ["Reading files", "Normalising", "Allocating", "Checking rules", "Writing output"];
+function batch(n, size) {
+  return {
+    batch: n,
+    count: size,
+    placements: Array.from({ length: size }, (_, i) => ({ cioc_no: 1, baseplate: 1 + (i % 8), channel: 1 + (i % 12), kind: "field", tag: `MOCK-${n}-${i}`, block_id: null })),
+  };
+}
 
 function buildEvents(o) {
-  const events = [{ type: "run.started", data: {} }];
-  STAGES.forEach((name, index) => events.push({ type: "run.stage", data: { name, index, total: STAGES.length } }));
-  for (let i = 0; i < o.placementEvents; i++) events.push({ type: "placement", data: { count: 19 } });
-  events.push({ type: "tq.raised", data: { tq_id: "tq-1", code: "MISSING_CABLE", severity: "warning" } });
-  events.push(o.failWith ? { type: "run.failed", data: { message: o.failWith } } : { type: "run.completed", data: {} });
-  return events.map((e, i) => ({ ...e, seq: i + 1 }));
+  const events = [{ type: EVENT.runStarted, data: { project_id: "p", uploads: 1, params: {} } }];
+  PIPELINE_STAGES.forEach((stage) => {
+    events.push({ type: EVENT.stageStarted, data: { stage } });
+    events.push({ type: EVENT.stageFinished, data: { stage, reused: false, seconds: 0.1 } });
+  });
+  events.push({ type: EVENT.groupFormed, data: { group: { id: "G1", cables: ["CBL-1"], positions: 6, signals: 6 } } });
+  for (let i = 0; i < o.placementEvents; i++) events.push({ type: EVENT.placement, data: batch(i + 1, 19) });
+  events.push({ type: EVENT.rejection, data: { code: "TQ-DATA", message: "IO type could not be read.", signals: 1, keys: [] } });
+  events.push({ type: EVENT.spareAssigned, data: { wired_spare_pairs: 4, spare_slots: 20, by_io_type: {} } });
+  events.push({ type: EVENT.solverStatus, data: { solver: "greedy", status: "done", detail: "" } });
+  events.push({ type: EVENT.tqRaised, data: { id: "tq-1", code: "TQ-DATA", severity: "assumed", category: "missing data", message: "Cable is missing for this signal.", signals: 1 } });
+  events.push({ type: EVENT.validation, data: { ok: true, violations: 0, items: [] } });
+  events.push(
+    o.failWith
+      ? { type: EVENT.error, data: { code: "run_failed", message: o.failWith } }
+      : { type: EVENT.runFinished, data: { status: "finished", allocated: 190, held_out: 1, tqs: 1, solver: "greedy" } },
+  );
+  const at = new Date().toISOString();
+  return events.map((e, i) => ({ ...e, seq: i + 1, at }));
 }
 
 /** Returns { close }. Frames are { id, data: string }. onStatus(status) reports the terminal state. */
@@ -71,8 +92,8 @@ export function openMockStream(handlers, { lastEventId = 0 } = {}, onTerminal) {
     const frame = { id: String(event.seq), data: JSON.stringify(event) };
     handlers.onMessage(frame);
     if (o.duplicateSeq === event.seq) handlers.onMessage(frame);
-    if (event.type === "run.completed") onTerminal?.("completed");
-    if (event.type === "run.failed") onTerminal?.("failed", event.data.message);
+    if (event.type === EVENT.runFinished) onTerminal?.(RUN_STATUS.finished);
+    if (event.type === EVENT.error) onTerminal?.(RUN_STATUS.failed, event.data.message);
   }, o.intervalMs);
 
   return {

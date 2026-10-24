@@ -49,7 +49,7 @@ export default function Run() {
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!pre) return <p role="status">Loading summary</p>;
 
-  const finished = run.projectId === id && run.status === "completed";
+  const finished = run.projectId === id && run.status === "finished";
   const resultPath = `/projects/${id}/result?run=${run.runId}`;
 
   async function onRun() {

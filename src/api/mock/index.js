@@ -1,4 +1,4 @@
-// Mock adapter. Hand-written sample data in the backend's response shapes (provisional, MI-1).
+// Mock adapter. Hand-written sample data in the backend's response shapes (see api/live/wire.js).
 // Nothing here is copied from the dataset. Functions resolve after a short delay so
 // loading states are exercised.
 import { DEFAULT_PREFERENCES } from "../../features/preferences/schema.js";
@@ -149,6 +149,7 @@ export const mockApi = {
     return parseResponse(MappingSchema, mapping, "getMapping");
   },
 
+  /** `confirmed` is the wire shape: { fileName: { field: columnName } }. */
   async saveMapping(pid, confirmed) {
     await gate();
     store.mapping[pid] = confirmed;
@@ -245,8 +246,11 @@ export const mockApi = {
     for (const result of Object.values(store.results)) {
       const tq = result.tqs.find((t) => t.id === tid);
       if (tq) {
+        if (!tq.options.some((o) => o.label === body.option)) {
+          throw new ServerError(`"${body.option}" is not an option of ${tq.code}.`, { status: 422, code: "invalid_answer" });
+        }
         tq.status = "answered";
-        tq.answer = body.value || body.option;
+        tq.answer = body.option;
         return parseResponse(AnswerSchema, { tq: { ...tq }, answer: body, history: [] }, "answerTq");
       }
     }
@@ -256,7 +260,7 @@ export const mockApi = {
   openRunStream(pid, rid, handlers, options) {
     return openMockStream(handlers, options, (status, error) => {
       const run = store.runs[pid]?.find((r) => r.id === rid);
-      if (run) Object.assign(run, { status, error: error ?? null, download_ready: status === "completed", finished_at: new Date().toISOString() });
+      if (run) Object.assign(run, { status, error: error ?? null, download_ready: status === "finished", finished_at: new Date().toISOString() });
     });
   },
 

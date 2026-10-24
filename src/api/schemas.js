@@ -3,6 +3,7 @@
 // ValidationError that names the field, never a broken screen.
 import { z } from "zod";
 import { ValidationError } from "./errors.js";
+import { PLACEMENT_KIND, RUN_STATUS, TQ_SEVERITY } from "./live/wire.js";
 
 const loose = (shape) => z.object(shape).passthrough();
 
@@ -24,7 +25,7 @@ export const UploadSchema = loose({
 export const RunSchema = loose({
   id: z.string(),
   project_id: z.string(),
-  status: z.string(),
+  status: z.enum(Object.values(RUN_STATUS)),
   created_at: z.string(),
 });
 
@@ -73,7 +74,7 @@ export const AllocationSchema = loose({
       cioc_no: z.number().int(),
       baseplate: z.number().int(),
       channel: z.number().int(),
-      kind: z.string(),
+      kind: z.enum(Object.values(PLACEMENT_KIND)),
     }),
   ),
   unplaced: z.array(z.any()),
@@ -97,9 +98,19 @@ export const LayoutSchema = loose({
 export const ReportSchema = loose({
   run_id: z.string(),
   report: loose({
-    kpi: loose({ cabinets: z.number().int(), ciocs: z.number().int(), signals_total: z.number().int() }),
+    kpi: loose({
+      cabinets: z.number().int(),
+      ciocs: z.number().int(),
+      signals_total: z.number().int(),
+      spares: loose({
+        cabinets: z.array(loose({ cabinet: z.string(), empty_baseplates: z.number().int(), free_slots_on_used_baseplates: z.number().int(), required_empty_baseplates: z.number().int(), wired_spare_pairs: z.number().int() })),
+        by_controller_io: z.array(loose({ controller: z.string(), io_type: z.string(), field_signals: z.number().int(), required: z.number().int(), wired_spares: z.number().int() })),
+      }),
+    }),
     declaration: loose({ rule_set: z.string() }),
-    rules: z.array(z.any()),
+    rules: z.array(
+      loose({ rule: z.string(), description: z.string(), passed: z.boolean(), violations: z.number().int(), enforced: z.boolean().optional(), strength: z.string().optional() }),
+    ),
   }),
 });
 
@@ -107,9 +118,12 @@ export const TqSchema = loose({
   id: z.string(),
   code: z.string(),
   category: z.string(),
-  severity: z.string(),
+  severity: z.enum(TQ_SEVERITY),
   status: z.string(),
   message: z.string(),
+  subject: z.string(),
+  signal_keys: z.array(z.string()).optional(),
+  options: z.array(loose({ label: z.string(), consequence: z.string() })).optional(),
 });
 
 export const TqListSchema = z.array(TqSchema);

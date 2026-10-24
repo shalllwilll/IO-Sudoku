@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { checkCompiled } from "./rules/PlainEnglishRule.jsx";
 import { PRIMITIVES, newRule, validateRule } from "./rules/ruleSchema.js";
 import { exportSet, importSet, validateSetName } from "./rulesets/ruleSets.js";
+import { assignmentsFromWire, confirmedToWire } from "../api/live/wire.js";
 import { confidenceLevel, initialAssignments, validateAssignments } from "./mapping/mappingState.js";
 import { normaliseIoType } from "./values/normaliseIoType.js";
 import { DEFAULT_GROUPING_RULE, parseGrouping } from "./values/parseGrouping.js";
@@ -16,10 +17,11 @@ describe("mapping state", () => {
     expect(validateAssignments({ 0: "tag", 1: "tag", 2: "io_type", 3: "pair" })).toEqual({ missing: ["cable"], duplicates: ["tag"] });
     expect(validateAssignments({ 0: "tag", 1: "io_type", 2: "cable", 3: "pair", 4: "" })).toEqual({ missing: [], duplicates: [] });
   });
-  it("prefers saved choices over matches", () => {
-    const sheet = { columns: ["A", ""], matches: { A: { field: "tag", confidence: 1 } } };
-    expect(initialAssignments(sheet, {})).toEqual({ 0: "tag", 1: "" });
-    expect(initialAssignments(sheet, { 0: "" })).toEqual({ 0: "", 1: "" });
+  it("prefers the saved wire entry over automatic matches", () => {
+    const sheet = { columns: ["A", "B", ""], matches: { A: { field: "tag", confidence: 1 } } };
+    expect(initialAssignments(sheet, undefined)).toEqual({ 0: "tag", 1: "", 2: "" });
+    expect(initialAssignments(sheet, { io_type: "A" })).toEqual({ 0: "io_type", 1: "", 2: "" });
+    expect(initialAssignments(sheet, {})).toEqual({ 0: "", 1: "", 2: "" });
   });
 });
 
@@ -99,5 +101,21 @@ describe("compiled rule check", () => {
     expect(checkCompiled({ rule: { primitive: "x", parameters: {} } }).ok).toBe(false);
     expect(checkCompiled({ rule: null, message: "Could not understand" }).ok).toBe(false);
     expect(checkCompiled({ rule: newRule("separate"), rules: [] }).ok).toBe(false);
+  });
+});
+
+describe("mapping wire codec", () => {
+  const sheet = { file: "a.xlsx", columns: ["Tag No", "Type", "", "Cable"] };
+  it("sends { file: { field: columnName } }, never column indexes", () => {
+    expect(confirmedToWire([sheet], [{ 0: "tag", 1: "io_type", 2: "pair", 3: "" }])).toEqual({ "a.xlsx": { tag: "Tag No", io_type: "Type" } });
+  });
+  it("keeps the first column of a duplicated field and merges sheets of one file", () => {
+    const second = { file: "a.xlsx", columns: ["Other"] };
+    expect(confirmedToWire([sheet, second], [{ 0: "tag", 1: "tag", 2: "", 3: "cable" }, { 0: "area" }])).toEqual({ "a.xlsx": { tag: "Tag No", cable: "Cable", area: "Other" } });
+  });
+  it("round-trips through the wire shape", () => {
+    const assignments = { 0: "tag", 1: "io_type", 2: "", 3: "cable" };
+    const wire = confirmedToWire([sheet], [assignments]);
+    expect(assignmentsFromWire(sheet, wire["a.xlsx"])).toEqual(assignments);
   });
 });

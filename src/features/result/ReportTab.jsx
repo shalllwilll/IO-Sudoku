@@ -21,7 +21,8 @@ export default function ReportTab({ report, model, tqs }) {
   const mismatches = model ? crossCheck(report, model) : [];
   if (mismatches.length) console.warn("[report] report and view disagree", mismatches.length);
   const openTqs = tqs.filter((t) => t.status !== "answered").length;
-  const violations = r.rules.reduce((n, rule) => n + (rule.violations ?? 0), 0);
+  const violations = r.rules.filter((rule) => rule.enforced !== false).reduce((n, rule) => n + (rule.violations ?? 0), 0);
+  const spares = { cabinets: kpi.spares?.cabinets ?? [], by_controller_io: kpi.spares?.by_controller_io ?? [] };
 
   return (
     <div className="space-y-5">
@@ -51,24 +52,20 @@ export default function ReportTab({ report, model, tqs }) {
           <thead className="uppercase text-soft-white/60">
             <tr>
               <th>Cabinet</th>
-              <th>CIOCs used</th>
-              <th>Baseplates used of 32</th>
-              <th>Fill (of 384)</th>
               <th>Wired spare pairs</th>
-              <th>Free slots</th>
+              <th>Free slots on used baseplates</th>
               <th>Empty baseplates</th>
+              <th>Required empty baseplates</th>
             </tr>
           </thead>
           <tbody>
-            {(kpi.spares.cabinets ?? []).map((c) => (
+            {spares.cabinets.map((c) => (
               <tr key={c.cabinet} className="border-t border-steel/50">
                 <td className="py-1">{c.cabinet}</td>
-                <td>{dash(c.ciocs_used)}</td>
-                <td>{dash(c.baseplates_used)}</td>
-                <td>{dash(c.fill)}</td>
                 <td>{dash(c.wired_spare_pairs)}</td>
-                <td>{dash(c.free_slots)}</td>
+                <td>{dash(c.free_slots_on_used_baseplates)}</td>
                 <td>{dash(c.empty_baseplates)}</td>
+                <td>{dash(c.required_empty_baseplates)}</td>
               </tr>
             ))}
           </tbody>
@@ -81,28 +78,35 @@ export default function ReportTab({ report, model, tqs }) {
           <thead className="uppercase text-soft-white/60">
             <tr>
               <th>Scope</th>
-              <th>Target %</th>
-              <th>Actual %</th>
+              <th>Measure</th>
+              <th>Required</th>
+              <th>Actual</th>
               <th>Result</th>
             </tr>
           </thead>
           <tbody>
-            {(kpi.spares.cabinets ?? []).map((c) => (
+            {spares.cabinets.map((c) => (
               <tr key={`c-${c.cabinet}`} className="border-t border-steel/50">
                 <td className="py-1">{c.cabinet}</td>
-                <td>{dash(c.target)}</td>
-                <td>{dash(c.actual)}</td>
-                <td>{c.target === undefined ? "—" : <PassFail pass={c.actual >= c.target} />}</td>
+                <td>Empty baseplates</td>
+                <td>{dash(c.required_empty_baseplates)}</td>
+                <td>{dash(c.empty_baseplates)}</td>
+                <td>
+                  <PassFail pass={c.empty_baseplates >= c.required_empty_baseplates} />
+                </td>
               </tr>
             ))}
-            {(kpi.spares.by_controller_io ?? []).map((c) => (
+            {spares.by_controller_io.map((c) => (
               <tr key={`io-${c.controller}-${c.io_type}`} className="border-t border-steel/50">
                 <td className="py-1">
-                  Controller {c.controller}, {c.io_type}
+                  Controller {c.controller}, {c.io_type} ({c.field_signals} signals)
                 </td>
-                <td>{dash(c.target)}</td>
-                <td>{dash(c.actual)}</td>
-                <td>{c.target === undefined ? "—" : <PassFail pass={c.actual >= c.target} />}</td>
+                <td>Wired spares</td>
+                <td>{dash(c.required)}</td>
+                <td>{dash(c.wired_spares)}</td>
+                <td>
+                  <PassFail pass={c.wired_spares >= c.required} />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -115,25 +119,20 @@ export default function ReportTab({ report, model, tqs }) {
           <thead className="uppercase text-soft-white/60">
             <tr>
               <th>Rule</th>
+              <th>Strength</th>
               <th>Status</th>
-              <th>Signals touched</th>
               <th>Violations</th>
             </tr>
           </thead>
           <tbody>
             {r.rules.map((rule) => (
-              <tr key={rule.id} className="border-t border-steel/50">
-                <td className="py-1">{rule.name}</td>
-                <td>
-                  {rule.status === "not_enforced" ? (
-                    <span>
-                      <Badge tone="medium">Not enforced</Badge> {rule.not_enforced_reason}
-                    </span>
-                  ) : (
-                    <PassFail pass={rule.status === "pass"} />
-                  )}
+              <tr key={rule.rule} className="border-t border-steel/50 align-top">
+                <td className="py-1">
+                  <code>{rule.rule}</code>
+                  <div className="text-soft-white/70">{rule.description}</div>
                 </td>
-                <td>{dash(rule.touched)}</td>
+                <td>{dash(rule.strength)}</td>
+                <td>{rule.enforced === false ? <Badge tone="medium">Not enforced</Badge> : <PassFail pass={rule.passed} />}</td>
                 <td>{dash(rule.violations)}</td>
               </tr>
             ))}

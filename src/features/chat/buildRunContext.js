@@ -1,4 +1,5 @@
-// Summary context for the result chat. Counts, rule names and TQ codes and categories only.
+// Summary context for the result chat. Counts, rule ids and TQ codes and categories only.
+// Rule descriptions are not sent: custom ones can carry free text.
 // TQ free text and tags are never included; redact() enforces the allow-list again.
 export function buildRunContext(report, tqs) {
   const kpi = report.report.kpi;
@@ -10,6 +11,6 @@ export function buildRunContext(report, tqs) {
     tqCount: tqs.length,
     tqCodes: [...new Set(tqs.map((t) => t.code))],
     tqCategories: [...new Set(tqs.map((t) => t.category))],
-    ruleNames: report.report.rules.map((r) => r.name),
+    ruleNames: report.report.rules.map((r) => r.rule),
   };
 }

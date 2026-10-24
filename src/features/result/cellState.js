@@ -1,3 +1,4 @@
+import { ioTypeOf, PLACEMENT_KIND } from "../../api/live/wire.js";
 import { directionOf, normaliseIoType } from "../values/normaliseIoType.js";
 
 export const STATES = ["input", "output", "spareSlot", "wiredSpare", "reservedAlarm", "emptyBaseplate", "tq", "unknown"];
@@ -14,9 +15,9 @@ export function cellState({ placement, baseplateUsed, reserved = false, hasTq = 
     if (reserved) return "reservedAlarm";
     return baseplateUsed ? "spareSlot" : "emptyBaseplate";
   }
-  if (placement.kind === "wired_spare") return "wiredSpare";
-  if (placement.signal?.cabinet_alarm) return "reservedAlarm";
-  const base = normaliseIoType(placement.io_type ?? placement.signal?.io_type).base;
+  if (placement.kind === PLACEMENT_KIND.wiredSpare) return "wiredSpare";
+  if (placement.kind === PLACEMENT_KIND.cabinetAlarm || placement.signal?.cabinet_alarm) return "reservedAlarm";
+  const base = normaliseIoType(ioTypeOf(placement)).base;
   const direction = directionOf(base);
   return direction ?? "unknown";
 }

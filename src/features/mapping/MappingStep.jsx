@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../../api/index.js";
+import { confirmedToWire } from "../../api/live/wire.js";
 import Badge from "../../components/ui/Badge.jsx";
 import Button from "../../components/ui/Button.jsx";
 import ErrorState from "../../components/ui/ErrorState.jsx";
@@ -83,7 +84,7 @@ export default function MappingStep({ projectId, onContinue }) {
   const result = results[sheetIndex];
   const allValid = results.every(isValid);
 
-  const confirmedFrom = (list) => Object.fromEntries(data.sheets.map((s, i) => [s.file, list[i]]));
+  const confirmedFrom = (list) => confirmedToWire(data.sheets, list);
 
   async function change(column, field) {
     const previous = assignments;
@@ -100,7 +101,7 @@ export default function MappingStep({ projectId, onContinue }) {
 
   async function reset() {
     setConfirmReset(false);
-    const next = data.sheets.map((s) => initialAssignments(s, {}));
+    const next = data.sheets.map((s) => initialAssignments(s, undefined));
     setAssignments(next);
     try {
       await api.saveMapping(projectId, {});

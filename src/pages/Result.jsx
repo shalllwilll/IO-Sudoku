@@ -60,7 +60,7 @@ export default function Result() {
     frame.current = requestAnimationFrame(step);
   }, []);
 
-  const fromLiveRun = live && run.status === "completed";
+  const fromLiveRun = live && run.status === "finished";
   const load = useCallback(() => {
     Promise.all([api.getLayout(id, runId), api.getAllocation(id, runId), api.getReport(id, runId), api.getRunTqs(id, runId)])
       .then(([layout, allocation, report, list]) => {

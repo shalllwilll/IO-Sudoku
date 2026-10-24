@@ -11,7 +11,7 @@ import { cellState, STATES } from "./cellState.js";
 import { crossCheck } from "./crossCheck.js";
 import { aggregate, buildModel, locateTq } from "./resultModel.js";
 
-const signal = (io) => ({ kind: "signal", io_type: io, signal: { tag: "T1" } });
+const signal = (io) => ({ kind: "field", signal: { tag: "T1", io_type: io } });
 
 describe("cellState", () => {
   it("covers every state", () => {
@@ -21,7 +21,9 @@ describe("cellState", () => {
     expect(cellState({ placement: signal("DO-SOV"), baseplateUsed: true })).toBe("output");
     expect(cellState({ placement: null, baseplateUsed: true })).toBe("spareSlot");
     expect(cellState({ placement: null, baseplateUsed: false })).toBe("emptyBaseplate");
-    expect(cellState({ placement: { kind: "wired_spare" }, baseplateUsed: true })).toBe("wiredSpare");
+    expect(cellState({ placement: { kind: "wired_spare", io_type: "AIR" }, baseplateUsed: true })).toBe("wiredSpare");
+    expect(cellState({ placement: { kind: "cabinet_alarm", signal: { tag: "A1", io_type: "DIR" } }, baseplateUsed: true })).toBe("reservedAlarm");
+    expect(cellState({ placement: { kind: "field", io_type: "AIR", signal: { tag: "X" } }, baseplateUsed: true })).toBe("unknown"); // IO type is read from the signal only
     expect(cellState({ placement: null, baseplateUsed: false, reserved: true })).toBe("reservedAlarm");
     expect(cellState({ placement: signal("AIR"), baseplateUsed: true, hasTq: true })).toBe("tq");
     expect(cellState({ placement: signal("??"), baseplateUsed: true })).toBe("unknown");
@@ -32,9 +34,9 @@ describe("cellState", () => {
 describe("brief", () => {
   const base = { ciocName: "CIOC-01", bpName: "BP-1", channel: 3 };
   it("describes each state from the data", () => {
-    const p = { io_type: "AIR", signal: { tag: "T1", cable: "C1", pair: 2 } };
+    const p = { signal: { tag: "T1", io_type: "AIR", cable: "C1", pair: 2 } };
     expect(brief({ kind: "cell", state: "input", placement: p, ...base })).toBe("AIR signal T1 on cable C1, pair 2, placed in CIOC-01, BP-1, channel 3.");
-    expect(brief({ kind: "cell", state: "wiredSpare", placement: { cable: "C9", pair: 4 }, ...base })).toContain("cable C9, pair 4");
+    expect(brief({ kind: "cell", state: "wiredSpare", placement: { kind: "wired_spare", io_type: "AIR", pair: 4 }, ...base })).toContain("pair 4");
     expect(brief({ kind: "cell", state: "spareSlot", placement: null, ...base })).toContain("Free position");
     expect(brief({ kind: "cell", state: "emptyBaseplate", placement: null, ...base })).toContain("cabinet spare");
     expect(brief({ kind: "cell", state: "reservedAlarm", placement: null, ...base })).toContain("alarms");
@@ -62,8 +64,9 @@ describe("model and report", () => {
     const counts = aggregate(model, { ciocs: [1] });
     expect(counts.signals).toBeGreaterThan(0);
     expect(counts.inputs + counts.outputs).toBe(counts.signals);
-    expect(locateTq(model, r.tqs[0])).not.toBeNull();
+    expect(locateTq(model, r.tqs[0]).signal.tag).toBe("MOCK-DOR-0007");
     expect(locateTq(model, r.tqs[3])).toBeNull();
+    expect(locateTq({ ...model, byKey: new Map() }, r.tqs[0])).toBeNull();
     expect(normaliseTag("320-FT   -20645-A")).toBe(normaliseTag("320FT20645A"));
   });
 });
@@ -134,7 +137,7 @@ describe("Result page", () => {
     expect(await screen.findByText(/Every signal is either placed or in the TQ list/)).toBeInTheDocument();
     await user.click(screen.getAllByRole("button", { name: "Show in view" })[0]);
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    const card = screen.getByText("UNKNOWN_IO_TYPE").closest("li");
+    const card = screen.getByText("TQ-VALUE").closest("li");
     await user.click(within(card).getByRole("button", { name: "Show in view" }));
     expect(await screen.findByText("This TQ has no position in the view.")).toBeInTheDocument();
     await user.click(screen.getAllByRole("button", { name: "Answer" })[0]);
@@ -146,13 +149,45 @@ describe("Result page", () => {
     const user = userEvent.setup();
     await screen.findByText("Cabinets needed");
     await user.click(screen.getByRole("tab", { name: "TQs" }));
-    await user.selectOptions(screen.getByLabelText("Severity filter"), "error");
-    expect(screen.queryByText("BASEPLATE_FULL")).not.toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Severity filter"), "blocking");
+    expect(screen.queryByText("TQ-CAP")).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Declaration" }));
     expect(screen.getByText("The AI never places a signal.")).toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "Chat" }));
     await user.type(screen.getByLabelText("Message"), "how many TQs?");
     await user.click(screen.getByRole("button", { name: "Send" }));
     expect(await screen.findByText(/Answered from: .*tqCount/)).toBeInTheDocument();
+  });
+});
+
+describe("report and answer wire shapes", () => {
+  const r = buildResult();
+  it("rule rows use rule, description, enforced and strength; spares use the backend field names", () => {
+    expect(r.report.report.rules.every((x) => typeof x.rule === "string" && typeof x.description === "string" && "passed" in x)).toBe(true);
+    expect(Object.keys(r.report.report.kpi.spares.cabinets[0]).sort()).toEqual(["cabinet", "empty_baseplates", "free_slots_on_used_baseplates", "required_empty_baseplates", "wired_spare_pairs"]);
+  });
+  it("the chat context carries rule ids, not descriptions", async () => {
+    const { buildRunContext } = await import("../chat/buildRunContext.js");
+    const ctx = buildRunContext(r.report, r.tqs);
+    expect(ctx.ruleNames).toContain("R-ONCE");
+    expect(ctx.ruleNames.every((n) => n.length > 0)).toBe(true);
+  });
+  it("builds an answer body from the TQ's own options and falls back from unavailable scopes", async () => {
+    const { buildAnswerBody, scopesFor } = await import("../../api/live/wire.js");
+    const tq = r.tqs[0];
+    expect(scopesFor(tq)).toEqual(["everywhere", "cable", "row"]);
+    expect(buildAnswerBody(tq, { option: tq.options[0].label, scope: "row" })).toMatchObject({ option: tq.options[0].label, scope: "row", target: tq.signal_keys[0], value: null });
+    expect(buildAnswerBody(tq, { option: "x", scope: "cable", value: " 3 " })).toMatchObject({ scope: "cable", target: "CBL-2", value: "3" });
+    expect(scopesFor(r.tqs[3])).toEqual(["everywhere"]);
+    expect(buildAnswerBody(r.tqs[3], { option: "x", scope: "row" })).toMatchObject({ scope: "everywhere", target: null });
+  });
+  it("the mock rejects an option the TQ does not offer", async () => {
+    resetMock();
+    mockControls.delayMs = 0;
+    const { api } = await import("../../api/index.js");
+    const started = await api.createProject({ name: "T" });
+    const run = await api.startRun(started.id, {});
+    await api.getRunTqs(started.id, run.id);
+    await expect(api.answerTq(started.id, "TQ-0001", { option: "Not an option" })).rejects.toThrow(/not an option/);
   });
 });

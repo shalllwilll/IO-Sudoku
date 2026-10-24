@@ -5,13 +5,13 @@ import { useRunState } from "./runStore.js";
 /** Stage progress, a short event log, and Cancel while running. */
 export default function ProgressPanel({ onRetry }) {
   const run = useRunState();
-  const percent = run.status === "completed" ? 100 : run.totalStages ? Math.round((run.doneStages / run.totalStages) * 100) : 0;
+  const percent = run.status === "finished" ? 100 : run.totalStages ? Math.round((run.doneStages / run.totalStages) * 100) : 0;
 
   return (
     <section aria-label="Run progress" className="rounded-panel border border-steel bg-carbon p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold">
-          {run.status === "completed" && "Run completed"}
+          {run.status === "finished" && "Run finished"}
           {run.status === "running" && "Running"}
           {run.status === "failed" && "Run failed"}
           {run.status === "cancelled" && "Run cancelled"}

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ioTypeOf } from "../../api/live/wire.js";
 import { brief, stateLabel } from "./brief.js";
 import { aggregate } from "./resultModel.js";
 
@@ -17,12 +18,12 @@ export function describeSelection(model, sel) {
       title: `${cioc.name} · ${bp.name} · channel ${ch}`,
       state: stateLabel(sel.state),
       origin: present
-        ? [["Source file", show(s.source_file)], ["Row", show(s.source_row)], ["Cable", show(s.cable ?? p?.cable)], ["Pair", show(s.pair ?? p?.pair)], ["Area", show(s.area)]]
+        ? [["Source file", show(s.source_file)], ["Row", show(s.source_row)], ["Cable", show(s.cable)], ["Pair", show(s.pair ?? p?.pair)], ["Area", show(s.area)]]
         : [],
       signal: present
-        ? [["Tag", show(s.tag)], ["Description", show(s.instrument_description)], ["IO type", show(p?.io_type)], ["Signal type", show(s.signal_type)], ["CHARM part", show(s.charm_part)], ["Terminal block part", show(s.terminal_block_part)], ["Status", show(s.status)]]
+        ? [["Tag", show(s.tag)], ["Description", show(s.instrument_description)], ["IO type", show(ioTypeOf(p))], ["Signal type", show(s.signal_type)], ["CHARM part", show(s.charm_part)], ["Terminal block part", show(s.terminal_block_part)], ["Status", show(s.status)]]
         : [],
-      brief: brief({ kind: "cell", state: sel.state, placement: p && { ...p, cable: p.cable }, ciocName: cioc.name, bpName: bp.name, channel: ch }),
+      brief: brief({ kind: "cell", state: sel.state, placement: p, ciocName: cioc.name, bpName: bp.name, channel: ch }),
     };
   }
   if (sel.kind === "baseplate") {

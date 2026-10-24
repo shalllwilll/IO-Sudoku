@@ -1,27 +1,32 @@
 import { useMemo, useState } from "react";
 import { api } from "../../api/index.js";
+import { buildAnswerBody, scopesFor, TQ_SEVERITY } from "../../api/live/wire.js";
 import Badge from "../../components/ui/Badge.jsx";
 import Button from "../../components/ui/Button.jsx";
 import { locateTq } from "./resultModel.js";
 
 const PAGE = 50;
 export const MAX_ANSWER = 1000;
-const TONE = { error: "low", warning: "medium", info: "neutral" };
+const TONE = { blocking: "low", assumed: "medium", info: "neutral" };
+const SCOPE_LABEL = { everywhere: "Everywhere", cable: "This cable", row: "This row" };
 
 function TqCard({ tq, projectId, model, onShow, onAnswered }) {
   const [option, setOption] = useState(tq.options?.[0]?.label ?? "");
-  const [note, setNote] = useState("");
+  const [scope, setScope] = useState("everywhere");
+  const [value, setValue] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [noPosition, setNoPosition] = useState(false);
 
+  const chosen = tq.options?.find((o) => o.label === option);
+
   async function submit() {
     if (busy) return;
-    if (note.length > MAX_ANSWER) return setError(`Answer is ${note.length} characters. The limit is ${MAX_ANSWER}.`);
+    if (value.length > MAX_ANSWER) return setError(`Value is ${value.length} characters. The limit is ${MAX_ANSWER}.`);
     setBusy(true);
     setError("");
     try {
-      const out = await api.answerTq(projectId, tq.id, { option, value: note || null, scope: "everywhere", author: "engineer", target: null, fields: {} });
+      const out = await api.answerTq(projectId, tq.id, buildAnswerBody(tq, { option, scope, value }));
       onAnswered(out.tq);
     } catch (e) {
       setError(e.message);
@@ -54,20 +59,30 @@ function TqCard({ tq, projectId, model, onShow, onAnswered }) {
       {tq.status === "answered" ? (
         <p className="mt-2 text-xs">Answer: {tq.answer}</p>
       ) : (
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          {tq.options?.length > 0 && (
-            <select aria-label={`Option for ${tq.code}`} value={option} onChange={(e) => setOption(e.target.value)} className="focus-ring rounded-xl border border-steel bg-gunmetal px-2 py-1 text-xs">
-              {tq.options.map((o) => (
-                <option key={o.label} value={o.label}>
-                  {o.label}
+        <div className="mt-2 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {tq.options?.length > 0 && (
+              <select aria-label={`Option for ${tq.code}`} value={option} onChange={(e) => setOption(e.target.value)} className="focus-ring rounded-xl border border-steel bg-gunmetal px-2 py-1 text-xs">
+                {tq.options.map((o) => (
+                  <option key={o.label} value={o.label}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            )}
+            <select aria-label={`Scope for ${tq.code}`} value={scope} onChange={(e) => setScope(e.target.value)} className="focus-ring rounded-xl border border-steel bg-gunmetal px-2 py-1 text-xs">
+              {scopesFor(tq).map((s) => (
+                <option key={s} value={s}>
+                  {SCOPE_LABEL[s]}
                 </option>
               ))}
             </select>
-          )}
-          <input aria-label={`Note for ${tq.code}`} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" className="focus-ring min-w-0 flex-1 rounded-full border border-steel bg-gunmetal px-3 py-1 text-xs" />
-          <Button disabled={busy || !option} onClick={submit}>
-            Answer
-          </Button>
+            <input aria-label={`Value for ${tq.code}`} value={value} onChange={(e) => setValue(e.target.value)} placeholder="Value, if the option needs one" className="focus-ring min-w-0 flex-1 rounded-full border border-steel bg-gunmetal px-3 py-1 text-xs" />
+            <Button disabled={busy || !option} onClick={submit}>
+              Answer
+            </Button>
+          </div>
+          {chosen && <p className="text-xs text-soft-white/70">If you choose this: {chosen.consequence}</p>}
         </div>
       )}
       {error && (
@@ -108,7 +123,7 @@ export default function TqTab({ projectId, tqs, report, model, onShow, onAnswere
       </p>
       <div className="flex flex-wrap gap-2 text-xs">
         <select aria-label="Severity filter" value={severity} onChange={(e) => { setSeverity(e.target.value); setPage(0); }} className="focus-ring rounded-xl border border-steel bg-gunmetal px-2 py-1">
-          {["all", "error", "warning", "info"].map((s) => <option key={s}>{s}</option>)}
+          {["all", ...TQ_SEVERITY].map((s) => <option key={s}>{s}</option>)}
         </select>
         <select aria-label="Status filter" value={status} onChange={(e) => { setStatus(e.target.value); setPage(0); }} className="focus-ring rounded-xl border border-steel bg-gunmetal px-2 py-1">
           {["all", "open", "answered"].map((s) => <option key={s}>{s}</option>)}

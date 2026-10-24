@@ -1,5 +1,7 @@
 // Pure helpers for the column mapping screen. The canonical field list lives here only,
 // so the engine's schema can replace it without touching the table.
+import { assignmentsFromWire } from "../../api/live/wire.js";
+
 export const IGNORE = "";
 export const REQUIRED_FIELDS = ["tag", "io_type", "cable", "pair"];
 
@@ -36,14 +38,15 @@ export function columnLabel(name, index) {
 
 /**
  * Builds { column: field|"" } for one sheet. Saved choices win over automatic matches.
- * `saved` is the project's confirmed map for this file.
+ * `saved` is the project's confirmed entry for this file in wire form ({ field: columnName }).
+ * When the file has one it is the whole truth: unlisted columns are ignored. Without one the
+ * automatic matches apply.
  */
-export function initialAssignments(sheet, saved = {}) {
+export function initialAssignments(sheet, saved) {
+  if (saved) return assignmentsFromWire(sheet, saved);
   const out = {};
   sheet.columns.forEach((column, index) => {
-    const key = String(index);
-    if (Object.prototype.hasOwnProperty.call(saved, key)) out[key] = saved[key] ?? IGNORE;
-    else out[key] = sheet.matches?.[column]?.field ?? IGNORE;
+    out[String(index)] = sheet.matches?.[column]?.field ?? IGNORE;
   });
   return out;
 }

@@ -1,6 +1,7 @@
 // Hand-written, deterministic sample result: 3 cabinets, 12 CIOCs, 96 baseplates, 1,152 positions,
 // 189 invented signals. Nothing is copied from the dataset. Shapes follow the backend contract
-// (provisional, MI-1); the placement `kind` values are assumed: signal, wired_spare.
+// (backend/docs/openapi.json). Placement kinds are field, wired_spare and cabinet_alarm. A field
+// placement carries its IO type on the signal; only a wired spare has io_type on the placement.
 const CABINETS = 3;
 const CIOCS_PER_CABINET = 4;
 const BASEPLATES = 8;
@@ -43,7 +44,7 @@ export function buildResult() {
         if (placedSignals >= SIGNALS) break outer;
         position++;
         if (position % 12 === 0) {
-          placements.push({ cioc_no: cioc.no, baseplate: bp, channel: ch, kind: "wired_spare", io_type: "AIR", pair: (position % 6) + 1, group: null, signal: null, cable: `CBL-${Math.ceil(position / 6)}` });
+          placements.push({ cioc_no: cioc.no, baseplate: bp, channel: ch, kind: "wired_spare", io_type: "AIR", pair: (position % 6) + 1, group: null, signal: null });
           continue;
         }
         placedSignals++;
@@ -53,8 +54,7 @@ export function buildResult() {
           cioc_no: cioc.no,
           baseplate: bp,
           channel: ch,
-          kind: "signal",
-          io_type: io,
+          kind: "field",
           duty_class: io === "DOR" ? "SOV" : null,
           group: n % 5 === 0 ? "CONTROL" : null,
           pair: (n % 6) + 1,
@@ -75,12 +75,12 @@ export function buildResult() {
     }
   }
 
-  const tag = (n) => `MOCK-${IO_CYCLE[n % 4]}-${String(n).padStart(4, "0")}`;
+  const key = (n) => `sample.xlsx:${n + 4}`;
   const tqs = [
-    { id: "tq-1", code: "MISSING_CABLE", category: "missing data", severity: "warning", status: "open", message: "Cable is missing for this signal.", subject: tag(7), default_applied: "Placed with a spare cable.", signal_keys: [tag(7)], source_row: 11, options: [{ label: "Use cable CBL-2", consequence: "Signal joins cable CBL-2." }, { label: "Keep default", consequence: "No change." }], answer: null },
-    { id: "tq-2", code: "SEGREGATION_CONFLICT", category: "rule conflicts", severity: "error", status: "open", message: "Two segregation groups meet in one CIOC.", subject: tag(30), default_applied: "Moved to the next CIOC.", signal_keys: [tag(30), tag(31)], source_row: 34, options: [{ label: "Allow", consequence: "Rule relaxed for this pair." }], answer: null },
-    { id: "tq-3", code: "BASEPLATE_FULL", category: "capacity issues", severity: "info", status: "answered", message: "Baseplate is full.", subject: tag(60), default_applied: "Next baseplate used.", signal_keys: [tag(60)], source_row: 64, options: [{ label: "Accept", consequence: "No change." }], answer: "Accept" },
-    { id: "tq-4", code: "UNKNOWN_IO_TYPE", category: "missing data", severity: "error", status: "open", message: "IO type could not be read.", subject: "Row 120", default_applied: "Held out.", signal_keys: [], source_row: 124, options: [{ label: "Set to DIR", consequence: "Signal is placed as DIR." }], answer: null },
+    { id: "TQ-0001", code: "TQ-DATA", category: "missing data", severity: "assumed", status: "open", message: "Cable is missing for this signal.", subject: key(7), default_applied: "Placed with a spare cable.", scope: "signal", signal_keys: [key(7)], source_file: "sample.xlsx", source_row: 11, data: { cable: "CBL-2" }, options: [{ label: "Correct the source data", consequence: "Signal is allocated on the next run." }, { label: "Leave as is", consequence: "The default stays." }], answer: null },
+    { id: "TQ-0002", code: "TQ-SEG", category: "rule conflicts", severity: "blocking", status: "open", message: "Two segregation groups meet in one CIOC.", subject: key(30), default_applied: "Moved to the next CIOC.", scope: "signal", signal_keys: [key(30), key(31)], source_file: "sample.xlsx", source_row: 34, data: {}, options: [{ label: "Confirm the segregation", consequence: "Signals are separated into compatible CIOCs." }, { label: "Correct the cable data", consequence: "Cable no longer mixes families." }], answer: null },
+    { id: "TQ-0003", code: "TQ-CAP", category: "capacity issues", severity: "info", status: "answered", message: "Baseplate is full.", subject: key(60), default_applied: "Next baseplate used.", scope: "signal", signal_keys: [key(60)], source_file: "sample.xlsx", source_row: 64, data: {}, options: [{ label: "Allow more cabinets", consequence: "Signals are placed in added capacity." }, { label: "Split the cable", consequence: "Smaller blocks may fit." }], answer: "Allow more cabinets" },
+    { id: "TQ-0004", code: "TQ-VALUE", category: "missing data", severity: "blocking", status: "open", message: "IO type could not be read.", subject: "IO type could not be read.", default_applied: "Held out.", scope: "signal", signal_keys: [], source_file: null, source_row: null, data: {}, options: [{ label: "Map to a known value", consequence: "Signal follows that value's rules." }, { label: "Keep the default policy", consequence: "Unknown value keeps its safe default." }], answer: null },
   ];
 
   const used = new Set(placements.map((p) => `${p.cioc_no}:${p.baseplate}`));
@@ -89,6 +89,8 @@ export function buildResult() {
     ciocs: new Set(placements.map((p) => p.cioc_no)).size,
     signals_total: SIGNALS + 1,
     allocated: placedSignals,
+    by_io_type: {},
+    controllers: CABINETS,
     held_out: 1,
     utilisation: Math.round((placements.length / (used.size * CHANNELS)) * 1000) / 1000,
     positions: CABINETS * CIOCS_PER_CABINET * BASEPLATES * CHANNELS,
@@ -104,17 +106,13 @@ export function buildResult() {
         const usedBp = new Set(inCab.map((p) => `${p.cioc_no}:${p.baseplate}`)).size;
         return {
           cabinet: cab.name,
-          ciocs_used: new Set(inCab.map((p) => p.cioc_no)).size,
-          baseplates_used: usedBp,
-          fill: inCab.length,
           wired_spare_pairs: inCab.filter((p) => p.kind === "wired_spare").length,
-          free_slots: usedBp * CHANNELS - inCab.length,
+          free_slots_on_used_baseplates: usedBp * CHANNELS - inCab.length,
           empty_baseplates: CIOCS_PER_CABINET * BASEPLATES - usedBp,
-          target: 10,
-          actual: usedBp ? Math.round(((usedBp * CHANNELS - inCab.length) / (usedBp * CHANNELS)) * 100) : 0,
+          required_empty_baseplates: 2,
         };
       }),
-      by_controller_io: [{ controller: "1", io_type: "AIR", target: 10, actual: 12 }],
+      by_controller_io: [{ controller: "1", io_type: "AIR", field_signals: 47, required: 4, wired_spares: 6 }],
     },
   };
 
@@ -127,9 +125,11 @@ export function buildResult() {
         kpi,
         declaration: { rule_set: "default", rules: ["Segregation separation", "Spare capacity"], assumed: ["Spare percentage 10"], defaulted: ["Naming preset sample"], not_enforced: ["Keep cable pairs together"] },
         rules: [
-          { id: "sep-seg", name: "Segregation separation", status: "pass", touched: 120, violations: 0 },
-          { id: "spare-pct", name: "Spare capacity", status: "pass", touched: 3, violations: 0 },
-          { id: "co-cable", name: "Keep cable pairs together", status: "not_enforced", touched: 0, violations: 0, not_enforced_reason: "Needs cable data that is not mapped." },
+          { rule: "R-ONCE", description: "Every signal is allocated exactly once or is in the TQ list", passed: true, violations: 0, enforced: true, strength: "hard" },
+          { rule: "R-CAP", description: "Capacity: 12 channels, 8 baseplates, 4 CIOCs, one signal per position", passed: true, violations: 0, enforced: true, strength: "hard" },
+          { rule: "sep-seg", description: "Segregation separation", passed: true, violations: 0, enforced: true, strength: "hard" },
+          { rule: "spare-pct", description: "Spare capacity", passed: true, violations: 0, enforced: true, strength: "soft" },
+          { rule: "co-cable", description: "Keep cable pairs together: Needs cable data that is not mapped.", passed: false, violations: 0, enforced: false, strength: "hard" },
         ],
         solver: "mock-greedy",
         pack_hash: "mock0000",
