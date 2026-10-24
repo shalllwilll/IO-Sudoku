@@ -1,6 +1,6 @@
 """Runs and everything read from them, plus TQs and their answers."""
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, Request
 from fastapi.responses import FileResponse
 
 from app.api.deps import project_of, run_of, service
@@ -45,15 +45,18 @@ def _finished(r: dict) -> dict:
 @router.post("/projects/{pid}/runs", status_code=201, response_model=RunOut,
              responses={404: ERRORS, 409: ERRORS})  # fmt: skip
 def start_run(
-    pid: str, request: Request, body: RunCreate | None = None, svc: Service = Depends(service)
+    pid: str,
+    request: Request,
+    tasks: BackgroundTasks,
+    body: RunCreate | None = None,
+    svc: Service = Depends(service),
 ):
     project = project_of(request, pid)
     if not svc.store.uploads(pid):
         raise ApiError(409, "no_uploads", "upload at least one MDB workbook before starting a run")
-    body = body or RunCreate()
-    params = body.model_dump()
-    rid = svc.store.create_run(pid, params)
-    svc.execute(project, rid, params)
+    params = (body or RunCreate()).model_dump()
+    rid = svc.begin(project, params)
+    tasks.add_task(svc.execute, project, rid, params)  # the response does not wait for the run
     return _run_out(svc.store.run(pid, rid))  # type: ignore[arg-type]
 
 

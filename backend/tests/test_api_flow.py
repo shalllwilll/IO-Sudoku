@@ -7,6 +7,7 @@ from app.core.model.allocation import Allocation
 from tests.api_helpers import (
     make_client,
     new_project,
+    run_now,
     sample_template_or_skip,
     simple_rows,
     upload,
@@ -18,9 +19,7 @@ from tests.test_tq_answers import HDR, cable_rows
 def run_project(client, tmp_path, rows=None, **kw):
     pid = new_project(client, **kw)
     assert upload(client, pid, xlsx_bytes(tmp_path, rows or simple_rows())).status_code == 201
-    r = client.post(f"/api/projects/{pid}/runs", json={})
-    assert r.status_code == 201, r.text
-    return pid, r.json()
+    return pid, run_now(client, pid)
 
 
 def test_project_lifecycle(tmp_path):  # T9.1.1
@@ -139,7 +138,7 @@ def test_mapping_values_rules_lint(tmp_path):
     )
     v2 = c.put(f"/api/projects/{pid}/values", json={"io_types": {"xx": "DIR"}}).json()
     assert v2["unknown"] == [] and v2["overrides"]["io_types"] == {"XX": "DIR"}
-    run = c.post(f"/api/projects/{pid}/runs", json={}).json()
+    run = run_now(c, pid)
     assert run["summary"]["allocated"] == 3
 
     r = c.get(f"/api/projects/{pid}/rules").json()
@@ -181,7 +180,7 @@ def test_answering_a_tq_changes_the_next_run(tmp_path):
     )
     assert ok.status_code == 200 and ok.json()["tq"]["status"] == "answered"
     assert [h["author"] for h in ok.json()["history"]] == ["ana"]
-    run2 = c.post(f"/api/projects/{pid}/runs", json={}).json()
+    run2 = run_now(c, pid)
     assert run2["summary"]["held_out"] == 0 and run2["summary"]["allocated"] == 7
     assert "ingest" in run2["summary"]["stages_reused"]
     by_status = c.get(f"/api/projects/{pid}/tqs", params={"status": "answered"}).json()
@@ -194,6 +193,6 @@ def test_sample_through_the_api(tmp_path, sample_mdb_path):
     pid = new_project(c, area="P30", unit="32001")
     r = upload(c, pid, sample_mdb_path.read_bytes(), sample_mdb_path.name)
     assert r.status_code == 201
-    run = c.post(f"/api/projects/{pid}/runs", json={}).json()
+    run = run_now(c, pid)
     assert run["status"] == "finished" and run["summary"]["allocated"] == 189
     assert run["summary"]["unaccounted"] == []

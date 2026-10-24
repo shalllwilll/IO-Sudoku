@@ -6,6 +6,9 @@ from pathlib import Path
 
 from app.api.store import ApiStore
 from app.config import Settings
+from app.core.events import EventStore
+from app.core.events import models as ev
+from app.core.events.run_events import run_events
 from app.core.ingest.merge import build_signalset, map_files, read_files
 from app.core.ingest.normaliser import ValueMapOverrides
 from app.core.model.pack import Pack
@@ -20,6 +23,7 @@ from app.core.writer.template import WriterError, build_rows, write_allocation
 class Service:
     def __init__(self, store: ApiStore, pack: Pack, settings: Settings):
         self.store, self.pack, self.settings = store, pack, settings
+        self.events = EventStore(store.db, store.lock)
         self.run_lock = threading.Lock()
         self._pipelines: dict[str, Pipeline] = {}
 
@@ -70,6 +74,27 @@ class Service:
         self._pipelines[pid] = pl
         return pl
 
+    def begin(self, project: dict, params: dict) -> str:
+        """Create the run and announce it; the work itself happens in `execute`."""
+        rid = self.store.create_run(project["id"], params)
+        self.events.emit(
+            rid,
+            ev.RunStarted(
+                project_id=project["id"], uploads=len(self.store.uploads(project["id"])),
+                params=params,
+            ),
+        )  # fmt: skip
+        return rid
+
+    def _listen(self, rid: str):
+        def on(kind: str, stage: str, info: dict) -> None:
+            if kind == "stage.started":
+                self.events.emit(rid, ev.StageStarted(stage=stage))
+            else:
+                self.events.emit(rid, ev.StageFinished(stage=stage, **info))
+
+        return on
+
     def execute(self, project: dict, rid: str, params: dict) -> None:
         """Run the pipeline and store everything a later GET needs. Never raises."""
         pid = project["id"]
@@ -77,12 +102,35 @@ class Service:
             with self.run_lock:
                 pl = self._pipeline(project, params)
                 tq = self.store.tq_store(pid)
-                run = pl.run(tq.compiled(self.pack))
+                run = pl.run(tq.compiled(self.pack), self._listen(rid))
                 run.tqs = tq.apply_status(run.tqs)
-            summary, data, output = self._results(project, rid, run)
+            summary, data, output, report = self._results(project, rid, run)
+            for event in run_events(run, report):
+                self.events.emit(rid, event)
+            self.events.emit(
+                rid,
+                ev.RunFinished(
+                    allocated=summary["allocated"], held_out=summary["held_out"],
+                    tqs=summary["tq_count"], solver=summary["solver"],
+                ),
+            )  # fmt: skip
             self.store.finish_run(rid, "finished", summary, data, output, None)
         except Exception as e:  # noqa: BLE001  a failed run is a result, not a crashed server
-            self.store.finish_run(rid, "failed", {}, {}, None, f"{type(e).__name__}: {e}")
+            msg = f"{type(e).__name__}: {e}"
+            self.events.emit(rid, ev.ErrorEvent(code=type(e).__name__, message=str(e)))
+            self.store.finish_run(rid, "failed", {}, {}, None, msg)
+
+    def recover(self) -> None:
+        """A run still marked running at startup was cut off by a restart."""
+        for pid in [p["id"] for p in self.store.projects()]:
+            for r in self.store.runs(pid):
+                if r["status"] == "running":
+                    self.events.emit(
+                        r["id"], ev.ErrorEvent(code="interrupted", message="server restarted")
+                    )
+                    self.store.finish_run(
+                        r["id"], "failed", {}, {}, None, "interrupted by a restart"
+                    )
 
     def _results(self, project: dict, rid: str, run: PipelineRun):
         pid = project["id"]
@@ -124,4 +172,4 @@ class Service:
             "tq_ids": [t.id for t in run.tqs],
             "events": [dataclasses.asdict(e) for e in run.chain.events],
         }
-        return summary, data, output
+        return summary, data, output, report

@@ -3,7 +3,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import errors, projects, runs
+from app.api import errors, events, projects, runs
 from app.api.service import Service
 from app.api.store import ApiStore
 from app.config import Settings
@@ -31,8 +31,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     def health() -> dict:
         return {"status": "ok", "version": VERSION, "ai_available": settings.ai_available}
 
+    app.state.service.recover()
     app.include_router(projects.router)
     app.include_router(runs.router)
+    app.include_router(events.router)
     return app
 
 

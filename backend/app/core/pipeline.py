@@ -14,6 +14,7 @@ inputs ended up unchanged are served from the stage cache.
 import hashlib
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -65,6 +66,7 @@ class PipelineRun:
     pack: Pack  # the effective pack the allocation was made with
     rules: list[Rule]
     not_enforced: list[str]
+    allocatable: list[Signal] = field(default_factory=list)  # what entered the solver
     tqs: list[TQ] = field(default_factory=list)
 
     @property
@@ -151,8 +153,14 @@ class Pipeline:
 
     # -- the run ---------------------------------------------------------------------------
 
-    def run(self, compiled: Compiled | None = None) -> PipelineRun:
+    def run(
+        self,
+        compiled: Compiled | None = None,
+        listener: Callable[[str, str, dict], None] | None = None,
+    ) -> PipelineRun:
+        """`listener(kind, stage, info)` hears stage.started and stage.finished as they happen."""
         c = compiled or Compiled()
+        tell = listener or (lambda *_: None)
         pack = self.pack
         executed: list[str] = []
         reused: list[str] = []
@@ -164,15 +172,18 @@ class Pipeline:
             nonlocal prev
             h = _hash(name, prev, inputs)
             hit = self._done.get(name)
+            tell("stage.started", name, {})
             if hit and hit[0] == h:
                 reused.append(name)
                 out = hit[1]
+                tell("stage.finished", name, {"reused": True, "seconds": 0.0})
             else:
                 t0 = time.perf_counter()
                 out = fn()
                 seconds[name] = time.perf_counter() - t0
                 self._done[name] = (h, out)
                 executed.append(name)
+                tell("stage.finished", name, {"reused": False, "seconds": seconds[name]})
             hashes[name], prev = h, h
             return out
 
@@ -265,6 +276,7 @@ class Pipeline:
             pack=eff,
             rules=rules,
             not_enforced=not_enforced,
+            allocatable=hw.signals,
         )
         run.tqs = collect_tqs(issues, chain.allocation, None, held_all)
         return run

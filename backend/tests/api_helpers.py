@@ -43,3 +43,12 @@ def simple_rows():
 def sample_template_or_skip() -> None:
     if Settings(data_dir=os.environ.get("SUDOKU_DATA_DIR")).resolve_template() is None:
         pytest.skip("no allocation template available")
+
+
+def run_now(client, pid, body=None):
+    """Start a run and return it finished (the POST itself answers before the work is done)."""
+    r = client.post(f"/api/projects/{pid}/runs", json=body or {})
+    assert r.status_code == 201, r.text
+    got = client.get(f"/api/projects/{pid}/runs/{r.json()['id']}")
+    assert got.status_code == 200
+    return got.json()
