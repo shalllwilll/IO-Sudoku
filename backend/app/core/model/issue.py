@@ -9,3 +9,4 @@ class Issue(BaseModel):
     message: str
     source_file: str | None = None
     source_row: int | None = None
+    data: dict[str, str] = {}  # structured facts an answer needs (field, value, cable, ...)

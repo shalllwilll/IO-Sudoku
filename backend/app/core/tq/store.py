@@ -2,12 +2,13 @@ import json
 import sqlite3
 from collections import defaultdict
 
+from app.core.ingest.normaliser import HeldOut
 from app.core.model.allocation import Allocation
 from app.core.model.issue import Issue
 from app.core.model.signal import Signal
 from app.core.tq.model import TQ, signal_key, tq_from_issue
 
-_JSON = {"options", "signal_keys"}
+_JSON = {"options", "signal_keys", "data"}
 _COLUMNS = list(TQ.model_fields)
 
 
@@ -81,11 +82,17 @@ DEFAULT_APPLIED = {
 
 
 def collect_tqs(
-    issues: list[Issue], alloc: Allocation | None = None, held_out: list[Signal] | None = None
+    issues: list[Issue],
+    alloc: Allocation | None = None,
+    held_out: list[Signal] | None = None,
+    held: list[HeldOut] | None = None,
 ) -> list[TQ]:
     """Turn every recorded issue into a TQ; unplaced signals are attached to their issue's TQ."""
     by_id: dict[str, TQ] = {}
     pending: list[tuple[Signal, list[Issue]]] = [(h, []) for h in held_out or []]
+    pending += [
+        (Signal(source_file=h.source_file, source_row=h.source_row), h.issues) for h in held or []
+    ]
     if alloc:
         pending += [(u.signal, u.issues) for u in alloc.unplaced]
         issues = [*issues, *alloc.issues]

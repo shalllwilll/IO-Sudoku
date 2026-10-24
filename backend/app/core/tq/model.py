@@ -61,6 +61,7 @@ class TQ(BaseModel):
     signal_keys: list[str] = Field(default_factory=list)
     source_file: str | None = None
     source_row: int | None = None
+    data: dict[str, str] = Field(default_factory=dict)
     status: str = "open"
     answer: str | None = None
 
@@ -98,4 +99,5 @@ def tq_from_issue(issue: Issue, default_applied: str = "") -> TQ:
         signal_keys=keys,
         source_file=issue.source_file,
         source_row=issue.source_row,
+        data=dict(issue.data),
     )

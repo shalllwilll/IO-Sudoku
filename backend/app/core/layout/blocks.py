@@ -72,6 +72,7 @@ def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
                 severity="blocking",
                 message=f"cable {cable} needs {block.size} positions, more than one CIOC "
                 f"({cioc_positions}); its signals are held out",
+                data={"cable": cable},
             )
             out.issues.append(iss)
             out.held_out.extend(

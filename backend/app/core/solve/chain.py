@@ -170,7 +170,9 @@ def _explain_rule_failure(res: ChainResult, blocks, pack, area, unit, rules) -> 
     found = probe_rule_conflicts(blocks, pack, area, unit, rules)
     if found:
         msg = f"hard rules {', '.join(found)} cannot all hold; signals were left on the TQ list"
-        res.allocation.issues.append(Issue(code="TQ-RULE", severity="blocking", message=msg))
+        res.allocation.issues.append(
+            Issue(code="TQ-RULE", severity="blocking", message=msg, data={"rules": ",".join(found)})
+        )
         res.events.append(Event("rules", "conflict", msg))
     elif found is None:
         res.events.append(Event("rules", "undecided", "rule-toggle probe hit its time limit"))

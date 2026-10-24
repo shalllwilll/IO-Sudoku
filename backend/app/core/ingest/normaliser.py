@@ -30,6 +30,17 @@ class ValueMapOverrides(BaseModel):
     io_types: dict[str, str] = Field(default_factory=dict)
     duty_classes: dict[str, str] = Field(default_factory=dict)
     segregation: dict[str, str] = Field(default_factory=dict)  # code -> family
+    # narrower scopes: field -> canonical value (io_type, duty_class, segregation family).
+    # They always beat the project-wide maps above.
+    rows: dict[str, dict[str, str]] = Field(default_factory=dict)  # "file:row" -> {field: value}
+    cables: dict[str, dict[str, str]] = Field(default_factory=dict)  # cable -> {field: value}
+
+    def scoped(
+        self, field: str, source_file: str | None, source_row: int | None, cable: str | None
+    ) -> str | None:
+        """The row answer wins over the cable answer."""
+        row = self.rows.get(f"{source_file}:{source_row}", {})
+        return row.get(field) or self.cables.get(cable or "", {}).get(field)
 
     @classmethod
     def load(cls, path: str | Path) -> "ValueMapOverrides":
@@ -133,7 +144,13 @@ def normalise(
         # IO type: base type plus optional duty (DO-SOV)
         raw_io = clean(col(row, "io_type"))
         hold = False
-        if raw_io:
+
+        def scoped(field: str, sig: Signal = sig, row: RawRow = row) -> str | None:
+            return ov.scoped(field, row.source_file, row.source_row, sig.cable)
+
+        forced_io, forced_duty = scoped("io_type"), scoped("duty_class")
+        if raw_io or forced_io:
+            raw_io = raw_io or forced_io
             base, duty = raw_io.upper(), None
             if base not in io_map:
                 for sep in seps:
@@ -141,13 +158,15 @@ def normalise(
                     if found and head in io_map:
                         base, duty = head, tail.strip() or None
                         break
-            if base in io_map:
-                sig.io_type, sig.duty = io_map[base], duty
+            if forced_io or base in io_map:
+                sig.io_type, sig.duty = forced_io or io_map[base], duty
                 if sig.io_type == "DOR":
                     key = (duty or "").upper()
                     text = f"{sig.instrument_description or ''} {sig.instrument_type or ''}".upper()
                     keyword = next((k for k in vm.duty_keywords if not key and k in text), None)
-                    if key in duty_map:
+                    if forced_duty:
+                        sig.duty_class = forced_duty
+                    elif key in duty_map:
                         sig.duty_class = duty_map[key]
                     elif keyword:
                         sig.duty_class = vm.duty_keywords[keyword]
@@ -161,6 +180,11 @@ def normalise(
                                     severity="warning",
                                     message=f"unknown DOR duty '{duty}'; allocated as "
                                     f"{vm.default_duty_class} DOR",
+                                    data={
+                                        "field": "duty_class",
+                                        "value": duty,
+                                        "cable": sig.cable or "",
+                                    },
                                     **loc,
                                 )
                             )
@@ -172,6 +196,7 @@ def normalise(
                         code="TQ-VALUE",
                         severity="blocking",
                         message=f"unknown IO type '{raw_io}'; row held out",
+                        data={"field": "io_type", "value": raw_io, "cable": sig.cable or ""},
                         **loc,
                     )
                 )
@@ -182,7 +207,10 @@ def normalise(
         else:
             g, seg = clean(col(row, "group")), clean(col(row, "segregation"))
             sig.group, seg = g, (seg.upper() if seg else None)
-        if seg:
+        forced_seg = scoped("segregation")
+        if forced_seg:
+            sig.segregation, sig.segregation_family = seg or forced_seg, forced_seg
+        elif seg:
             sig.segregation = seg
             if seg in seg_map:
                 sig.segregation_family = seg_map[seg]
@@ -194,6 +222,7 @@ def normalise(
                         code="TQ-VALUE",
                         severity="warning",
                         message=f"unknown segregation code '{seg}'; given its own CIOC",
+                        data={"field": "segregation", "value": seg, "cable": sig.cable or ""},
                         **loc,
                     )
                 )

@@ -36,13 +36,14 @@ def _matches(signal: Signal, match: dict) -> bool:
     return True
 
 
-def _issue(signal: Signal, message: str) -> Issue:
+def _issue(signal: Signal, message: str, **data: str) -> Issue:
     return Issue(
         code="TQ-HW",
         severity="blocking",
         message=message,
         source_file=signal.source_file,
         source_row=signal.source_row,
+        data={**data, "cable": signal.cable or ""},
     )
 
 
@@ -72,16 +73,22 @@ def resolve_hardware(signal: Signal, pack: Pack) -> HardwareResult:
                     signal,
                     f"hardware rule {row.id} matched but its {' and '.join(missing)} part "
                     f"number is not defined in the pack; signal held out",
+                    rule=row.id,
                 )
             ]
         return res
+    facts = {
+        k: str(getattr(signal, k))
+        for k in ("io_type", "signal_type", "signal_level", "duty_class")
+        if getattr(signal, k)
+    }
     desc = ", ".join(
         f"{k}={getattr(signal, k)!r}"
         for k in ("io_type", "signal_type", "signal_level", "duty_class")
     )
     return HardwareResult(
         held_out=True,
-        issues=[_issue(signal, f"no hardware rule matches ({desc}); signal held out")],
+        issues=[_issue(signal, f"no hardware rule matches ({desc}); signal held out", **facts)],
     )
 
 

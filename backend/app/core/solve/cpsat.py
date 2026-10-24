@@ -586,7 +586,7 @@ def _to_allocation(
 
 
 def _unplace(alloc: Allocation, block: Block, code: str, message: str) -> None:
-    iss = Issue(code=code, severity="blocking", message=message)
+    iss = Issue(code=code, severity="blocking", message=message, data={"cable": block.id})
     alloc.issues.append(iss)
     for s in block.signals:
         alloc.unplaced.append(Unplaced(signal=s, issues=[iss]))

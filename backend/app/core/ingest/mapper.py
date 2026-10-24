@@ -147,6 +147,7 @@ def map_columns(
                     code="TQ-MAP",
                     severity="warning",
                     message=f"'{field}' is ambiguous between columns {options}; using '{m.column}'",
+                    data={"field": field, "column": m.column, "options": "|".join(options)},
                 )
             )
         elif m.confidence < th.accept:
@@ -156,6 +157,7 @@ def map_columns(
                     severity="warning",
                     message=f"'{field}' mapped to '{m.column}' with low confidence "
                     f"{m.confidence:.2f}; please confirm",
+                    data={"field": field, "column": m.column},
                 )
             )
 
@@ -166,6 +168,7 @@ def map_columns(
                     code="TQ-MAP",
                     severity="blocking",
                     message=f"required field '{field}' has no matching column",
+                    data={"field": field},
                 )
             )
 

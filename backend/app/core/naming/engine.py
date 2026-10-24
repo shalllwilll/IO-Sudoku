@@ -64,10 +64,10 @@ class Namer:
         issues: list[Issue] = []
         if area is None:
             area = self.naming.default_area
-            issues.append(_tq(f"{kind}: no area given, default '{area}' used"))
+            issues.append(_tq(f"{kind}: no area given, default '{area}' used", "area"))
         if unit is None:
             unit = self.naming.default_unit
-            issues.append(_tq(f"{kind}: no unit given, default '{unit}' used"))
+            issues.append(_tq(f"{kind}: no unit given, default '{unit}' used", "unit"))
         given = {"area": area, "unit": unit, "seq": seq, "cioc_no": cioc_no, "n": n, "ch": ch}
         values = {ph: given[arg] for ph, arg in _ARGS.items()}
         text, missing = render(self.naming, getattr(self.naming, kind).template, **values)
@@ -80,5 +80,6 @@ class Namer:
         return NamedItem(name=text, issues=issues)
 
 
-def _tq(message: str) -> Issue:
-    return Issue(code="TQ-NAME", severity="warning", message=message)
+def _tq(message: str, field: str | None = None) -> Issue:
+    data = {"field": field} if field else {}
+    return Issue(code="TQ-NAME", severity="warning", message=message, data=data)

@@ -81,6 +81,7 @@ def validate(signals: list[Signal], pack: Pack) -> tuple[list[Signal], list[Held
                     code="TQ-SEG",
                     severity="warning",
                     message=f"cable '{cable}' carries both A and B segregation signals",
+                    data={"cable": cable},
                     **_loc(group[0]),
                 )
             )
