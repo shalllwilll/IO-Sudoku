@@ -139,10 +139,38 @@ def place_fixed(alloc: Allocation, blocks: BlockSet, layout: Layout, pack: Pack)
             alloc.unplaced.append(Unplaced(signal=h.signal, issues=h.issues))
 
 
+Cell = tuple[int, int, int]  # (cioc, baseplate, channel)
+
+
+def valid_shape(size: int, cells: list[tuple[int, int]], width: int) -> bool:
+    """Do these (baseplate, channel) cells, in pair order, satisfy the block rules?"""
+    if size <= width:
+        return len({n for n, _ in cells}) == 1 and [c for _, c in cells] == list(
+            range(cells[0][1], cells[0][1] + size)
+        )
+    bps = sorted({n for n, _ in cells})
+    if bps != list(range(bps[0], bps[0] + len(bps))):
+        return False
+    want = [(n, c) for n in bps[:-1] for c in range(1, width + 1)]
+    want += [(bps[-1], c) for c in range(1, size - width * (len(bps) - 1) + 1)]
+    return cells == want
+
+
 def pack_blocks(
-    blocks: BlockSet, layout: Layout, pack: Pack, rules: list[Rule] | None = None
+    blocks: BlockSet,
+    layout: Layout,
+    pack: Pack,
+    rules: list[Rule] | None = None,
+    pinned: dict[str, list[Cell]] | None = None,
+    prefs: dict[str, list[Cell | None]] | None = None,
+    fixed=None,
 ) -> Allocation:
-    """First-fit-decreasing into a fixed layout. Never mutates its inputs."""
+    """First-fit-decreasing into a fixed layout. Never mutates its inputs.
+
+    Revisions pass `pinned` (block -> cells it keeps), `prefs` (cells a block tries first) and
+    `fixed` (a function that seeds the cabinet alarms and held-out signals instead of the
+    default placement).
+    """
     alloc = Allocation(layout=layout.model_copy(deep=True), solver="greedy")
     alloc.issues.extend(layout.issues)
     grid = _Grid(layout, pack)
@@ -151,9 +179,20 @@ def pack_blocks(
     families: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
     groups: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
 
-    place_fixed(alloc, blocks, layout, pack)
+    (fixed or (lambda a: place_fixed(a, blocks, layout, pack)))(alloc)
+    pinned = pinned or {}
+    for block in sorted(blocks.blocks, key=lambda b: b.id):
+        if block.id in pinned:
+            cno = pinned[block.id][0][0]
+            cells = [(n, ch) for _, n, ch in pinned[block.id]]
+            grid.take(cno, cells)
+            families[cno] |= set(block.families)
+            groups[cno].add(block.group or block.id)
+            alloc.placements.extend(_make_placements(block, cno, cells, block_hw(block)))
 
     for block in sorted(blocks.blocks, key=lambda b: (-b.size, b.id)):
+        if block.id in pinned:
+            continue
         bad = block_ok(block, pack)
         if bad:
             _unplace(alloc, block, "TQ-SEG", bad)
@@ -164,7 +203,19 @@ def pack_blocks(
 
         rejected_by: set[str] = set()
         chosen: tuple[int, list[Placement], list[tuple[int, int]]] | None = None
-        for cno in order:
+        want = (prefs or {}).get(block.id)
+        if want and all(w is not None for w in want) and len({w[0] for w in want}) == 1:
+            cno, cells2 = want[0][0], [(n, ch) for _, n, ch in want]
+            if (
+                valid_shape(block.size, cells2, grid.ch)
+                and not any(grid.occ[(cno, n)][ch - 1] for n, ch in cells2)
+                and all(n in grid.usable[cno] for n, _ in cells2)
+                and compatible(families[cno], bool(groups[cno]), block, pack)
+            ):
+                new_ps = _make_placements(block, cno, cells2, hw)
+                if not _rule_rejections(active, ctx, alloc.placements, new_ps):
+                    chosen = (cno, new_ps, cells2)
+        for cno in [] if chosen else order:
             if not compatible(families[cno], bool(groups[cno]), block, pack):
                 continue
             for cells2 in grid.candidates(cno, block.size):

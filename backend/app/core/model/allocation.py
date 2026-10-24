@@ -22,6 +22,7 @@ class Placement(BaseModel):
     signal_type: str | None = None
     signal_level: str | None = None
     group: str | None = None  # affinity group of the block
+    change: str | None = None  # revisions: Added | Modified | Moved
 
     @property
     def charm_no(self) -> int:
@@ -40,6 +41,7 @@ class Allocation(BaseModel):
     issues: list[Issue] = Field(default_factory=list)
     cioc_labels: dict[int, str] = Field(default_factory=dict)
     solver: str = "greedy"
+    slot_remarks: dict[str, str] = Field(default_factory=dict)  # 'cioc/baseplate/channel' -> text
 
     def utilisation(self) -> dict:
         used = Counter(p.kind for p in self.placements)

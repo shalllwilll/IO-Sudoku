@@ -170,7 +170,9 @@ def build_rows(
                         "tagstatus": status,
                         "remarks": "Internal Cabinet Alarm."
                         if status == "Cabinet Alarm" and internal
-                        else None,
+                        else alloc.slot_remarks.get(f"{cno}/{bp.n}/{channel}"),
+                        "changetype": (p.change if p else None)
+                        or ("Deleted" if f"{cno}/{bp.n}/{channel}" in alloc.slot_remarks else None),
                         "batch": batch,
                         "hwlooptypical": hw.loop_typical if p else None,
                         "system2": s.extras.get("System 2") if s else None,

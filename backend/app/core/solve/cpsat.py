@@ -95,10 +95,20 @@ class _Option:
     load: dict[tuple[int, int], int]
     large: bool
     index: int  # tie-break order
+    cells: list[tuple[int, int, int]] | None = None  # (cioc, baseplate, channel); revisions only
+    moves: int = 0  # signals sitting away from their baseline cell (revisions only)
 
     @property
     def start(self) -> tuple[int, int]:
         return self.units[0]
+
+
+@dataclass
+class RevisionSpec:
+    """Channel-level mode for revisions: some blocks are fixed, the rest pay to move."""
+
+    pinned: dict[str, list[tuple[int, int, int]]] = field(default_factory=dict)
+    prefs: dict[str, list[tuple[int, int, int] | None]] = field(default_factory=dict)
 
 
 def _active(rules: list[Rule] | None) -> list[Rule]:
@@ -106,8 +116,15 @@ def _active(rules: list[Rule] | None) -> list[Rule]:
 
 
 class _Build:
-    def __init__(self, blocks: BlockSet, layout: Layout, pack: Pack, rules: list[Rule] | None):
-        self.blocks, self.layout, self.pack = blocks, layout, pack
+    def __init__(
+        self,
+        blocks: BlockSet,
+        layout: Layout,
+        pack: Pack,
+        rules: list[Rule] | None,
+        spec: RevisionSpec | None = None,
+    ):
+        self.blocks, self.layout, self.pack, self.spec = blocks, layout, pack, spec
         self.ch = pack.capacity.channels_per_baseplate
         self.rules = _active(rules)
         self.ctx = Ctx(layout, pack)
@@ -165,12 +182,66 @@ class _Build:
                         bad.add(r.id)
         return bad
 
+    def _cell_candidates(self, block: Block):
+        """Every cell set a block may take, channel by channel (first-fit order)."""
+        ch, size = self.ch, block.size
+        for c, usable in self.usable.items():
+            if size <= ch:
+                for n in usable:
+                    for start in range(1, ch - size + 2):
+                        yield [(c, n, start + i) for i in range(size)]
+                continue
+            for cc, span in self._spans(size):
+                if cc == c:
+                    yield [(c, n, k) for n, cnt in span for k in range(1, cnt + 1)]
+
+    def _add_cell_options(self, block: Block, strict: bool) -> None:
+        m, spec = self.model, self.spec
+        pinned = spec.pinned.get(block.id)
+        prefs = spec.prefs.get(block.id, [])
+        cands = [pinned] if pinned else self._cell_candidates(block)
+        opts: list[_Option] = []
+        for cells in cands:
+            units = [(c, n) for c, n, _ in cells]
+            bad = self._violates_placement_rules(block, units)
+            if bad:
+                self.rule_blocked[block.id] |= bad
+                continue
+            load: dict[tuple[int, int], int] = defaultdict(int)
+            for u in units:
+                load[u] += 1
+            moves = sum(
+                1
+                for pos, cell, want in zip(block.positions, cells, prefs or cells, strict=True)
+                if pos.signal is not None and want is not None and cell != want
+            )
+            v = m.NewBoolVar(f"x_{block.id}_{cells[0]}")
+            index = self.bp_index.get(units[0], 0) * self.ch + cells[0][2]
+            opts.append(
+                _Option(
+                    block, v, units, dict(load), block.size > self.ch, index, list(cells), moves
+                )
+            )
+        self.options[block.id] = opts
+        if pinned and opts:
+            m.Add(opts[0].var == 1)  # a fixed block is not a decision
+            return
+        if strict:
+            m.AddExactlyOne([o.var for o in opts])
+        else:
+            u = m.NewBoolVar(f"u_{block.id}")
+            self.unplaced_var[block.id] = u
+            m.AddExactlyOne([*(o.var for o in opts), u])
+
     def add_options(self, strict: bool) -> None:
         m = self.model
         for block in self.blocks.blocks:
             why = block_ok(block, self.pack)
             if why:
                 self.rejected[block.id] = why
+                continue
+            if self.spec is not None:
+                self._add_cell_options(block, strict)
                 continue
             opts: list[_Option] = []
             for c, span in self._spans(block.size):
@@ -200,6 +271,16 @@ class _Build:
     # -- structure -------------------------------------------------------------------------
     def add_capacity(self) -> None:
         m = self.model
+        if self.spec is not None:  # one block per cell
+            at: dict[tuple[int, int, int], list] = defaultdict(list)
+            for opts in self.options.values():
+                for o in opts:
+                    for cell in o.cells or ():
+                        at[cell].append(o.var)
+            for vs in at.values():
+                if len(vs) > 1:
+                    m.AddAtMostOne(vs)
+            return
         by_bp: dict[tuple[int, int], list[tuple[object, int]]] = defaultdict(list)
         tails: dict[tuple[int, int], list[object]] = defaultdict(list)
         for opts in self.options.values():
@@ -400,8 +481,9 @@ class _Build:
         for cab in lay.cabinets:
             for cno in cab.ciocs:
                 m.AddImplication(cioc_used[cno], cab_used[cab.no])
-        for a, b in zip(lay.cabinets, lay.cabinets[1:], strict=False):
-            m.AddImplication(cab_used[b.no], cab_used[a.no])  # symmetry: fill cabinets in order
+        if self.spec is None:
+            for a, b in zip(lay.cabinets, lay.cabinets[1:], strict=False):
+                m.AddImplication(cab_used[b.no], cab_used[a.no])  # symmetry: fill cabinets in order
 
         bp_used = {}
         for opts in self.options.values():
@@ -431,9 +513,19 @@ class _Build:
         w_cab = w_cioc * (len(cioc_used) + 1)
         w_un = w_cab * (len(cab_used) + 1)
         # stage 1: unallocated, cabinets, CIOCs; stage 2 (bounded by stage 1): fragmentation, tie
+        moved = sum(o.var * o.moves for opts in self.options.values() for o in opts if o.moves)
+        if self.spec is not None:  # revisions: unallocated, moved signals, cabinets, ...
+            w_mv = w_cab * (len(cab_used) + 1)
+            w_un = w_mv * (sum(o.moves for os_ in self.options.values() for o in os_) + 1)
+        else:
+            w_mv = 0
         self.stage1 = (
-            w_un * unalloc + w_cab * sum(cab_used.values()) + w_cioc * sum(cioc_used.values())
+            w_un * unalloc
+            + w_mv * moved
+            + w_cab * sum(cab_used.values())
+            + w_cioc * sum(cioc_used.values())
         )
+        self.moved = moved
         self.frag, self.tie = frag, tie
         self.stage2 = t_max * frag + tie
 
@@ -478,7 +570,8 @@ def _to_allocation(
             _unplace_reason(alloc, b, build)
         else:
             chosen.append(pick)
-    cells = _order_in_baseplate(chosen)
+    cells = _order_in_baseplate([o for o in chosen if o.cells is None])
+    cells.update({o.block.id: [(n, k) for _, n, k in o.cells] for o in chosen if o.cells})
     families: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
     groups: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
     for o in sorted(chosen, key=lambda o: (-o.block.size, o.block.id)):
@@ -539,13 +632,18 @@ def _hint(build: _Build, base: Allocation | None) -> None:
         return
     build.hinted = True
     where: dict[str, tuple[int, int]] = {}
+    exact: dict[str, list[tuple[int, int, int]]] = defaultdict(list)
     for p in sorted(base.placements, key=lambda p: (p.cioc_no, p.baseplate, p.channel)):
         if p.block_id and p.block_id not in where:
             where[p.block_id] = (p.cioc_no, p.baseplate)
+    for p in sorted(base.placements, key=lambda p: p.pair or 0):
+        if p.block_id:
+            exact[p.block_id].append((p.cioc_no, p.baseplate, p.channel))
     for bid, opts in build.options.items():
         want = where.get(bid)
         for o in opts:
-            build.model.AddHint(o.var, 1 if o.start == want else 0)
+            hit = o.cells == exact.get(bid) if o.cells is not None else o.start == want
+            build.model.AddHint(o.var, 1 if hit else 0)
         if bid in build.unplaced_var:
             build.model.AddHint(build.unplaced_var[bid], 0 if want else 1)
 
