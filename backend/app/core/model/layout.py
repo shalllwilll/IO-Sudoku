@@ -11,6 +11,9 @@ class Position(BaseModel):
     kind: str  # field | wired_spare | spare_slot
     signal: Signal | None = None
     io_type: str | None = None  # wired spares take it from the block when packed
+    duty_class: str | None = None
+    signal_type: str | None = None
+    signal_level: str | None = None
 
 
 class Block(BaseModel):

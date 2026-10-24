@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 
+from app.core.hardware.engine import attach_wired_spare_hardware_issues
 from app.core.layout.blocks import BlockSet
 from app.core.layout.derive import cabinets_needed, derive_layout
 from app.core.layout.spares import attach_spare_shortfall_issues
@@ -287,10 +288,10 @@ def _make_placements(
             signal=pos.signal,
             block_id=block.id,
             pair=pos.pair,
-            io_type=pos.signal.io_type if pos.signal else io,
-            duty_class=pos.signal.duty_class if pos.signal else duty,
-            signal_type=pos.signal.signal_type if pos.signal else st,
-            signal_level=pos.signal.signal_level if pos.signal else lvl,
+            io_type=pos.signal.io_type if pos.signal else (pos.io_type or io),
+            duty_class=pos.signal.duty_class if pos.signal else (pos.duty_class or duty),
+            signal_type=pos.signal.signal_type if pos.signal else (pos.signal_type or st),
+            signal_level=pos.signal.signal_level if pos.signal else (pos.signal_level or lvl),
             group=block.group,
         )
         for pos, (n, ch) in zip(block.positions, cells, strict=True)
@@ -430,9 +431,13 @@ def solve_greedy(
         no_room = [i for i in alloc.issues if i.code == "TQ-CAP" and "does not fit" in i.message]
         by_rule = [i for i in alloc.issues if i.code == "TQ-RULE"]
         if not no_room and not (by_rule and extra < RULE_RETRY_CABINETS):
-            return attach_spare_shortfall_issues(alloc, pack)
+            attach_spare_shortfall_issues(alloc, pack)
+            return attach_wired_spare_hardware_issues(alloc, pack)
         if cap is not None and len(layout.cabinets) >= cap:
-            return attach_spare_shortfall_issues(alloc, pack)
+            attach_spare_shortfall_issues(alloc, pack)
+            return attach_wired_spare_hardware_issues(alloc, pack)
         if not no_room and extra >= RULE_RETRY_CABINETS:
-            return attach_spare_shortfall_issues(alloc, pack)
-    return attach_spare_shortfall_issues(alloc, pack)
+            attach_spare_shortfall_issues(alloc, pack)
+            return attach_wired_spare_hardware_issues(alloc, pack)
+    attach_spare_shortfall_issues(alloc, pack)
+    return attach_wired_spare_hardware_issues(alloc, pack)

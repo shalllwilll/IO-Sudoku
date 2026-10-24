@@ -88,6 +88,9 @@ class Capacity(BaseModel):
     # historic prompt-book behaviour by default, but permit an explicit project plan.
     wired_spare_policy: Literal["declared_pairs", "explicit_pairs"] = "declared_pairs"
     wired_spare_pairs: dict[str, list[int]] = Field(default_factory=dict)
+    # Optional per-pair hardware facts for confirmed installed wired spares. These override the
+    # cable-majority fallback used when the wiring plan does not name a pair.
+    wired_spare_hardware: dict[str, dict[int, "WiredSpareHardware"]] = Field(default_factory=dict)
     controllers_per_system_cabinet: int = 1
     max_cabinets: int | None = None
     cpsat_seed: int = 1
@@ -104,6 +107,14 @@ class Capacity(BaseModel):
     qiga_population: int = 16
     qiga_generations: int = 40
     qiga_max_blocks: int = 400  # bigger instances skip the stage (docs/benchmark.md)
+
+
+class WiredSpareHardware(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    io_type: str
+    duty_class: str | None = None
+    signal_type: str | None = None
+    signal_level: str | None = None
 
 
 class Schema(BaseModel):

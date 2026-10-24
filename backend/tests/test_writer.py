@@ -4,7 +4,7 @@ import pytest
 from app.core.ingest.merge import merge_files
 from app.core.ingest.reader import read_workbook
 from app.core.layout.blocks import build_blocks
-from app.core.model.pack import Pack
+from app.core.model.pack import Pack, WiredSpareHardware
 from app.core.solve.greedy import solve_greedy
 from app.core.writer.template import WriterError, build_rows, write_allocation
 from tests.test_greedy import cable
@@ -112,6 +112,29 @@ def test_protected_spare_slot_does_not_claim_wired_spare_hardware(pack, template
         if cells[headers.index("CHARM_No")].value == protected.charm_no
     )
     assert row["Tag Status"] == "Spare Slot" and row["IO Type"] == "-"
+
+
+def test_pair_specific_wired_spare_hardware_reaches_the_workbook(pack, template, tmp_path):
+    planned = pack.model_copy(
+        update={
+            "capacity": pack.capacity.model_copy(
+                update={"wired_spare_hardware": {"C1": {12: WiredSpareHardware(io_type="DIR")}}}
+            )
+        }
+    )
+    allocation = alloc_for(cable("C1", 10, 12), planned)
+    spare = next(p for p in allocation.placements if p.kind == "wired_spare" and p.pair == 12)
+    row = next(r for r in build_rows(allocation, planned) if r["charmno"] == spare.charm_no)
+    assert row["iotype"] == "DIR" and row["charmtype"] == "SE4301T02"
+    out = write_allocation(allocation, planned, template, tmp_path / "o.xlsx")
+    ws = openpyxl.load_workbook(out).worksheets[0]
+    headers = [c.value for c in ws[1]]
+    written = next(
+        dict(zip(headers, [c.value for c in cells], strict=False))
+        for cells in ws.iter_rows(min_row=2)
+        if cells[headers.index("CHARM_No")].value == spare.charm_no
+    )
+    assert written["IO Type"] == "DIR" and written["CHARM Type"] == "SE4301T02"
 
 
 def test_sample_signal_columns_match_sample_allocation(

@@ -3,6 +3,7 @@
 from dataclasses import asdict, dataclass, field
 
 from app.config import Settings
+from app.core.hardware.engine import attach_wired_spare_hardware_issues
 from app.core.layout.blocks import BlockSet
 from app.core.layout.spares import attach_spare_shortfall_issues
 from app.core.model.allocation import Allocation, Unplaced
@@ -133,6 +134,7 @@ def run_chain(
         if chosen.solver == "greedy" and _improvable(chosen.allocation):
             chosen = _try_qiga(chosen, blocks, pack, rules, events, qiga_on)
     attach_spare_shortfall_issues(chosen.allocation, pack)
+    attach_wired_spare_hardware_issues(chosen.allocation, pack)
     chosen.events, chosen.key = events, key
     if any(i.code == "TQ-RULE" for i in chosen.allocation.issues):
         _explain_rule_failure(chosen, blocks, pack, area, unit, rules)

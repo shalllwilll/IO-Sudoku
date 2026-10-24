@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from app.core.model.allocation import Allocation
 from app.core.model.issue import Issue
 from app.core.model.pack import HardwareRow, Pack
 from app.core.model.signal import Signal
@@ -94,3 +95,30 @@ def resolve_hardware(signal: Signal, pack: Pack) -> HardwareResult:
 
 def spare_slot_hardware(pack: Pack) -> HardwareResult:
     return _result(pack.hardware.spare_slot)
+
+
+def attach_wired_spare_hardware_issues(alloc: Allocation, pack: Pack) -> Allocation:
+    """Surface an unresolved explicit wired-spare choice as a TQ instead of exporting blanks."""
+    alloc.issues = [i for i in alloc.issues if i.data.get("kind") != "wired_spare_hardware"]
+    for p in alloc.placements:
+        if p.kind != "wired_spare":
+            continue
+        probe = Signal(
+            io_type=p.io_type,
+            duty_class=p.duty_class,
+            signal_type=p.signal_type,
+            signal_level=p.signal_level,
+        )
+        result = resolve_hardware(probe, pack)
+        if not result.held_out:
+            continue
+        alloc.issues.extend(
+            i.model_copy(
+                update={
+                    "message": f"wired spare {p.block_id} pair {p.pair}: {i.message}",
+                    "data": {**i.data, "kind": "wired_spare_hardware", "pair": str(p.pair)},
+                }
+            )
+            for i in result.issues
+        )
+    return alloc

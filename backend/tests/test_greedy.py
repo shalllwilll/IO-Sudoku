@@ -4,7 +4,7 @@ from app.core.ingest.merge import merge_files
 from app.core.layout.blocks import build_blocks
 from app.core.layout.derive import derive_layout
 from app.core.layout.spares import spare_report
-from app.core.model.pack import Pack
+from app.core.model.pack import Pack, WiredSpareHardware
 from app.core.model.signal import Signal
 from app.core.solve.greedy import pack_blocks, solve_greedy
 from app.core.solve.validator import validate_allocation
@@ -152,6 +152,36 @@ def test_explicit_wired_spare_plan_preserves_other_declared_pairs_as_slots(pack)
     assert report.cabinets[0].protected_spare_pairs == 1
     assert report.cabinets[0].free_slots_on_used_baseplates == 0
     assert validate_allocation(alloc, planned, signals) == []
+
+
+def test_pair_specific_wired_spare_hardware_overrides_cable_majority(pack):
+    planned = pack.model_copy(
+        update={
+            "capacity": pack.capacity.model_copy(
+                update={"wired_spare_hardware": {"C1": {12: WiredSpareHardware(io_type="DIR")}}}
+            )
+        }
+    )
+    alloc = run(cable("C1", 10, 12, io="AIR"), planned)
+    spare = next(p for p in alloc.placements if p.block_id == "C1" and p.pair == 12)
+    assert spare.kind == "wired_spare" and spare.io_type == "DIR"
+
+
+def test_unknown_explicit_wired_spare_hardware_becomes_a_tq(pack):
+    planned = pack.model_copy(
+        update={
+            "capacity": pack.capacity.model_copy(
+                update={"wired_spare_hardware": {"C1": {12: WiredSpareHardware(io_type="NOPE")}}}
+            )
+        }
+    )
+    alloc = run(cable("C1", 10, 12), planned)
+    issue = next(
+        i
+        for i in alloc.issues
+        if i.data.get("kind") == "wired_spare_hardware" and i.data["pair"] == "12"
+    )
+    assert issue.code == "TQ-HW" and issue.data["pair"] == "12"
 
 
 def test_sample_packs(pack, sample_mdb_path):

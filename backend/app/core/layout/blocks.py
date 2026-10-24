@@ -110,7 +110,17 @@ def build_blocks(signals: list[Signal], pack: Pack) -> BlockSet:
                         if pack.capacity.wired_spare_policy == "declared_pairs" or planned
                         else "spare_slot"
                     )
-                    positions.append(Position(pair=p, kind=kind))
+                    hardware = pack.capacity.wired_spare_hardware.get(cable, {}).get(p)
+                    positions.append(
+                        Position(
+                            pair=p,
+                            kind=kind,
+                            io_type=hardware.io_type if hardware else None,
+                            duty_class=hardware.duty_class if hardware else None,
+                            signal_type=hardware.signal_type if hardware else None,
+                            signal_level=hardware.signal_level if hardware else None,
+                        )
+                    )
         else:
             positions = [Position(pair=s.pair or 0, kind="field", signal=s) for s in sigs]
         block = Block(
