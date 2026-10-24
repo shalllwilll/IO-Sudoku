@@ -11,5 +11,9 @@
  "cpsat_seed": 1,
  "cpsat_deterministic_time": 10.0,
  "cpsat_wall_seconds": 60.0,
- "cpsat_max_options": 30000
+ "cpsat_max_options": 30000,
+ "miner_min_support": 8,
+ "miner_min_confidence": 0.95,
+ "miner_min_signals": 30,
+ "miner_min_groups": 3
 }

@@ -89,6 +89,11 @@ class Capacity(BaseModel):
     cpsat_deterministic_time: float = 10.0  # primary stop: reproducible across machines
     cpsat_wall_seconds: float = 60.0  # backstop only; never the normal stop
     cpsat_max_options: int = 30000  # larger models keep the greedy answer (see docs/benchmark.md)
+    # rule miner: how much evidence a candidate needs before it is shown as a rule
+    miner_min_support: int = 8  # signals behind each side of a candidate
+    miner_min_confidence: float = 0.95
+    miner_min_signals: int = 30  # a smaller reference only yields low-confidence candidates
+    miner_min_groups: int = 3  # groups that must be tested for a co-location candidate
 
 
 class Schema(BaseModel):

@@ -277,6 +277,20 @@
     "title": "Baseplate",
     "type": "object"
    },
+   "Body_mine_upload_api_projects__pid__rules_mine_upload_post": {
+    "properties": {
+     "file": {
+      "contentMediaType": "application/octet-stream",
+      "title": "File",
+      "type": "string"
+     }
+    },
+    "required": [
+     "file"
+    ],
+    "title": "Body_mine_upload_api_projects__pid__rules_mine_upload_post",
+    "type": "object"
+   },
    "Body_upload_api_projects__pid__uploads_post": {
     "properties": {
      "file": {
@@ -348,6 +362,53 @@
      "required_empty_baseplates"
     ],
     "title": "CabinetSpares",
+    "type": "object"
+   },
+   "Candidate": {
+    "properties": {
+     "already_enforced": {
+      "default": false,
+      "title": "Already Enforced",
+      "type": "boolean"
+     },
+     "confidence": {
+      "title": "Confidence",
+      "type": "number"
+     },
+     "evidence": {
+      "additionalProperties": true,
+      "title": "Evidence",
+      "type": "object"
+     },
+     "id": {
+      "title": "Id",
+      "type": "string"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "low_confidence": {
+      "default": false,
+      "title": "Low Confidence",
+      "type": "boolean"
+     },
+     "rule": {
+      "$ref": "#/components/schemas/Rule"
+     },
+     "support": {
+      "title": "Support",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "rule",
+     "support",
+     "confidence"
+    ],
+    "title": "Candidate",
     "type": "object"
    },
    "Cioc": {
@@ -1160,6 +1221,52 @@
      "issues"
     ],
     "title": "MappingSheet",
+    "type": "object"
+   },
+   "MineIn": {
+    "properties": {
+     "run_id": {
+      "title": "Run Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "run_id"
+    ],
+    "title": "MineIn",
+    "type": "object"
+   },
+   "MineResult": {
+    "properties": {
+     "candidates": {
+      "items": {
+       "$ref": "#/components/schemas/Candidate"
+      },
+      "title": "Candidates",
+      "type": "array"
+     },
+     "ciocs": {
+      "title": "Ciocs",
+      "type": "integer"
+     },
+     "notes": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+     },
+     "signals": {
+      "title": "Signals",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "signals",
+     "ciocs",
+     "candidates"
+    ],
+    "title": "MineResult",
     "type": "object"
    },
    "Placement": {
@@ -3350,7 +3457,8 @@
   },
   "/api/projects/{pid}/rules/mine": {
    "post": {
-    "operationId": "mine_rules_api_projects__pid__rules_mine_post",
+    "description": "Mine the rules an earlier run of this project obeys. Candidates are not applied.",
+    "operationId": "mine_run_api_projects__pid__rules_mine_post",
     "parameters": [
      {
       "in": "path",
@@ -3362,7 +3470,47 @@
       }
      }
     ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MineIn"
+       }
+      }
+     },
+     "required": true
+    },
     "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MineResult"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
      "422": {
       "content": {
        "application/json": {
@@ -3372,8 +3520,48 @@
        }
       },
       "description": "Validation Error"
+     }
+    },
+    "summary": "Mine Run"
+   }
+  },
+  "/api/projects/{pid}/rules/mine/upload": {
+   "post": {
+    "description": "Mine a reference allocation workbook. The file is read once and not kept.",
+    "operationId": "mine_upload_api_projects__pid__rules_mine_upload_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "multipart/form-data": {
+       "schema": {
+        "$ref": "#/components/schemas/Body_mine_upload_api_projects__pid__rules_mine_upload_post"
+       }
+      }
      },
-     "501": {
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/MineResult"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "400": {
       "content": {
        "application/json": {
         "schema": {
@@ -3381,10 +3569,50 @@
         }
        }
       },
-      "description": "Successful Response"
+      "description": "Bad Request"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "413": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Content Too Large"
+     },
+     "415": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unsupported Media Type"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
      }
     },
-    "summary": "Mine Rules"
+    "summary": "Mine Upload"
    }
   },
   "/api/projects/{pid}/runs": {

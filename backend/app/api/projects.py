@@ -4,9 +4,10 @@ import hashlib
 import re
 
 from fastapi import APIRouter, Depends, File, Request, UploadFile
+from pydantic import BaseModel
 
-from app.api.deps import project_of, service
-from app.api.errors import ApiError, ErrorBody, not_found
+from app.api.deps import project_of, run_of, service
+from app.api.errors import ApiError, ErrorBody
 from app.api.models import (
     CompileIn,
     ConfirmRuleIn,
@@ -27,11 +28,15 @@ from app.api.models import (
     ValuesOut,
 )
 from app.api.service import Service
+from app.api.store import new_id
 from app.core.ai.features import RulePreview, classify_value, compile_rule, mapping_hint
 from app.core.ingest.reader import ReaderError, read_workbook
 from app.core.layout.blocks import build_blocks
+from app.core.model.allocation import Allocation
+from app.core.revision.baseline import BaselineError, baseline_from_workbook
 from app.core.rules.dryrun import dry_run
 from app.core.rules.lint import lint
+from app.core.rules.miner import MineResult, mine
 from app.core.rules.schema import RuleSetError, load_rules
 
 router = APIRouter(prefix="/api")
@@ -109,19 +114,10 @@ def _label(name: str | None, taken: set[str]) -> str:
     return label
 
 
-@router.post(
-    "/projects/{pid}/uploads", status_code=201, response_model=UploadOut,
-    responses={400: ERRORS, 404: ERRORS, 413: ERRORS, 415: ERRORS},
-)  # fmt: skip
-async def upload(pid: str, request: Request, file: UploadFile = File(...)):
-    svc: Service = request.app.state.service
-    project_of(request, pid)
+async def _receive(file: UploadFile, path, limit: int):
+    """Stream an upload to `path` with every safety check; the file is removed on any failure."""
     if not (file.filename or "").lower().endswith(".xlsx"):
         raise ApiError(415, "unsupported_media_type", "only .xlsx workbooks are accepted")
-    limit = svc.settings.max_upload_bytes
-    seq = svc.store.next_seq(pid)
-    stored = f"u{seq:04d}_{hashlib.sha256(f'{pid}{seq}{file.filename}'.encode()).hexdigest()[:10]}"
-    path = svc.store.upload_dir(pid) / f"{stored}.xlsx"
     sha, size, head = hashlib.sha256(), 0, b""
     try:
         with path.open("wb") as fh:
@@ -148,6 +144,20 @@ async def upload(pid: str, request: Request, file: UploadFile = File(...)):
     except BaseException:
         path.unlink(missing_ok=True)
         raise
+    return size, sha.hexdigest(), results
+
+
+@router.post(
+    "/projects/{pid}/uploads", status_code=201, response_model=UploadOut,
+    responses={400: ERRORS, 404: ERRORS, 413: ERRORS, 415: ERRORS},
+)  # fmt: skip
+async def upload(pid: str, request: Request, file: UploadFile = File(...)):
+    svc: Service = request.app.state.service
+    project_of(request, pid)
+    seq = svc.store.next_seq(pid)
+    stored = f"u{seq:04d}_{hashlib.sha256(f'{pid}{seq}{file.filename}'.encode()).hexdigest()[:10]}"
+    path = svc.store.upload_dir(pid) / f"{stored}.xlsx"
+    size, sha, results = await _receive(file, path, svc.settings.max_upload_bytes)
     label = _label(file.filename, {u["name"] for u in svc.store.uploads(pid)})
     sheets = [
         SheetInfo(
@@ -157,7 +167,7 @@ async def upload(pid: str, request: Request, file: UploadFile = File(...)):
         ).model_dump()
         for r in results
     ]  # fmt: skip
-    up = svc.store.add_upload(pid, label, path.name, size, sha.hexdigest(), sheets)
+    up = svc.store.add_upload(pid, label, path.name, size, sha, sheets)
     return UploadOut(**{k: up[k] for k in ("id", "name", "size", "sha256", "created_at", "sheets")})
 
 
@@ -381,10 +391,37 @@ def confirm_rule(pid: str, body: ConfirmRuleIn, request: Request, svc: Service =
     return get_rules(pid, request, svc)
 
 
-@router.post("/projects/{pid}/rules/mine", status_code=501, responses={501: ERRORS})
-def mine_rules(pid: str, request: Request):
+class MineIn(BaseModel):
+    run_id: str
+
+
+@router.post(
+    "/projects/{pid}/rules/mine", response_model=MineResult, responses={404: ERRORS, 409: ERRORS}
+)
+def mine_run(pid: str, body: MineIn, request: Request):
+    """Mine the rules an earlier run of this project obeys. Candidates are not applied."""
+    svc: Service = request.app.state.service
+    run = run_of(request, pid, body.run_id)
+    if run["status"] != "finished":
+        raise ApiError(409, "run_not_finished", f"the run is {run['status']}")
+    return mine(Allocation.model_validate(run["data"]["allocation"]), svc.pack)
+
+
+@router.post(
+    "/projects/{pid}/rules/mine/upload",
+    response_model=MineResult,
+    responses={400: ERRORS, 404: ERRORS, 413: ERRORS, 415: ERRORS, 422: ERRORS},
+)
+async def mine_upload(pid: str, request: Request, file: UploadFile = File(...)):
+    """Mine a reference allocation workbook. The file is read once and not kept."""
+    svc: Service = request.app.state.service
     project_of(request, pid)
-    raise ApiError(501, "not_implemented", "rule mining is not available yet")
-
-
-_ = not_found
+    path = svc.store.output_dir(pid) / f"ref_{new_id()}.xlsx"
+    await _receive(file, path, svc.settings.max_upload_bytes)
+    try:
+        base = baseline_from_workbook(path, svc.pack)
+    except BaselineError as e:
+        raise ApiError(422, "not_an_allocation", str(e)) from e
+    finally:
+        path.unlink(missing_ok=True)
+    return mine(base.allocation, svc.pack)

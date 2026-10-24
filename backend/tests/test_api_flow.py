@@ -154,13 +154,6 @@ def test_mapping_values_rules_lint(tmp_path):
     assert "findings" in lint and lint["dry_run"][0]["rule_id"] == "SEP"
 
 
-def test_mine_says_not_implemented(tmp_path):
-    c = make_client(tmp_path)
-    pid = new_project(c)
-    r = c.post(f"/api/projects/{pid}/rules/mine")
-    assert r.status_code == 501 and r.json()["code"] == "not_implemented"
-
-
 def test_answering_a_tq_changes_the_next_run(tmp_path):
     c = make_client(tmp_path)
     pid, run = run_project(
