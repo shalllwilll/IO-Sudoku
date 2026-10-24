@@ -131,3 +131,23 @@ def test_sample_signal_columns_match_sample_allocation(
     real = [b for b in bad if "20076" not in b[0] and b[1] != "Old Tag"]
     assert real == []
     assert checked == 176
+
+
+def test_every_row_key_lands_in_a_template_column(pack, template):
+    """A key that matches no header is silently dropped; the CIOC name once was."""
+    from app.core.writer.template import _norm
+
+    wb = openpyxl.load_workbook(template, read_only=True)
+    heads = {_norm(h) for h in next(wb.worksheets[0].iter_rows(max_row=1, values_only=True)) if h}
+    keys = set(build_rows(alloc_for(cable("C1", 5), pack), pack)[0])
+    assert keys <= heads, f"row keys with no template column: {sorted(keys - heads)}"
+
+
+def test_cioc_and_baseplate_names_are_written(pack, template, tmp_path):
+    a = alloc_for(cable("C1", 5), pack)
+    out = write_allocation(a, pack, template, tmp_path / "o.xlsx")
+    ws = openpyxl.load_workbook(out).worksheets[0]
+    head = [c.value for c in ws[1]]
+    first = dict(zip(head, [c.value for c in ws[2]], strict=False))
+    assert first["CIOC/CSLS Name"] == a.layout.ciocs[0].name != "-"
+    assert first["Baseplate"] == a.layout.ciocs[0].baseplates[0].name
