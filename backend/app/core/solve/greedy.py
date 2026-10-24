@@ -152,7 +152,10 @@ def pack_blocks(blocks: BlockSet, layout: Layout, pack: Pack) -> Allocation:
             families[cno] |= set(block.families)
             groups[cno].add(block.group or block.id)
             io = _majority([s.io_type for s in block.signals])
-            duty = _majority([s.duty_class for s in block.signals if s.io_type == io])
+            same = [s for s in block.signals if s.io_type == io]
+            duty = _majority([s.duty_class for s in same])
+            st = _majority([s.signal_type for s in same])
+            lvl = _majority([s.signal_level for s in same])
             for pos, (n, ch) in zip(block.positions, cells2, strict=True):
                 alloc.placements.append(
                     Placement(
@@ -165,6 +168,8 @@ def pack_blocks(blocks: BlockSet, layout: Layout, pack: Pack) -> Allocation:
                         pair=pos.pair,
                         io_type=pos.signal.io_type if pos.signal else io,
                         duty_class=pos.signal.duty_class if pos.signal else duty,
+                        signal_type=pos.signal.signal_type if pos.signal else st,
+                        signal_level=pos.signal.signal_level if pos.signal else lvl,
                     )
                 )
             break

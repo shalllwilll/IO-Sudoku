@@ -17,6 +17,7 @@ class Signal(BaseModel):
     cable_formation: str | None = None
     cable_pairs: int | None = None
     pair: int | None = None
+    pair_label: str | None = None
     group: str | None = None
     segregation: str | None = None
     segregation_family: str | None = None
@@ -26,6 +27,7 @@ class Signal(BaseModel):
     technical_room: str | None = None
     equipment_name: str | None = None
     service: str | None = None
+    service_short: str | None = None
     loop_name: str | None = None
     execution: str | None = None
     external_power: str | None = None

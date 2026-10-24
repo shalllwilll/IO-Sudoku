@@ -19,6 +19,8 @@ class Placement(BaseModel):
     pair: int | None = None
     io_type: str | None = None  # for wired spares: the type of the CHARM installed
     duty_class: str | None = None
+    signal_type: str | None = None
+    signal_level: str | None = None
 
     @property
     def charm_no(self) -> int:

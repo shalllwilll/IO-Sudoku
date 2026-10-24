@@ -151,6 +151,10 @@
   "instrument_description": [
    "Instrument Type Description",
    "Instrument Description"
+  ],
+  "service_short": [
+   "Tag Service 1 and 2",
+   "Service Short"
   ]
  }
 }

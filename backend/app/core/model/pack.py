@@ -47,11 +47,15 @@ class Naming(BaseModel):
     marshalling_cabinet: NamingItem
     cioc: NamingItem
     baseplate: NamingItem
+    wired_spare_tag: NamingItem | None = None
 
     @model_validator(mode="after")
     def _templates_use_known_placeholders(self) -> "Naming":
-        for kind in KINDS:
-            for name in _PLACEHOLDER.findall(getattr(self, kind).template):
+        for kind in KINDS + ("wired_spare_tag",):
+            item = getattr(self, kind)
+            if item is None:
+                continue
+            for name in _PLACEHOLDER.findall(item.template):
                 if name not in self.placeholders:
                     raise ValueError(f"{kind} template uses unknown placeholder '{{{name}}}'")
         return self

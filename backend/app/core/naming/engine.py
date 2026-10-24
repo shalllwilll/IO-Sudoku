@@ -8,7 +8,14 @@ from app.core.model.pack import KINDS, Naming
 _PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
 
 # keyword argument of name_for -> placeholder in the templates
-_ARGS = {"Area": "area", "Unit": "unit", "Seq": "seq", "CIOC no": "cioc_no", "n": "n"}
+_ARGS = {
+    "Area": "area",
+    "Unit": "unit",
+    "Seq": "seq",
+    "CIOC no": "cioc_no",
+    "n": "n",
+    "Ch": "ch",
+}
 
 
 class NamedItem(BaseModel):
@@ -50,8 +57,9 @@ class Namer:
         seq: int | str | None = None,
         cioc_no: int | str | None = None,
         n: int | str | None = None,
+        ch: int | str | None = None,
     ) -> NamedItem:
-        if kind not in KINDS:
+        if kind not in (*KINDS, "wired_spare_tag") or getattr(self.naming, kind) is None:
             raise ValueError(f"unknown naming kind '{kind}'")
         issues: list[Issue] = []
         if area is None:
@@ -60,7 +68,7 @@ class Namer:
         if unit is None:
             unit = self.naming.default_unit
             issues.append(_tq(f"{kind}: no unit given, default '{unit}' used"))
-        given = {"area": area, "unit": unit, "seq": seq, "cioc_no": cioc_no, "n": n}
+        given = {"area": area, "unit": unit, "seq": seq, "cioc_no": cioc_no, "n": n, "ch": ch}
         values = {ph: given[arg] for ph, arg in _ARGS.items()}
         text, missing = render(self.naming, getattr(self.naming, kind).template, **values)
         for key in missing:

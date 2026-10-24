@@ -19,7 +19,7 @@ _BLANK = {"", "-", "--", "n/a", "na"}
 _TEXT_FIELDS = [
     "tag", "signal_type", "signal_level", "instrument_type", "instrument_description",
     "cable", "cable_formation", "logic_number", "area", "operating_area", "technical_room",
-    "equipment_name", "service", "loop_name", "execution", "external_power", "contact_type",
+    "equipment_name", "service", "service_short", "loop_name", "execution", "external_power", "contact_type",
     "old_tag", "revision", "change_type", "remarks", "status", "io_type_2",
 ]  # fmt: skip
 
@@ -201,6 +201,7 @@ def normalise(
         # pair and cable formation
         raw_pair = col(row, "pair")
         sig.pair = parse_pair(raw_pair)
+        sig.pair_label = clean(raw_pair)
         sig.cable_pairs, ok = parse_formation(sig.cable_formation)
         if not ok:
             issues.append(

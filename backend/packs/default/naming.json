@@ -4,7 +4,8 @@
   "Unit",
   "Seq",
   "CIOC no",
-  "n"
+  "n",
+  "Ch"
  ],
  "system_cabinet": {
   "template": "{Area}-DCS-{Unit}-{Seq}",
@@ -31,5 +32,9 @@
   "CIOC no": 3
  },
  "default_area": "AR1",
- "default_unit": "100"
+ "default_unit": "100",
+ "wired_spare_tag": {
+  "template": "{Unit}DSP{Seq}{CIOC no}{n}{Ch}",
+  "example": "100DSP0100135"
+ }
 }
