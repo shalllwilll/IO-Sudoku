@@ -6,7 +6,6 @@ import { consumeExpiredNote, signInSession, useSession } from "../auth/session.j
 import { isCompanyEmail, looksLikeEmail } from "../auth/isCompanyEmail.js";
 import { safeReturnTo } from "../auth/returnTo.js";
 import MagnetLines from "../components/MagnetLines.jsx";
-import PointerGlow from "../components/PointerGlow.jsx";
 import { pageDurationMs } from "../components/PageTransition.jsx";
 import SponsorSlot from "../components/SponsorSlot.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -81,12 +80,39 @@ export default function Landing() {
   }
 
   return (
-    <div className="grid h-screen grid-cols-1 overflow-hidden bg-graphite md:grid-cols-2">
-      <div className={`relative flex items-center justify-center p-8 ${leaving ? "page-leave" : ""}`}>
-        <div className="absolute left-8 top-8">
+    <main className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-graphite">
+      <div className="absolute inset-0" aria-hidden="true">
+        <MagnetLines
+          className="absolute inset-0 h-full w-full"
+          lineColor="#efefef"
+          spacing={30}
+          lineWidth={2}
+          lineHeight={18}
+          mode="orbit"
+          shape="line"
+          radius={200}
+          fade={0.65}
+          baseAngle={-10}
+          edgeFade={0}
+          stretch={0.4}
+          reach={0}
+          scatter={0}
+          inertia={0.35}
+          bounce={0.3}
+          ripple={0.3}
+          rainbow={false}
+          tiltX={0}
+          tiltY={0}
+          clickPulse
+          intro
+          idle={false}
+        />
+      </div>
+      <div className={`relative z-10 flex min-h-screen w-full items-center justify-center p-6 sm:p-8 ${leaving ? "page-leave" : ""}`}>
+        <div className="absolute left-6 top-6 z-20 sm:left-8 sm:top-8">
           <SponsorSlot />
         </div>
-        <form onSubmit={onSubmit} noValidate className="w-full max-w-sm rounded-panel border border-steel bg-carbon p-8">
+        <form onSubmit={onSubmit} noValidate className="w-full max-w-sm rounded-panel border border-steel/80 bg-carbon/90 p-8 shadow-xl backdrop-blur-md">
           <h1 className="text-2xl font-semibold">IO Signal Sudoku</h1>
           <p className="mb-6 mt-1 text-sm text-soft-white/70">Sign in with your company email.</p>
           {expired && (
@@ -114,34 +140,6 @@ export default function Landing() {
           </div>
         </form>
       </div>
-      <div className="relative hidden h-full overflow-hidden md:block" aria-hidden="true">
-        <PointerGlow className="absolute inset-0 h-full w-full" />
-        <MagnetLines
-          className="absolute inset-0 h-full w-full"
-          lineColor="#efefef"
-          spacing={30}
-          lineWidth={2}
-          lineHeight={18}
-          mode="orbit"
-          shape="line"
-          radius={200}
-          fade={0.65}
-          baseAngle={-10}
-          edgeFade={0}
-          stretch={0.4}
-          reach={0}
-          scatter={0}
-          inertia={0.35}
-          bounce={0.3}
-          ripple={0.3}
-          rainbow={false}
-          tiltX={0}
-          tiltY={0}
-          clickPulse
-          intro
-          idle={false}
-        />
-      </div>
-    </div>
+    </main>
   );
 }
