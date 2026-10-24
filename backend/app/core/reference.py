@@ -25,6 +25,7 @@ from app.core.revision.baseline import (
 from app.core.revision.match import match_revision
 from app.core.revision.solve import Event, RevisionResult, solve_revision
 from app.core.rules.schema import Rule
+from app.core.solve.validator import validate_allocation
 
 
 @dataclass(frozen=True)
@@ -149,10 +150,9 @@ def solve_reference_guided(
             match=match,
             solver="reference",
             events=[Event("reference", "used", "preserved approved reference positions")],
-            # The reference is the approved baseline. It may contain an authorised legacy cable
-            # shape which the generic validator would flag; added or changed signals take the
-            # normal revision path below and are validated there.
-            violations=[],
+            # Copied placements are checked like any other answer. A legacy shape in the approved
+            # workbook shows up here as a reported violation instead of being hidden.
+            violations=validate_allocation(allocation, profile.pack, signals, blocks.alarm_signals),
             label="REF",
             pinned_blocks=len(blocks.blocks),
         )

@@ -26,9 +26,31 @@ class IntentPreview(BaseModel):
     rule_preview: RulePreview | None = None
 
 
+_UPPER_PAIR = re.compile(r"\b([AB])\b\s*(?:and|&|/|\+|with|or|,)\s*\b([AB])\b")
+_NAMED_PAIR = re.compile(
+    r"\b(?:family|class|segregation|type)\s+([ab])\b.*\b(?:family|class|segregation|type)\s+([ab])\b",
+    re.IGNORECASE,
+)
+_MIXING = re.compile(r"\b(together|same|mix|mixed|share|sharing|combine|alongside)\b")
+_NEGATED = re.compile(r"\b(not|never|don't|dont|no|avoid|separate|apart|keep apart)\b")
+
+
+def _mixes_ab(text: str) -> bool:
+    """True only when the request names both segregation families and asks to put them together.
+
+    The bare article "a" must never count as family A, so a family is recognised as an upper-case
+    letter or as "family/class/segregation/type a".
+    """
+    low = text.lower()
+    pair = _UPPER_PAIR.search(text) or _NAMED_PAIR.search(text)
+    if not pair or pair.group(1).lower() == pair.group(2).lower():
+        return False
+    return bool(_MIXING.search(low)) and not _NEGATED.search(low)
+
+
 def _local(text: str) -> IntentName:
     value = text.lower()
-    if re.search(r"\b(a|b)\b.*\b(together|same|mix)|\b(together|same|mix).*\b(a|b)\b", value):
+    if _mixes_ab(text):
         return "conflict"
     if any(word in value for word in ("why", "explain", "reason")):
         return "explain"
