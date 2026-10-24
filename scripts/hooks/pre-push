@@ -1,0 +1,15 @@
+#!/bin/sh
+# Refuses any push whose target is not the frontend branch (or a release tag).
+# Git passes one line per ref on stdin: <local ref> <local sha> <remote ref> <remote sha>.
+# Enable with: git config core.hooksPath scripts/hooks
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/frontend|refs/tags/*) ;;
+    *)
+      echo "pre-push: refused. Target '$remote_ref' is not allowed. Push to 'frontend' only." >&2
+      exit 1
+      ;;
+  esac
+done
+exit 0

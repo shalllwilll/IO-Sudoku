@@ -1,0 +1,28 @@
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+test-results/
+playwright-report/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Hackathon dataset: never commit workbooks or Word files
+*.xlsx
+*.xls
+*.xlsm
+*.mdb
+*.docx
+
+# Generated 3D scene data (derived from the dataset)
+public/scene/
+
+# Editor and OS noise
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
