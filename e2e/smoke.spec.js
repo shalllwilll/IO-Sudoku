@@ -7,7 +7,7 @@ test("landing page loads with its title", async ({ page }) => {
 
 test("signed-out visit to a protected route redirects to sign-in", async ({ page }) => {
   await page.goto("/plant");
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/returnTo=%2Fplant/);
 });
 
 test("regression: /login shows the same landing view", async ({ page }) => {
