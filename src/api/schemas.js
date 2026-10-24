@@ -130,18 +130,67 @@ export const TqListSchema = z.array(TqSchema);
 export const RunListSchema = z.array(RunSchema);
 export const ProjectListSchema = z.array(ProjectSchema);
 export const UploadListSchema = z.array(UploadSchema);
+const DeltaSchema = loose({
+  tag: z.string().nullable(),
+  cable: z.string().nullable().optional(),
+  pair: z.number().int().nullable().optional(),
+  old_slot: z.string().nullable().optional(),
+  new_slot: z.string().nullable().optional(),
+  fields: z.array(z.string()).optional(),
+});
+
+const ImpactDetailSchema = loose({
+  label: z.string(),
+  baseline_label: z.string(),
+  added: z.number().int().optional(),
+  removed: z.number().int().optional(),
+  modified: z.number().int().optional(),
+  moved: z.number().int().optional(),
+  unchanged: z.number().int().optional(),
+  total_baseline: z.number().int().optional(),
+  total_revised: z.number().int().optional(),
+  solver: z.string().optional(),
+  moves_by_reason: z.record(z.number().int()).optional(),
+  // Mock-only convenience field (docs/contract-gaps.md): the real Impact model has no
+  // naive-reallocation figure. Optional so a real backend response still validates.
+  naive_moved: z.number().int().optional(),
+});
+
 export const ChainSchema = z.array(
-  loose({ seq: z.number().int(), label: z.string(), parent_label: z.string().nullable(), run_id: z.string() }),
+  loose({
+    seq: z.number().int(),
+    label: z.string(),
+    parent_label: z.string().nullable(),
+    run_id: z.string(),
+    created_at: z.string().optional(),
+    impact: ImpactDetailSchema.nullable().optional(),
+  }),
 );
+export const ChainEntrySchema = ChainSchema.element;
 export const ComparisonSchema = loose({
   from_label: z.string(),
   to_label: z.string(),
   added: z.number().int(),
   removed: z.number().int(),
   moved: z.number().int(),
+  modified: z.number().int().optional(),
   unchanged: z.number().int(),
+  naive_moved: z.number().int().optional(),
+  deltas: z.array(DeltaSchema).optional(),
 });
-export const ImpactSchema = loose({ available: z.boolean() });
+export const ImpactSchema = loose({
+  run_id: z.string().optional(),
+  available: z.boolean(),
+  impact: ImpactDetailSchema.nullable().optional(),
+  diff: z.array(DeltaSchema).optional(),
+  reason: z.string().nullable().optional(),
+});
+export const BaselineSchema = loose({
+  chain_run_id: z.string(),
+  label: z.string(),
+  placed: z.number().int(),
+  signals: z.number().int(),
+});
 export const AnswerSchema = loose({ tq: TqSchema });
 
 /**

@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it } from "vitest";
 import { buildResult } from "../../api/mock/resultFixture.js";
 import { mockControls, resetMock } from "../../api/mock/index.js";
+import { streamOptions } from "../../api/mock/stream.js";
 import { normaliseTag } from "../../lib/tagKey.js";
 import Result from "../../pages/Result.jsx";
 import { brief } from "./brief.js";
@@ -76,6 +77,7 @@ describe("Result page", () => {
   beforeEach(() => {
     resetMock();
     mockControls.delayMs = 0;
+    streamOptions.intervalMs = 1;
   });
   const open = () =>
     render(
@@ -190,5 +192,101 @@ describe("report and answer wire shapes", () => {
     const run = await api.startRun(started.id, {});
     await api.getRunTqs(started.id, run.id);
     await expect(api.answerTq(started.id, "TQ-0001", { option: "Not an option" })).rejects.toThrow(/not an option/);
+  });
+});
+
+describe("Result page: downloads, impact and highlight", () => {
+  beforeEach(() => {
+    resetMock();
+    mockControls.delayMs = 0;
+  });
+
+  async function revisedRun() {
+    const { api } = await import("../../api/index.js");
+    const { startRun, startRevisionRun, resetController } = await import("../run/runController.js");
+    const { runStore } = await import("../run/runStore.js");
+    resetController();
+    const project = await api.createProject({ name: "R" });
+    const run = await startRun(project.id, {});
+    await waitFor(() => expect(runStore.getState().status).toBe("finished"), { timeout: 5000 });
+    await api.baseline(project.id, { run_id: run.id });
+    const revised = await startRevisionRun(project.id, { label: "B" });
+    await waitFor(() => expect(runStore.getState().status).toBe("finished"), { timeout: 5000 });
+    return { project, revised };
+  }
+
+  const at = (projectId, runId, extra = "") =>
+    render(
+      <MemoryRouter initialEntries={[`/projects/${projectId}/result?run=${runId}${extra}`]}>
+        <Routes>
+          <Route path="/projects/:id/result" element={<Result />} />
+          <Route path="/projects/:id/run" element={<p>run page</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+  it("shows an Impact tab only for a revision run, with the moved counts", async () => {
+    const { project, revised } = await revisedRun();
+    at(project.id, revised.id);
+    const user = userEvent.setup();
+    await screen.findByText("Cabinets needed");
+    await user.click(await screen.findByRole("tab", { name: "Impact" }));
+    await waitFor(() => expect(document.getElementById("result-impact-panel")?.textContent).toContain("Revision B against baseline 00"));
+    const panel = document.getElementById("result-impact-panel");
+    expect(within(panel).getByText("Moved").closest("div").querySelector("dd").textContent).toBe("2");
+  });
+
+  it("has no Impact tab for an ordinary run", async () => {
+    const { api } = await import("../../api/index.js");
+    const { startRun, resetController } = await import("../run/runController.js");
+    const { runStore } = await import("../run/runStore.js");
+    resetController();
+    const project = await api.createProject({ name: "R" });
+    const run = await startRun(project.id, {});
+    await waitFor(() => expect(runStore.getState().status).toBe("finished"), { timeout: 5000 });
+    at(project.id, run.id);
+    await screen.findByText("Cabinets needed");
+    expect(screen.queryByRole("tab", { name: "Impact" })).not.toBeInTheDocument();
+  });
+
+  it("downloads the workbook and generated files without leaving the page", async () => {
+    const { project, revised } = await revisedRun();
+    at(project.id, revised.id);
+    const user = userEvent.setup();
+    await screen.findByText("Cabinets needed");
+    await user.click(screen.getByRole("tab", { name: "Downloads" }));
+
+    const clicks = ["Allocated workbook", "Rule-check report", "TQ list", "Declaration page", "Revision report", "Run log"];
+    for (const title of clicks) {
+      await user.click(screen.getByRole("button", { name: `Download ${title}` }));
+      await waitFor(() => expect(screen.getByRole("button", { name: `Download ${title}` })).toBeEnabled());
+    }
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  }, 15000);
+
+  it("disables the revision report download for a non-revision run", async () => {
+    const { api } = await import("../../api/index.js");
+    const { startRun, resetController } = await import("../run/runController.js");
+    const { runStore } = await import("../run/runStore.js");
+    resetController();
+    const project = await api.createProject({ name: "R" });
+    const run = await startRun(project.id, {});
+    await waitFor(() => expect(runStore.getState().status).toBe("finished"), { timeout: 5000 });
+    at(project.id, run.id);
+    const user = userEvent.setup();
+    await screen.findByText("Cabinets needed");
+    await user.click(screen.getByRole("tab", { name: "Downloads" }));
+    expect(screen.getByRole("button", { name: "Download Revision report" })).toBeDisabled();
+  });
+
+  it("highlights the grid position of a tag named in ?highlight= and jumps to its cabinet", async () => {
+    at("p1", "r1", "&highlight=MOCK-AIR-0004");
+    await screen.findByText("Cabinets needed");
+    await waitFor(() => expect(document.querySelector('[aria-label$="(changed)"]')).not.toBeNull());
+  });
+  it("shows no highlight when ?highlight= is absent", async () => {
+    at("p1", "r1");
+    await screen.findByText("Cabinets needed");
+    expect(document.querySelector('[aria-label$="(changed)"]')).toBeNull();
   });
 });

@@ -106,8 +106,8 @@ if (typeof window !== "undefined") {
   });
 }
 
-/** Starts a run. Throws if offline or the request fails. A second call while one is active is ignored. */
-export async function startRun(projectId, { fileNames = [] } = {}) {
+/** Creates a run with `create`, attaches the event stream to it, and returns it (or null if busy). */
+async function begin(projectId, fileNames, create) {
   const state = runStore.getState();
   if (current && state.projectId === projectId && state.status === "running") return null;
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -117,7 +117,7 @@ export async function startRun(projectId, { fileNames = [] } = {}) {
   queue = [];
   attempt = 0;
   try {
-    const run = await api.startRun(projectId, {});
+    const run = await create();
     current = { projectId, runId: run.id };
     runStore.reset({ projectId, runId: run.id, fileNames, status: "running" });
     open();
@@ -126,6 +126,19 @@ export async function startRun(projectId, { fileNames = [] } = {}) {
     if (e instanceof AuthError) expire();
     throw e;
   }
+}
+
+/** Starts an ordinary run. Throws if offline or the request fails. A second call while one is active is ignored. */
+export function startRun(projectId, { fileNames = [] } = {}) {
+  return begin(projectId, fileNames, () => api.startRun(projectId, {}));
+}
+
+/**
+ * Starts a revision run on the project's current uploads (after they have been swapped in by the
+ * caller). The project must already have a baseline. Same busy/offline rules as `startRun`.
+ */
+export function startRevisionRun(projectId, { fileNames = [], ...body } = {}) {
+  return begin(projectId, fileNames, () => api.startRevision(projectId, body));
 }
 
 export function cancelRun() {

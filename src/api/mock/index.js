@@ -7,6 +7,10 @@ import { buildResult } from "./resultFixture.js";
 import {
   AllocationSchema,
   AnswerSchema,
+  BaselineSchema,
+  ChainSchema,
+  ComparisonSchema,
+  ImpactSchema,
   LayoutSchema,
   ReportSchema,
   TqListSchema,
@@ -18,10 +22,12 @@ import {
   RulesSchema,
   RunListSchema,
   RunSchema,
+  UploadListSchema,
   ValuesSchema,
   parseResponse,
 } from "../schemas.js";
 
+import { addRevision, baselineChain, comparisonBetween } from "./revisionFixture.js";
 import { openMockStream, resetStreamOptions } from "./stream.js";
 
 export const mockControls = { delayMs: 120, failNext: null, corruptNext: false, chatReply: null, hang: false };
@@ -39,7 +45,7 @@ async function gate() {
   }
 }
 
-const store = { projects: [], uploads: {}, mapping: {}, values: {}, rules: {}, runs: {}, results: {}, seq: 1 };
+const store = { projects: [], uploads: {}, mapping: {}, values: {}, rules: {}, runs: {}, results: {}, chains: {}, seq: 1 };
 
 export function resetMock() {
   store.projects = [];
@@ -49,6 +55,7 @@ export function resetMock() {
   store.rules = {};
   store.runs = {};
   store.results = {};
+  store.chains = {};
   resetStreamOptions();
   mockControls.hang = false;
   store.seq = 1;
@@ -125,6 +132,22 @@ export const mockApi = {
     (store.uploads[pid] ||= []).push(upload);
     project.uploads += 1;
     return upload;
+  },
+
+  async listUploads(pid) {
+    await gate();
+    findProject(pid);
+    return parseResponse(UploadListSchema, (store.uploads[pid] ?? []).map((u) => ({ ...u })), "listUploads");
+  },
+
+  async deleteUpload(pid, uid) {
+    await gate();
+    const project = findProject(pid);
+    const list = store.uploads[pid] ?? [];
+    const index = list.findIndex((u) => u.id === uid);
+    if (index < 0) throw new ServerError("Upload not found.", { status: 404, code: "not_found" });
+    list.splice(index, 1);
+    project.uploads = Math.max(0, project.uploads - 1);
   },
 
   async getMapping(pid) {
@@ -206,6 +229,90 @@ export const mockApi = {
     (store.runs[pid] ||= []).push(run);
     project.runs += 1;
     return parseResponse(RunSchema, { ...run }, "startRun");
+  },
+
+  /** Makes a finished run the first issue ("00") of the revision chain. */
+  async baseline(pid, { run_id: runId, label }) {
+    await gate();
+    findProject(pid);
+    const run = store.runs[pid]?.find((r) => r.id === runId);
+    if (!run) throw new ServerError("Run not found.", { status: 404, code: "not_found" });
+    if (run.status !== "finished") {
+      throw new ServerError(`the run is ${run.status}`, { status: 409, code: "run_not_finished" });
+    }
+    if (store.chains[pid]?.length) {
+      throw new ServerError("This project already has a baseline.", { status: 409, code: "already_baselined" });
+    }
+    store.chains[pid] = baselineChain(runId);
+    store.chains[pid][0].label = label ? String(label).toUpperCase() : "00";
+    return parseResponse(BaselineSchema, { chain_run_id: runId, label: store.chains[pid][0].label, placed: 189, signals: 190 }, "baseline");
+  },
+
+  async getRevisions(pid) {
+    await gate();
+    findProject(pid);
+    return parseResponse(ChainSchema, structuredClone(store.chains[pid] ?? []), "getRevisions");
+  },
+
+  async getRevision(pid, label) {
+    await gate();
+    findProject(pid);
+    const entry = (store.chains[pid] ?? []).find((c) => c.label === label);
+    if (!entry) throw new ServerError("Revision not found.", { status: 404, code: "not_found" });
+    return parseResponse(ChainSchema.element, structuredClone(entry), "getRevision");
+  },
+
+  async compareRevisions(pid, { from, to }) {
+    await gate();
+    findProject(pid);
+    const chain = store.chains[pid] ?? [];
+    const comparison = comparisonBetween(chain, from, to);
+    if (!comparison) {
+      throw new ServerError(`cannot compare "${from}" to "${to}".`, { status: 422, code: "invalid_comparison" });
+    }
+    return parseResponse(ComparisonSchema, structuredClone(comparison), "compareRevisions");
+  },
+
+  /** Allocates the project's current uploads as the next revision. Returns a running RunOut. */
+  async startRevision(pid, { label } = {}) {
+    await gate();
+    const project = findProject(pid);
+    const chain = store.chains[pid];
+    if (!chain?.length) {
+      throw new ServerError("This project has no baseline yet.", { status: 409, code: "no_baseline" });
+    }
+    const run = { id: `r${store.seq++}`, project_id: pid, status: "running", created_at: new Date().toISOString(), finished_at: null, error: null, download_ready: false, summary: {} };
+    (store.runs[pid] ||= []).push(run);
+    project.runs += 1;
+    const nextLabel = label ? String(label).toUpperCase() : String.fromCharCode(65 + chain.length - 1);
+    store.chains[pid] = addRevision(chain, run.id, nextLabel);
+    return parseResponse(RunSchema, { ...run }, "startRevision");
+  },
+
+  async getImpact(pid, rid) {
+    await gate();
+    findProject(pid);
+    const entry = (store.chains[pid] ?? []).find((c) => c.run_id === rid);
+    if (!entry?.impact) {
+      return parseResponse(ImpactSchema, { run_id: rid, available: false, reason: "not a revision run" }, "getImpact");
+    }
+    return parseResponse(ImpactSchema, { run_id: rid, available: true, impact: entry.impact }, "getImpact");
+  },
+
+  /**
+   * The one real backend download: the allocated workbook. There is no separate endpoint for the
+   * report, TQ list, declaration, revision report or run log — those are built on the client from
+   * data already on the Result page (docs/contract-gaps.md).
+   */
+  async downloadAllocation(pid, rid) {
+    await gate();
+    const run = store.runs[pid]?.find((r) => r.id === rid);
+    if (!run) throw new ServerError("Run not found.", { status: 404, code: "not_found" });
+    if (run.status !== "finished") {
+      throw new ServerError(`the run is ${run.status}`, { status: 409, code: "run_not_finished" });
+    }
+    const text = `Mock workbook for run ${rid}. No real spreadsheet: the mock never writes one.`;
+    return { blob: new Blob([text], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), filename: `io_allocation_${rid}.xlsx` };
   },
 
   async getRun(pid, rid) {

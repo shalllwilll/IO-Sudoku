@@ -7,7 +7,7 @@ import { CHANNELS, isTq, posKey } from "./resultModel.js";
  * Selected cabinet: its CIOC columns, each with one row per baseplate of 12 cells.
  * Layout lives only here (MI-7). visibleCount limits placements for the replay.
  */
-export default function CabinetGrid({ model, cabinetNo, visibleCount = Infinity, selectedKey, onSelect }) {
+export default function CabinetGrid({ model, cabinetNo, visibleCount = Infinity, selectedKey, highlightKeys, onSelect }) {
   const cabinet = model.layout.cabinets.find((c) => c.no === cabinetNo);
   const [focusKey, setFocusKey] = useState(null);
 
@@ -78,6 +78,7 @@ export default function CabinetGrid({ model, cabinetNo, visibleCount = Infinity,
                           state={state}
                           label={`${cioc.name} ${bp.name} channel ${ch}: ${STATE_STYLE[state].label}`}
                           selected={selectedKey === key}
+                          highlighted={highlightKeys?.has(key)}
                           focusable={activeKey === key}
                           onSelect={(pos, node) => {
                             setFocusKey(pos);

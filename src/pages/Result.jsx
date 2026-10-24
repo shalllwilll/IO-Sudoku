@@ -10,6 +10,8 @@ import ChatTab from "../features/result/ChatTab.jsx";
 import CabinetGrid from "../features/result/CabinetGrid.jsx";
 import CabinetRail from "../features/result/CabinetRail.jsx";
 import DeclarationTab from "../features/result/DeclarationTab.jsx";
+import DownloadsTab from "../features/result/DownloadsTab.jsx";
+import ImpactTab from "../features/result/ImpactTab.jsx";
 import InfoBox, { describeSelection } from "../features/result/InfoBox.jsx";
 import Legend from "../features/result/Legend.jsx";
 import ReportTab from "../features/result/ReportTab.jsx";
@@ -18,12 +20,14 @@ import { cellState } from "../features/result/cellState.js";
 import { buildModel, cabinetOf, isTq } from "../features/result/resultModel.js";
 import ProgressPanel from "../features/run/ProgressPanel.jsx";
 import { useRunState } from "../features/run/runStore.js";
+import { highlightKeysFor } from "../features/revisions/gridHighlight.js";
 
-const TABS = [
+const BASE_TABS = [
   { id: "report", label: "Report" },
   { id: "tqs", label: "TQs" },
   { id: "declaration", label: "Declaration" },
   { id: "chat", label: "Chat" },
+  { id: "downloads", label: "Downloads" },
 ];
 
 const reduced = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
@@ -40,12 +44,14 @@ export default function Result() {
 
   const [data, setData] = useState(null);
   const [tqs, setTqs] = useState([]);
+  const [impact, setImpact] = useState(null);
   const [error, setError] = useState("");
   const [tab, setTab] = useState("report");
   const [cabinetNo, setCabinetNo] = useState(null);
   const [selection, setSelection] = useState(null); // { sel, anchor }
   const [visible, setVisible] = useState(Infinity);
   const frame = useRef(0);
+  const highlightTags = params.get("highlight");
 
   const replay = useCallback((total) => {
     cancelAnimationFrame(frame.current);
@@ -70,6 +76,12 @@ export default function Result() {
         if (fromLiveRun) replay(allocation.placements.length);
       })
       .catch((e) => setError(e.message));
+    // The impact tab is optional: a run with no impact just hides the tab, so its failure never
+    // blocks the rest of the page.
+    api
+      .getImpact(id, runId)
+      .then(setImpact)
+      .catch(() => setImpact(null));
   }, [id, runId, fromLiveRun, replay]);
 
   useEffect(() => {
@@ -79,6 +91,19 @@ export default function Result() {
   }, [runId, waiting, ended, load]);
 
   const model = useMemo(() => (data ? buildModel(data.layout, data.allocation, tqs) : null), [data, tqs]);
+
+  const highlightKeys = useMemo(
+    () => (model && highlightTags ? highlightKeysFor(model, highlightTags.split(",")) : null),
+    [model, highlightTags],
+  );
+
+  // Arriving with ?highlight=... (from a compare view) starts on the first changed cabinet, until
+  // the user picks one themselves.
+  const highlightCabinet = useMemo(() => {
+    if (!model || !highlightKeys?.size) return null;
+    const first = model.placements.find((p) => highlightKeys.has(`${p.cioc_no}:${p.baseplate}:${p.channel}`));
+    return first ? cabinetOf(model, first.cioc_no) : null;
+  }, [model, highlightKeys]);
 
   const showPlacement = useCallback(
     (p) => {
@@ -114,9 +139,10 @@ export default function Result() {
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!model) return <p role="status">Loading result</p>;
 
-  const activeCabinet = cabinetNo ?? (model.perCabinet.find((c) => c.occupied > 0) ?? model.perCabinet[0])?.no;
+  const activeCabinet = cabinetNo ?? highlightCabinet ?? (model.perCabinet.find((c) => c.occupied > 0) ?? model.perCabinet[0])?.no;
   const info = selection ? describeSelection(model, selection.sel) : null;
   const selectedKey = selection?.sel.kind === "cell" ? selection.sel.key : null;
+  const tabs = impact?.available ? [...BASE_TABS.slice(0, 3), { id: "impact", label: "Impact" }, ...BASE_TABS.slice(3)] : BASE_TABS;
 
   return (
     <div className="space-y-4">
@@ -146,13 +172,14 @@ export default function Result() {
               cabinetNo={activeCabinet}
               visibleCount={visible}
               selectedKey={selectedKey}
+              highlightKeys={highlightKeys}
               onSelect={(sel, node) => setSelection({ sel, anchor: node })}
             />
             <Legend />
           </section>
 
           <section aria-label="Details" className="min-w-0 space-y-3">
-            <Tabs tabs={TABS} value={tab} onChange={setTab} idPrefix="result" />
+            <Tabs tabs={tabs} value={tab} onChange={setTab} idPrefix="result" />
             <div role="tabpanel" id={`result-${tab}-panel`} aria-labelledby={`result-${tab}-tab`} className="rounded-panel border border-steel bg-carbon p-4">
               {tab === "report" && <ReportTab report={data.report} model={model} tqs={tqs} />}
               {tab === "tqs" && (
@@ -166,7 +193,11 @@ export default function Result() {
                 />
               )}
               {tab === "declaration" && <DeclarationTab report={data.report} />}
+              {tab === "impact" && impact?.available && <ImpactTab impact={impact.impact} />}
               {tab === "chat" && <ChatTab runId={runId} report={data.report} tqs={tqs} />}
+              {/* Reaching here means the layout/allocation/report calls above already succeeded,
+                  which the backend only allows for a finished run. */}
+              {tab === "downloads" && <DownloadsTab projectId={id} runId={runId} report={data.report} tqs={tqs} impact={impact} />}
             </div>
           </section>
         </div>

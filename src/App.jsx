@@ -7,9 +7,10 @@ import Run from "./pages/Run.jsx";
 import Result from "./pages/Result.jsx";
 import Mapping from "./pages/Mapping.jsx";
 import Rules from "./pages/Rules.jsx";
-import Placeholder from "./pages/Placeholder.jsx";
 import Projects from "./pages/Projects.jsx";
 import Upload from "./pages/Upload.jsx";
+import History from "./pages/History.jsx";
+import Revisions from "./pages/project/Revisions.jsx";
 
 // three.js is loaded only when the stage is opened, so it stays out of the main bundle (T-6.2-5).
 const PlantStage = lazy(() => import("./pages/PlantStage.jsx"));
@@ -23,10 +24,11 @@ export default function App() {
         <Route element={<RequireAuth />}>
           <Route element={<AppShell />}>
             <Route path="/projects" element={<Projects />} />
-            <Route path="/history" element={<Placeholder title="History" />} />
+            <Route path="/history" element={<History />} />
             <Route path="/projects/:id/upload" element={<Upload />} />
             <Route path="/projects/:id/mapping" element={<Mapping />} />
             <Route path="/projects/:id/rules" element={<Rules />} />
+            <Route path="/projects/:id/revisions" element={<Revisions />} />
             <Route path="/projects/:id/run" element={<Run />}
             />
             <Route path="/projects/:id/result" element={<Result />} />
