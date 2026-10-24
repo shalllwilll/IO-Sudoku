@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: io-sudoku-backend
+Version: 0.1.0
+Requires-Python: >=3.11
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: pydantic>=2
+Requires-Dist: openpyxl
+Requires-Dist: rapidfuzz
+Requires-Dist: ortools
+Requires-Dist: httpx
+Requires-Dist: pytest
+Requires-Dist: hypothesis
+Requires-Dist: ruff

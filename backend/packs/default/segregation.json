@@ -1,0 +1,14 @@
+{
+  "codes": [
+    {"code": "A", "family": "A"},
+    {"code": "A-CONTROL", "family": "A"},
+    {"code": "B", "family": "B"},
+    {"code": "B-ALARM", "family": "B"},
+    {"code": "C", "family": "C"},
+    {"code": "D", "family": "D"},
+    {"code": "E", "family": "E"},
+    {"code": "A-B", "family": "A"},
+    {"code": "B-A", "family": "B"}
+  ],
+  "unknown_policy": "own_cioc"
+}

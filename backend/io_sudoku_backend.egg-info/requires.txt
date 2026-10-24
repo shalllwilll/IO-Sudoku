@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic>=2
+openpyxl
+rapidfuzz
+ortools
+httpx
+pytest
+hypothesis
+ruff

@@ -1,0 +1,12 @@
+{
+  "rows": [
+    {
+      "match": {"io_type": "DOR", "duty": "RELAY"},
+      "charm": null,
+      "charm_name": null,
+      "tb": null,
+      "tb_terminals": null,
+      "loop_typical": null
+    }
+  ]
+}
