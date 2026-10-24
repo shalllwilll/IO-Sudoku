@@ -158,20 +158,15 @@ export default function MagnetLines({
       const bounds = canvas.getBoundingClientRect();
       field.pointer.tx = event.clientX - bounds.left;
       field.pointer.ty = event.clientY - bounds.top;
-      field.pointer.inside = true;
-      requestDraw();
-    }
-
-    function onPointerLeave() {
-      field.pointer.inside = false;
-      field.pointer.tx = field.pointer.x;
-      field.pointer.ty = field.pointer.y;
+      field.pointer.inside =
+        event.clientX >= bounds.left && event.clientX <= bounds.right && event.clientY >= bounds.top && event.clientY <= bounds.bottom;
       requestDraw();
     }
 
     function onPointerDown(event) {
       if (!clickPulse) return;
       const bounds = canvas.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) return;
       field.pulse = { x: event.clientX - bounds.left, y: event.clientY - bounds.top, startedAt: performance.now() };
       field.pointer.tx = field.pulse.x;
       field.pointer.ty = field.pulse.y;
@@ -179,18 +174,23 @@ export default function MagnetLines({
       requestDraw();
     }
 
+    function onPointerLeaveDocument() {
+      field.pointer.inside = false;
+      requestDraw();
+    }
+
     const observer = new ResizeObserver(resize);
     observer.observe(host);
-    canvas.addEventListener("pointermove", onPointerMove);
-    canvas.addEventListener("pointerleave", onPointerLeave);
-    canvas.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerdown", onPointerDown, { passive: true });
+    document.documentElement.addEventListener("pointerleave", onPointerLeaveDocument);
     resize();
 
     return () => {
       observer.disconnect();
-      canvas.removeEventListener("pointermove", onPointerMove);
-      canvas.removeEventListener("pointerleave", onPointerLeave);
-      canvas.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerdown", onPointerDown);
+      document.documentElement.removeEventListener("pointerleave", onPointerLeaveDocument);
       if (frame) cancelAnimationFrame(frame);
     };
   }, [
