@@ -56,3 +56,19 @@ body {
   transform: translateX(-24px);
   transition: opacity var(--t-page) ease-in, transform var(--t-page) ease-in;
 }
+
+/* Upload chip moves to the top-left corner when a run starts (4.2). */
+@keyframes chip-to-corner {
+  from {
+    opacity: 0;
+    transform: translate(40vw, 30vh) scale(1.4);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.chip-to-corner {
+  animation: chip-to-corner var(--t-page) ease-in-out both;
+}

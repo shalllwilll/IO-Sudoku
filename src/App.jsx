@@ -2,6 +2,8 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell.jsx";
 import RequireAuth from "./components/RequireAuth.jsx";
 import Landing from "./pages/Landing.jsx";
+import Run from "./pages/Run.jsx";
+import Result from "./pages/Result.jsx";
 import Mapping from "./pages/Mapping.jsx";
 import Rules from "./pages/Rules.jsx";
 import Placeholder from "./pages/Placeholder.jsx";
@@ -21,7 +23,9 @@ export default function App() {
             <Route path="/projects/:id/upload" element={<Upload />} />
             <Route path="/projects/:id/mapping" element={<Mapping />} />
             <Route path="/projects/:id/rules" element={<Rules />} />
-            <Route path="/projects/:id/run" element={<Placeholder title="Run" />} />
+            <Route path="/projects/:id/run" element={<Run />}
+            />
+            <Route path="/projects/:id/result" element={<Result />} />
             <Route path="/plant" element={<Placeholder title="3D plant view" />} />
           </Route>
         </Route>

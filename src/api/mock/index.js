@@ -10,9 +10,13 @@ import {
   ProjectSchema,
   RulePreviewSchema,
   RulesSchema,
+  RunListSchema,
+  RunSchema,
   ValuesSchema,
   parseResponse,
 } from "../schemas.js";
+
+import { openMockStream, resetStreamOptions } from "./stream.js";
 
 export const mockControls = { delayMs: 120, failNext: null, corruptNext: false, chatReply: null, hang: false };
 
@@ -29,7 +33,7 @@ async function gate() {
   }
 }
 
-const store = { projects: [], uploads: {}, mapping: {}, values: {}, rules: {}, seq: 1 };
+const store = { projects: [], uploads: {}, mapping: {}, values: {}, rules: {}, runs: {}, seq: 1 };
 
 export function resetMock() {
   store.projects = [];
@@ -37,6 +41,8 @@ export function resetMock() {
   store.mapping = {};
   store.values = {};
   store.rules = {};
+  store.runs = {};
+  resetStreamOptions();
   mockControls.hang = false;
   store.seq = 1;
   mockControls.delayMs = 120;
@@ -179,6 +185,35 @@ export const mockApi = {
     const next = { ...current, preset: preset ?? current.preset, rules: rules ?? defaultRules(), custom: Boolean(rules) };
     store.rules[pid] = next;
     return parseResponse(RulesSchema, structuredClone(next), "saveRules");
+  },
+
+  async startRun(pid) {
+    await gate();
+    const project = findProject(pid);
+    const run = { id: `r${store.seq++}`, project_id: pid, status: "running", created_at: new Date().toISOString(), finished_at: null, error: null, download_ready: false, summary: {} };
+    (store.runs[pid] ||= []).push(run);
+    project.runs += 1;
+    return parseResponse(RunSchema, { ...run }, "startRun");
+  },
+
+  async getRun(pid, rid) {
+    await gate();
+    const run = store.runs[pid]?.find((r) => r.id === rid);
+    if (!run) throw new ServerError("Run not found.", { status: 404, code: "not_found" });
+    return parseResponse(RunSchema, { ...run }, "getRun");
+  },
+
+  async listRuns(pid) {
+    await gate();
+    findProject(pid);
+    return parseResponse(RunListSchema, (store.runs[pid] ?? []).map((r) => ({ ...r })), "listRuns");
+  },
+
+  openRunStream(pid, rid, handlers, options) {
+    return openMockStream(handlers, options, (status, error) => {
+      const run = store.runs[pid]?.find((r) => r.id === rid);
+      if (run) Object.assign(run, { status, error: error ?? null, download_ready: status === "completed", finished_at: new Date().toISOString() });
+    });
   },
 
   async lintRules(pid, rules) {
