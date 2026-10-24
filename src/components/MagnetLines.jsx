@@ -116,7 +116,7 @@ export default function MagnetLines({
           const length = Math.max(0, lineHeight * introScale * (1 + bounce * pulseStrength));
           const half = length / 2;
 
-          let alpha = 0.8 - influence * fade * 0.32;
+          let alpha = 0.34 + influence * 0.12;
           if (edgeFade > 0) {
             const edgeDistance = Math.min(x, y, width - x, height - y);
             alpha *= clamp(edgeDistance / (step * edgeFade * 3), 0, 1);
@@ -212,5 +212,17 @@ export default function MagnetLines({
     stretch,
   ]);
 
-  return <canvas ref={canvasRef} className={`pointer-events-auto block ${className}`} aria-hidden="true" style={{ transform: `perspective(900px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)` }} />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className={`pointer-events-auto block ${className}`}
+      aria-hidden="true"
+      style={{
+        opacity: 0.52,
+        maskImage: "radial-gradient(ellipse at center, #000 28%, rgb(0 0 0 / 72%) 62%, transparent 100%)",
+        WebkitMaskImage: "radial-gradient(ellipse at center, #000 28%, rgb(0 0 0 / 72%) 62%, transparent 100%)",
+        transform: `perspective(900px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`,
+      }}
+    />
+  );
 }
