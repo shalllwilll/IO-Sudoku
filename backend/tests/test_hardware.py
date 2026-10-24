@@ -1,8 +1,15 @@
 import pytest
 
-from app.core.hardware.engine import resolve_hardware, spare_slot_hardware
+from app.core.hardware.engine import (
+    attach_field_hardware_issues,
+    resolve_hardware,
+    spare_slot_hardware,
+)
+from app.core.layout.blocks import build_blocks
 from app.core.model.pack import HardwareRow, Pack
 from app.core.model.signal import Signal
+from app.core.solve.greedy import solve_greedy
+from app.core.solve.validator import validate_allocation
 
 
 @pytest.fixture
@@ -43,6 +50,18 @@ def test_unknown_combination_held_out(pack):
 def test_relay_row_names_missing_part(pack):
     r = resolve_hardware(sig("DOR", duty_class="relay"), pack)
     assert r.held_out and "CHARM" in r.issues[0].message and "HW-DOR-RELAY" in r.issues[0].message
+
+
+def test_direct_solver_holds_out_unresolved_hardware_and_keeps_the_cable_position(pack):
+    relay = Signal(tag="R1", io_type="DOR", duty_class="relay", cable="C1", pair=1, cable_pairs=1)
+    alloc = solve_greedy(build_blocks([relay], pack), pack)
+    attach_field_hardware_issues(alloc, pack)
+    attach_field_hardware_issues(alloc, pack)
+    assert not [p for p in alloc.placements if p.signal is relay]
+    assert any(i.code == "TQ-HW" for u in alloc.unplaced for i in u.issues)
+    assert len(alloc.unplaced) == 1
+    assert any(p.kind == "spare_slot" and p.block_id == "C1" for p in alloc.placements)
+    assert validate_allocation(alloc, pack, [relay]) == []
 
 
 def test_order_matters(pack):

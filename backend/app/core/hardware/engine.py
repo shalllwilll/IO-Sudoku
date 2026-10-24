@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from app.core.model.allocation import Allocation
+from app.core.model.allocation import Allocation, Unplaced
 from app.core.model.issue import Issue
 from app.core.model.pack import HardwareRow, Pack
 from app.core.model.signal import Signal
@@ -95,6 +95,47 @@ def resolve_hardware(signal: Signal, pack: Pack) -> HardwareResult:
 
 def spare_slot_hardware(pack: Pack) -> HardwareResult:
     return _result(pack.hardware.spare_slot)
+
+
+def attach_field_hardware_issues(alloc: Allocation, pack: Pack) -> Allocation:
+    """Never leave a field or alarm with unresolved hardware in a direct solver result.
+
+    The normal pipeline resolves hardware before it builds cable blocks. This guard makes the
+    lower-level solver API equally safe: an unresolved field moves to its TQ-HW list, while its
+    declared cable position becomes a protected slot so that cable continuity remains auditable.
+    """
+    if any(i.data.get("kind") == "field_hardware" for i in alloc.issues):
+        return alloc
+    kept = []
+    for p in alloc.placements:
+        if p.kind not in {"field", "cabinet_alarm"} or p.signal is None:
+            kept.append(p)
+            continue
+        result = resolve_hardware(p.signal, pack)
+        if not result.held_out:
+            kept.append(p)
+            continue
+        issues = [
+            i.model_copy(update={"data": {**i.data, "kind": "field_hardware"}})
+            for i in result.issues
+        ]
+        alloc.issues.extend(issues)
+        alloc.unplaced.append(Unplaced(signal=p.signal, issues=issues))
+        if p.kind == "field":
+            kept.append(
+                p.model_copy(
+                    update={
+                        "kind": "spare_slot",
+                        "signal": None,
+                        "io_type": None,
+                        "duty_class": None,
+                        "signal_type": None,
+                        "signal_level": None,
+                    }
+                )
+            )
+    alloc.placements = kept
+    return alloc
 
 
 def attach_wired_spare_hardware_issues(alloc: Allocation, pack: Pack) -> Allocation:
