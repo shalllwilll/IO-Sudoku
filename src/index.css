@@ -1,3 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Typeface: change --font-ui here only (MI-5). Default is the system UI stack. */
+:root {
+  --font-ui: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --t-page: 600ms; /* page transitions (MI-8) */
+  --t-3d: 1400ms; /* 3D camera tweens (MI-8) */
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-page: 0ms;
+    --t-3d: 0ms;
+  }
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  background-color: #141619; /* graphite */
+  color: #d7dadf; /* soft-white */
+  font-family: var(--font-ui);
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #d7dadf;
+  outline-offset: 2px;
 }
