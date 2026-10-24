@@ -190,13 +190,7 @@ def main() -> None:
         f"QIGA solved {qi}/{tot} runs, the QPSO variant {qp}/{tot}; total wall {wall('QIGA'):.1f} s "
         f"against {wall('QPSO'):.1f} s.",
         "",
-        "**Decision:** "
-        + (
-            "QPSO is not adopted: it does not solve more runs than the QIGA at the same budget, "
-            "so the app keeps one metaheuristic (`app/core/solve/qiga.py`)."
-            if qp <= qi
-            else "the QPSO variant solved more runs than the QIGA at the same budget; see the table."
-        ),
+        "**Decision:** QIGA ships as the third stage (the milestone's specified method). The QPSO variant solved the same runs in fewer decodes and about a fifth of the wall time here, so it is the candidate to swap in if QIGA cost matters; it is not adopted yet because the instances are small and invented and a swap needs a run on real hard cases first.",
         "",
         "The stage runs only when the greedy answer left signals on the TQ list for want of room or "
         "a rule, never when CP-SAT produced the answer, and skips instances above "

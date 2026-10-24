@@ -54,7 +54,7 @@ Python 3.14.7, arm64. Population 16, up to 40 generations, stops after 8 generat
 
 QIGA solved 20/20 runs, the QPSO variant 20/20; total wall 167.2 s against 37.0 s.
 
-**Decision:** QPSO is not adopted: it does not solve more runs than the QIGA at the same budget, so the app keeps one metaheuristic (`app/core/solve/qiga.py`).
+**Decision:** QIGA ships as the third stage (the milestone's specified method). The QPSO variant solved the same runs in fewer decodes and about a fifth of the wall time here, so it is the candidate to swap in if QIGA cost matters; it is not adopted yet because the instances are small and invented and a swap needs a run on real hard cases first.
 
 The stage runs only when the greedy answer left signals on the TQ list for want of room or a rule, never when CP-SAT produced the answer, and skips instances above `qiga_max_blocks` blocks. A QIGA answer is accepted only if it passes the validator and leaves fewer signals unplaced; otherwise the greedy answer stands.
 
