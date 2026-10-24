@@ -81,6 +81,20 @@ DEFAULT_APPLIED = {
 }
 
 
+def default_applied(issue: Issue, pending_keys: set[str]) -> str:
+    """State what this run actually did with a TQ subject.
+
+    A data warning may describe a row that was still allocated.  The old fixed text said every
+    ``TQ-DATA`` subject was held out, which made the output workbook contradict the allocation.
+    """
+    if issue.code != "TQ-DATA":
+        return DEFAULT_APPLIED.get(issue.code, "")
+    key = signal_key(issue.source_file, issue.source_row)
+    if key in pending_keys:
+        return "signal is held out pending correction"
+    return "recorded as an informational warning; allocation continues"
+
+
 def collect_tqs(
     issues: list[Issue],
     alloc: Allocation | None = None,
@@ -96,13 +110,14 @@ def collect_tqs(
     if alloc:
         pending += [(u.signal, u.issues) for u in alloc.unplaced]
         issues = [*issues, *alloc.issues]
+    pending_keys = {signal_key(sig.source_file, sig.source_row) for sig, _ in pending}
     for i in issues:
-        t = tq_from_issue(i, DEFAULT_APPLIED.get(i.code, ""))
+        t = tq_from_issue(i, default_applied(i, pending_keys))
         by_id.setdefault(t.id, t)
     for sig, iss in pending:
         key = signal_key(sig.source_file, sig.source_row)
         for i in iss:
-            t = tq_from_issue(i, DEFAULT_APPLIED.get(i.code, ""))
+            t = tq_from_issue(i, default_applied(i, pending_keys))
             cur = by_id.setdefault(t.id, t)
             if key not in cur.signal_keys:
                 cur.signal_keys.append(key)

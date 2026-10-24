@@ -6,12 +6,14 @@ from pydantic import ValidationError
 
 from app.core.ingest.merge import merge_files
 from app.core.layout.blocks import build_blocks
+from app.core.model.allocation import Unplaced
 from app.core.model.issue import Issue
 from app.core.model.pack import Pack
 from app.core.solve.greedy import solve_greedy
 from app.core.tq.model import TQ, tq_from_issue, tq_id
 from app.core.tq.store import TqStore, collect_tqs, tq_sheet, unaccounted
 from app.core.writer.template import write_allocation
+from tests.test_greedy import cable
 
 
 def issue(code="TQ-DATA", msg="bad", row=3):
@@ -108,3 +110,21 @@ def test_tq_sheet_in_output(pack, blank_template_path, tmp_path):
     )
     ws = openpyxl.load_workbook(out)["TQ list"]
     assert ws.max_row == len(tqs) + 1 and len(tqs) >= 1
+
+
+def test_data_tq_describes_whether_its_signal_was_held_out(pack):
+    allocated = Issue(
+        code="TQ-DATA", severity="info", message="area mismatch", source_file="a.xlsx", source_row=3
+    )
+    held = Issue(
+        code="TQ-DATA", severity="blocking", message="bad pair", source_file="a.xlsx", source_row=4
+    )
+    signal = cable("C1", 1)[0].model_copy(update={"source_file": "a.xlsx", "source_row": 4})
+    alloc = solve_greedy(build_blocks([], pack), pack)
+    alloc.unplaced.append(Unplaced(signal=signal, issues=[held]))
+    tqs = {t.subject: t for t in collect_tqs([allocated], alloc).copy()}
+    assert (
+        tqs["a.xlsx:3"].default_applied
+        == "recorded as an informational warning; allocation continues"
+    )
+    assert tqs["a.xlsx:4"].default_applied == "signal is held out pending correction"

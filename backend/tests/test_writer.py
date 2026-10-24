@@ -151,3 +151,26 @@ def test_cioc_and_baseplate_names_are_written(pack, template, tmp_path):
     first = dict(zip(head, [c.value for c in ws[2]], strict=False))
     assert first["CIOC/CSLS Name"] == a.layout.ciocs[0].name != "-"
     assert first["Baseplate"] == a.layout.ciocs[0].baseplates[0].name
+
+
+def test_source_change_metadata_and_print_area_are_preserved(pack, template, tmp_path):
+    signal = cable("C1", 1)[0].model_copy(
+        update={"change_type": "PDR-1", "remarks": "Range updated"}
+    )
+    a = alloc_for([signal], pack)
+    out = write_allocation(
+        a, pack, template, tmp_path / "o.xlsx", {"TQ list": [["Message"], ["A long explanation"]]}
+    )
+    wb = openpyxl.load_workbook(out)
+    ws = wb.worksheets[0]
+    headers = [c.value for c in ws[1]]
+    field = next(
+        dict(zip(headers, [c.value for c in row], strict=False))
+        for row in ws.iter_rows(min_row=2)
+        if row[2].value == signal.tag
+    )
+    assert field["Change Type"] == "PDR-1"
+    assert field["Remarks"] == "Range updated"
+    assert ws.print_area == "'IO Assignment'!$A$1:$BX$385"
+    tq = wb["TQ list"]
+    assert tq.freeze_panes == "A2" and tq.column_dimensions["A"].width >= 12

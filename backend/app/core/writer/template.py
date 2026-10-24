@@ -4,6 +4,8 @@ from copy import copy
 from pathlib import Path
 
 from openpyxl import load_workbook
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 from app.core.hardware.engine import HardwareResult, resolve_hardware, spare_slot_hardware
 from app.core.model.allocation import Allocation, Placement
@@ -168,11 +170,17 @@ def build_rows(
                             else (f"Pair {p.pair}" if p and p.kind == "wired_spare" else None)
                         ),
                         "tagstatus": status,
-                        "remarks": "Internal Cabinet Alarm."
-                        if status == "Cabinet Alarm" and internal
-                        else alloc.slot_remarks.get(f"{cno}/{bp.n}/{channel}"),
+                        "remarks": alloc.slot_remarks.get(f"{cno}/{bp.n}/{channel}")
+                        or (
+                            "Internal Cabinet Alarm."
+                            if status == "Cabinet Alarm" and internal
+                            else s.remarks
+                            if s
+                            else None
+                        ),
                         "changetype": (p.change if p else None)
-                        or ("Deleted" if f"{cno}/{bp.n}/{channel}" in alloc.slot_remarks else None),
+                        or ("Deleted" if f"{cno}/{bp.n}/{channel}" in alloc.slot_remarks else None)
+                        or (s.change_type if s else None),
                         "batch": batch,
                         "hwlooptypical": hw.loop_typical if p else None,
                         "system2": s.extras.get("System 2") if s else None,
@@ -222,14 +230,26 @@ def write_allocation(
     for r in range(len(rows) + 2, ws.max_row + 1):  # template rows we did not need
         for col in range(1, len(headers) + 1):
             ws.cell(row=r, column=col).value = None
+    last_row = max(2, len(rows) + 1)
+    last_col = ws.cell(row=1, column=len(headers)).column_letter
     if ws.auto_filter.ref:
-        ws.auto_filter.ref = (
-            f"A1:{ws.cell(row=1, column=len(headers)).column_letter}{max(2, len(rows) + 1)}"
-        )
+        ws.auto_filter.ref = f"A1:{last_col}{last_row}"
+    ws.print_area = f"A1:{last_col}{last_row}"
     for title, data in (extra_sheets or {}).items():
         sh = wb.create_sheet(title[:31])
         for line in data:
             sh.append([_val(x) if x is not None else None for x in line])
+        if data:
+            sh.freeze_panes = "A2"
+            for cell in sh[1]:
+                cell.font = Font(bold=True, color="FFFFFF")
+                cell.fill = PatternFill("solid", fgColor="1F4E78")
+                cell.alignment = Alignment(wrap_text=True, vertical="top")
+            for index, values in enumerate(zip(*data, strict=False), start=1):
+                width = max(len(str(v or "")) for v in values)
+                sh.column_dimensions[get_column_letter(index)].width = min(max(width + 2, 12), 60)
+                for cell in sh[get_column_letter(index)]:
+                    cell.alignment = Alignment(wrap_text=True, vertical="top")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(out_path)
     return out_path
