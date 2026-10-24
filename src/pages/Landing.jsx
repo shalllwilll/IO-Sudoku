@@ -5,6 +5,7 @@ import { config } from "../config.js";
 import { consumeExpiredNote, signInSession, useSession } from "../auth/session.js";
 import { isCompanyEmail, looksLikeEmail } from "../auth/isCompanyEmail.js";
 import { safeReturnTo } from "../auth/returnTo.js";
+import MagnetLines from "../components/MagnetLines.jsx";
 import PointerGlow from "../components/PointerGlow.jsx";
 import { pageDurationMs } from "../components/PageTransition.jsx";
 import SponsorSlot from "../components/SponsorSlot.jsx";
@@ -80,7 +81,7 @@ export default function Landing() {
   }
 
   return (
-    <div className="grid h-screen grid-cols-2 overflow-hidden bg-graphite">
+    <div className="grid h-screen grid-cols-1 overflow-hidden bg-graphite md:grid-cols-2">
       <div className={`relative flex items-center justify-center p-8 ${leaving ? "page-leave" : ""}`}>
         <div className="absolute left-8 top-8">
           <SponsorSlot />
@@ -113,7 +114,34 @@ export default function Landing() {
           </div>
         </form>
       </div>
-      <PointerGlow className="h-full" />
+      <div className="relative hidden h-full overflow-hidden md:block" aria-hidden="true">
+        <PointerGlow className="absolute inset-0 h-full w-full" />
+        <MagnetLines
+          className="absolute inset-0 h-full w-full"
+          lineColor="#efefef"
+          spacing={30}
+          lineWidth={2}
+          lineHeight={18}
+          mode="orbit"
+          shape="line"
+          radius={200}
+          fade={0.65}
+          baseAngle={-10}
+          edgeFade={0}
+          stretch={0.4}
+          reach={0}
+          scatter={0}
+          inertia={0.35}
+          bounce={0.3}
+          ripple={0.3}
+          rainbow={false}
+          tiltX={0}
+          tiltY={0}
+          clickPulse
+          intro
+          idle={false}
+        />
+      </div>
     </div>
   );
 }
