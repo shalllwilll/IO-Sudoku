@@ -1,0 +1,29 @@
+{
+ "io_types": {
+  "AI": "AIR",
+  "AIR": "AIR",
+  "AO": "AOR",
+  "AOR": "AOR",
+  "DI": "DIR",
+  "DIR": "DIR",
+  "DO": "DOR",
+  "DOR": "DOR"
+ },
+ "duty_classes": {
+  "SOV": "high_current",
+  "SOLENOID": "high_current",
+  "HORN": "high_current",
+  "BEACON": "high_current",
+  "SOUNDER": "high_current",
+  "ANNUNCIATOR": "high_current",
+  "ALARM": "standard",
+  "INDICATION": "standard",
+  "RELAY": "relay"
+ },
+ "composite_separators": [
+  "-",
+  "/",
+  " "
+ ],
+ "default_duty_class": "standard"
+}

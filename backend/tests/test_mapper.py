@@ -57,7 +57,9 @@ def test_reordered_columns(pack_dir, sample_mdb_path):
     pack = _pack(pack_dir)
     shuffled = cols[:]
     random.Random(1).shuffle(shuffled)
-    assert map_columns(shuffled, rows, pack).confirmed() == map_columns(cols, rows, pack).confirmed()
+    assert (
+        map_columns(shuffled, rows, pack).confirmed() == map_columns(cols, rows, pack).confirmed()
+    )
 
 
 def test_deterministic(pack_dir, sample_mdb_path):

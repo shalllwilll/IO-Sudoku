@@ -98,9 +98,7 @@ def read_workbook(
                 summary.blank_skipped += 1
                 continue
             values = {headers[j]: r[j] for j in range(min(len(headers), len(r))) if headers[j]}
-            deleted = any(
-                _text(r[j]).upper() == "DELETED" for j in status_cols if j < len(r)
-            )
+            deleted = any(_text(r[j]).upper() == "DELETED" for j in status_cols if j < len(r))
             oos = any(isinstance(c, str) and token_re.search(c) for c in r)
             res.rows.append(
                 RawRow(

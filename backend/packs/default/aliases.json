@@ -112,8 +112,7 @@
   ],
   "service": [
    "Service",
-   "Service Description",
-   "Tag Service 1 and 2"
+   "Service Description"
   ],
   "loop_name": [
    "Loop Name"
@@ -148,6 +147,10 @@
   "status": [
    "Status",
    "Tag Status"
+  ],
+  "instrument_description": [
+   "Instrument Type Description",
+   "Instrument Description"
   ]
  }
 }

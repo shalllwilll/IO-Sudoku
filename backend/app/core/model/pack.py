@@ -80,6 +80,14 @@ class Aliases(BaseModel):
     fields: dict[str, list[str]]
 
 
+class ValueMaps(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    io_types: dict[str, str]
+    duty_classes: dict[str, str]
+    composite_separators: list[str]
+    default_duty_class: str
+
+
 class PackError(ValueError):
     pass
 
@@ -91,6 +99,7 @@ _PARTS = {
     "capacity.json": ("capacity", Capacity),
     "schema.json": ("schema", Schema),
     "aliases.json": ("aliases", Aliases),
+    "valuemaps.json": ("valuemaps", ValueMaps),
 }
 
 
@@ -101,6 +110,7 @@ class Pack(BaseModel):
     capacity: Capacity
     schema_: Schema
     aliases: Aliases
+    valuemaps: ValueMaps
     hash: str
 
     @classmethod
@@ -129,6 +139,7 @@ class Pack(BaseModel):
             capacity=parts["capacity"],
             schema_=parts["schema"],
             aliases=parts["aliases"],
+            valuemaps=parts["valuemaps"],
             hash=digest,
         )
 
