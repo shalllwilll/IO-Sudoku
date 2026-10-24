@@ -36,10 +36,12 @@ app/
   reduced to distinct samples), and every suggestion waits for a human confirmation.
 - **Only hard rules are enforced.** Rules have a strength (`hard`, `soft`, `advisory`); the
   solvers and the validator enforce hard rules only.
-- **Spare intent is explicit.** `capacity.json` defaults to the original `declared_pairs`
-  policy, which treats each declared but unused cable pair as an installed wired spare. A plant
-  can instead select `explicit_pairs` and list `wired_spare_pairs` by cable; unlisted declared
-  pairs remain protected `Spare Slot` rows with no claimed CHARM hardware.
+- **Spare intent is explicit.** `capacity.json` defaults to the `explicit_pairs` policy: only
+  cable pairs listed in `wired_spare_pairs` are treated as installed wired spares. Every other
+  declared but unused pair stays a protected `Spare Slot` row with no claimed CHARM hardware and
+  raises a `TQ-SPARE`, because the MDB does not say which pairs were physically wired. A plant
+  that wants the older behaviour (each declared unused pair counts as a wired spare) can select
+  `declared_pairs`.
 - **Spare shortfalls are visible.** A controller/IO-type allowance that cannot be met creates a
   `TQ-SPARE` and fails `R-SPARE`; it does not invalidate otherwise sound field allocations.
 
