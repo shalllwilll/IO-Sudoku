@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from app.core.layout.spares import spare_report
 from app.core.model.allocation import Allocation
 from app.core.model.pack import Pack
 from app.core.model.signal import Signal
@@ -41,6 +42,15 @@ def rule_check(
     for rid, desc, codes in BUILTIN:
         n = sum(1 for v in found if v.code in codes)
         out.append(RuleResult(rule=rid, description=desc, passed=n == 0, violations=n))
+    shortfalls = [r for r in spare_report(alloc, pack).by_controller_io if r.shortfall]
+    out.append(
+        RuleResult(
+            rule="R-SPARE",
+            description="Each controller and IO type meets its configured wired-spare allowance",
+            passed=not shortfalls,
+            violations=len(shortfalls),
+        )
+    )
     ctx = Ctx(alloc.layout, pack)
     for r in rules or []:
         if r.builtin:

@@ -40,6 +40,8 @@ app/
   policy, which treats each declared but unused cable pair as an installed wired spare. A plant
   can instead select `explicit_pairs` and list `wired_spare_pairs` by cable; unlisted declared
   pairs remain protected `Spare Slot` rows with no claimed CHARM hardware.
+- **Spare shortfalls are visible.** A controller/IO-type allowance that cannot be met creates a
+  `TQ-SPARE` and fails `R-SPARE`; it does not invalidate otherwise sound field allocations.
 
 ## Solver chain
 

@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 from app.config import Settings
 from app.core.layout.blocks import BlockSet, build_blocks
+from app.core.layout.spares import attach_spare_shortfall_issues
 from app.core.model.allocation import Allocation, Placement, Unplaced
 from app.core.model.issue import Issue
 from app.core.model.layout import Block, Layout
@@ -346,6 +347,7 @@ def solve_revision(
         events.append(Event(solver, "used", f"{len(chosen.placements)} positions"))
     result.violations = bad
     chosen.issues.extend(m.issues)
+    attach_spare_shortfall_issues(chosen, pack)
     _annotate(chosen, m, plan, result, tier, rules_changed)
     result.allocation, result.solver, result.tier, result.events = chosen, solver, tier, events
     return result

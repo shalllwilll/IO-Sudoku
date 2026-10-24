@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from app.core.layout.reserve import spare_baseplates
 from app.core.model.allocation import Allocation
+from app.core.model.issue import Issue
 from app.core.model.pack import Pack
 
 
@@ -35,6 +36,51 @@ class IoSpares(BaseModel):
 class SpareReport(BaseModel):
     cabinets: list[CabinetSpares]
     by_controller_io: list[IoSpares]
+
+
+def spare_shortfall_issues(alloc: Allocation, pack: Pack) -> list[Issue]:
+    """One actionable TQ for each controller/IO family that misses its wired-spare target.
+
+    A wiring plan may not contain enough declared spare pairs to repair the result automatically.
+    The allocation is still structurally valid, so report the shortfall rather than rejecting or
+    moving valid field signals. This keeps the decision with the project engineer.
+    """
+    out: list[Issue] = []
+    for row in spare_report(alloc, pack).by_controller_io:
+        if not row.shortfall:
+            continue
+        msg = (
+            f"controller {row.controller}, IO type {row.io_type}: requires {row.required} wired "
+            f"spare pair(s) for {row.field_signals} field signal(s), has {row.wired_spares}; "
+            f"shortfall {row.shortfall}"
+        )
+        out.append(
+            Issue(
+                code="TQ-SPARE",
+                severity="warning",
+                message=msg,
+                data={
+                    "kind": "wired_spare_shortfall",
+                    "controller": row.controller,
+                    "io_type": row.io_type,
+                    "required": str(row.required),
+                    "wired_spares": str(row.wired_spares),
+                    "shortfall": str(row.shortfall),
+                },
+            )
+        )
+    return out
+
+
+def attach_spare_shortfall_issues(alloc: Allocation, pack: Pack) -> Allocation:
+    """Replace generated spare-shortfall TQs while preserving any user/source TQ-SPARE issues."""
+    alloc.issues = [
+        i
+        for i in alloc.issues
+        if not (i.code == "TQ-SPARE" and i.data.get("kind") == "wired_spare_shortfall")
+    ]
+    alloc.issues.extend(spare_shortfall_issues(alloc, pack))
+    return alloc
 
 
 def spare_report(alloc: Allocation, pack: Pack) -> SpareReport:

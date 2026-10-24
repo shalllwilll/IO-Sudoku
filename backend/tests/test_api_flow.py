@@ -49,10 +49,13 @@ def test_all_read_endpoints(tmp_path):
     assert c.get(f"{base}/layout").json()["layout"]["cabinets"]
     assert c.get(f"{base}/groups").json()["groups"]
     rep = c.get(f"{base}/report").json()["report"]
-    assert rep["kpi"]["allocated"] == 19 and all(r["passed"] for r in rep["rules"])
+    assert rep["kpi"]["allocated"] == 19
+    assert all(r["passed"] for r in rep["rules"] if r["rule"] != "R-SPARE")
+    assert next(r for r in rep["rules"] if r["rule"] == "R-SPARE")["passed"] is False
     imp = c.get(f"{base}/impact").json()
     assert imp["available"] is False and imp["reason"]
-    assert c.get(f"{base}/tqs").status_code == 200
+    tqs = c.get(f"{base}/tqs")
+    assert tqs.status_code == 200 and any(t["code"] == "TQ-SPARE" for t in tqs.json())
 
 
 def test_download_by_run_id(tmp_path):  # T9.1.2

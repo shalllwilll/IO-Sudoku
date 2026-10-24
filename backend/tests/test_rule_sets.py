@@ -84,7 +84,8 @@ def test_default_rules_still_validate_and_declaration_lists_set(pack):
     rep = build_report(a, pack, s, [], ruleset=rs)
     assert rs.hash[:12] in rep.declaration.rule_set
     assert any("PS-AB-SEP" in x for x in rep.declaration.rules)
-    assert all(r.passed for r in rep.rules)
+    assert all(r.passed for r in rep.rules if r.rule != "R-SPARE")
+    assert next(r for r in rep.rules if r.rule == "R-SPARE").violations == 1
 
 
 def test_not_enforced_rule_listed_in_declaration(pack):

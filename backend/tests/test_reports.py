@@ -52,6 +52,15 @@ def test_rule_check_reports_failure_with_count(pack):
     assert not seg.passed and seg.violations == 1
 
 
+def test_spare_shortfall_fails_the_rule_check_and_is_reported_as_a_tq(pack):
+    signals = cable("DIR", 12, 12)
+    alloc = run(signals, pack)
+    report = build_report(alloc, pack, signals, alloc.issues)
+    spare = next(r for r in report.rules if r.rule == "R-SPARE")
+    assert not spare.passed and spare.violations == 1
+    assert [i.code for i in alloc.issues] == ["TQ-SPARE"]
+
+
 def test_not_enforced_listed(pack):
     s = cable("C1", 3)
     rep = build_report(run(s, pack), pack, s, [], not_enforced=["rule X: unsupported primitive"])

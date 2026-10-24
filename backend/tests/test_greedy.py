@@ -8,6 +8,7 @@ from app.core.model.pack import Pack
 from app.core.model.signal import Signal
 from app.core.solve.greedy import pack_blocks, solve_greedy
 from app.core.solve.validator import validate_allocation
+from app.core.tq.store import collect_tqs
 
 
 @pytest.fixture
@@ -113,6 +114,20 @@ def test_spare_report_kinds(pack):
     row = rep.by_controller_io[0]
     assert row.field_signals == 34 and row.wired_spares == 2 and row.required == 3
     assert row.shortfall == 1
+
+
+def test_wired_spare_shortfall_is_an_actionable_tq(pack):
+    alloc = run(cable("DIR", 12, 12), pack)
+    tq = next(i for i in alloc.issues if i.code == "TQ-SPARE")
+    assert tq.data == {
+        "kind": "wired_spare_shortfall",
+        "controller": alloc.layout.controllers[0].name,
+        "io_type": "AIR",
+        "required": "1",
+        "wired_spares": "0",
+        "shortfall": "1",
+    }
+    assert [t.code for t in collect_tqs([], alloc)] == ["TQ-SPARE"]
 
 
 def test_explicit_wired_spare_plan_preserves_other_declared_pairs_as_slots(pack):

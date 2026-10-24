@@ -2,6 +2,7 @@ from collections import Counter, defaultdict
 
 from app.core.layout.blocks import BlockSet
 from app.core.layout.derive import cabinets_needed, derive_layout
+from app.core.layout.spares import attach_spare_shortfall_issues
 from app.core.model.allocation import Allocation, Placement, Unplaced
 from app.core.model.issue import Issue
 from app.core.model.layout import Block, Layout
@@ -419,9 +420,9 @@ def solve_greedy(
         no_room = [i for i in alloc.issues if i.code == "TQ-CAP" and "does not fit" in i.message]
         by_rule = [i for i in alloc.issues if i.code == "TQ-RULE"]
         if not no_room and not (by_rule and extra < RULE_RETRY_CABINETS):
-            return alloc
+            return attach_spare_shortfall_issues(alloc, pack)
         if cap is not None and len(layout.cabinets) >= cap:
-            return alloc
+            return attach_spare_shortfall_issues(alloc, pack)
         if not no_room and extra >= RULE_RETRY_CABINETS:
-            return alloc
-    return alloc
+            return attach_spare_shortfall_issues(alloc, pack)
+    return attach_spare_shortfall_issues(alloc, pack)
