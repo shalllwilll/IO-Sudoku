@@ -3,7 +3,13 @@
 // loading states are exercised.
 import { DEFAULT_PREFERENCES } from "../../features/preferences/schema.js";
 import { NetworkError, ServerError } from "../errors.js";
+import { buildResult } from "./resultFixture.js";
 import {
+  AllocationSchema,
+  AnswerSchema,
+  LayoutSchema,
+  ReportSchema,
+  TqListSchema,
   LintSchema,
   MappingSchema,
   ProjectListSchema,
@@ -33,7 +39,7 @@ async function gate() {
   }
 }
 
-const store = { projects: [], uploads: {}, mapping: {}, values: {}, rules: {}, runs: {}, seq: 1 };
+const store = { projects: [], uploads: {}, mapping: {}, values: {}, rules: {}, runs: {}, results: {}, seq: 1 };
 
 export function resetMock() {
   store.projects = [];
@@ -42,6 +48,7 @@ export function resetMock() {
   store.values = {};
   store.rules = {};
   store.runs = {};
+  store.results = {};
   resetStreamOptions();
   mockControls.hang = false;
   store.seq = 1;
@@ -49,6 +56,10 @@ export function resetMock() {
   mockControls.failNext = null;
   mockControls.corruptNext = false;
   mockControls.chatReply = null;
+}
+
+function resultFor(rid) {
+  return (store.results[rid] ||= buildResult());
 }
 
 function findProject(pid) {
@@ -207,6 +218,39 @@ export const mockApi = {
     await gate();
     findProject(pid);
     return parseResponse(RunListSchema, (store.runs[pid] ?? []).map((r) => ({ ...r })), "listRuns");
+  },
+
+  async getLayout(pid, rid) {
+    await gate();
+    return parseResponse(LayoutSchema, { ...resultFor(rid).layout, run_id: rid }, "getLayout");
+  },
+
+  async getAllocation(pid, rid) {
+    await gate();
+    return parseResponse(AllocationSchema, { ...resultFor(rid).allocation, run_id: rid }, "getAllocation");
+  },
+
+  async getReport(pid, rid) {
+    await gate();
+    return parseResponse(ReportSchema, { ...resultFor(rid).report, run_id: rid }, "getReport");
+  },
+
+  async getRunTqs(pid, rid) {
+    await gate();
+    return parseResponse(TqListSchema, resultFor(rid).tqs, "getRunTqs");
+  },
+
+  async answerTq(pid, tid, body) {
+    await gate();
+    for (const result of Object.values(store.results)) {
+      const tq = result.tqs.find((t) => t.id === tid);
+      if (tq) {
+        tq.status = "answered";
+        tq.answer = body.value || body.option;
+        return parseResponse(AnswerSchema, { tq: { ...tq }, answer: body, history: [] }, "answerTq");
+      }
+    }
+    throw new ServerError("TQ not found.", { status: 404, code: "not_found" });
   },
 
   openRunStream(pid, rid, handlers, options) {
