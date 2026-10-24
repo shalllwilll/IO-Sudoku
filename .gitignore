@@ -20,3 +20,7 @@ IO_Signal_Sudoku_Build_Plan_v3.md
 *.pdf
 *.egg-info/
 IO SIGNAL SUDUKO/
+.hypothesis/
+*.log
+.env.*
+!.env.example

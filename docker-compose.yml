@@ -1,0 +1,18 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - path: backend/.env
+        required: false
+    environment:
+      DB_PATH: /var/lib/sudoku/sudoku.db
+      SUDOKU_DATA_DIR: /data
+    volumes:
+      - sudoku-db:/var/lib/sudoku
+      - ./backend/data:/data:ro
+volumes:
+  sudoku-db:
