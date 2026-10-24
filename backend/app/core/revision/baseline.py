@@ -166,6 +166,15 @@ def _int_at_end(text: str | None) -> int | None:
     return int(m.group(1)) if m else None
 
 
+def _owner_from_row(row: dict[str, object]) -> str | None:
+    values = (
+        _text(row.get("technicalroom")),
+        _text(row.get("operatingarea")),
+        _text(row.get("riskarea")),
+    )
+    return " | ".join(value or "-" for value in values) if any(values) else None
+
+
 def baseline_from_workbook(path: str | Path, pack: Pack, label: str = "00") -> Baseline:
     """Rebuild a baseline from an allocation workbook (the template's first sheet).
 
@@ -193,8 +202,13 @@ def baseline_from_workbook(path: str | Path, pack: Pack, label: str = "00") -> B
         if not cab or not cio:
             raise BaselineError(f"row {r.get('srno')}: cabinet or CIOC name is empty")
         if cab not in cab_by_name:
-            cab_by_name[cab] = Cabinet(no=len(cab_by_name) + 1, name=cab, ciocs=[])
+            cab_by_name[cab] = Cabinet(
+                no=len(cab_by_name) + 1, name=cab, ciocs=[], owner=_owner_from_row(r)
+            )
             layout.cabinets.append(cab_by_name[cab])
+        elif cab_by_name[cab].owner != _owner_from_row(r):
+            # Mixed ownership is not a reliable boundary constraint.
+            cab_by_name[cab].owner = None
         if cio not in cioc_by_name:
             cabinet = cab_by_name[cab]
             ctl_name = _text(r.get("controller")) or f"CTL-{cabinet.no}"
