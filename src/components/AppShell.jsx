@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { signOutSession } from "../auth/session.js";
 import PageTransition from "./PageTransition.jsx";
+import ResponsiveNotice from "./ResponsiveNotice.jsx";
 
 const link = ({ isActive }) =>
   `focus-ring rounded-full px-4 py-1.5 text-sm ${isActive ? "bg-soft-white text-graphite" : "text-soft-white hover:bg-gunmetal"}`;
@@ -10,6 +11,7 @@ export default function AppShell() {
   const navigate = useNavigate();
   return (
     <div className="flex min-h-screen flex-col bg-graphite">
+      <ResponsiveNotice />
       <header className="px-6 pt-5">
         <nav aria-label="Main" className="flex items-center justify-between rounded-full border border-steel bg-carbon px-5 py-2">
           <span className="text-sm font-semibold tracking-wide">IO Signal Sudoku</span>

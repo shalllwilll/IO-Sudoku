@@ -72,3 +72,9 @@ body {
 .chip-to-corner {
   animation: chip-to-corner var(--t-page) ease-in-out both;
 }
+
+@media (max-width: 767px) {
+  .plant-controls {
+    top: 2.5rem;
+  }
+}

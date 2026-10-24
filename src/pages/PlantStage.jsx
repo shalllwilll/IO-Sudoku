@@ -12,6 +12,7 @@ import { hasWebgl, loadScene, resolveRun } from "../scene/loadScene.js";
 import { locate, markersFor } from "../scene/lookup.js";
 import { FOV } from "../scene/poses.js";
 import { createView } from "../scene/viewStore.js";
+import ResponsiveNotice from "../components/ResponsiveNotice.jsx";
 
 const EXIT_IDLE_MS = 2500;
 
@@ -177,6 +178,9 @@ export default function PlantStage() {
 
   return (
     <div ref={stageRef} className="fixed inset-0 bg-black text-soft-white" role="application" aria-label="3D plant view">
+      <div className="pointer-events-auto absolute inset-x-0 top-0 z-20">
+        <ResponsiveNotice />
+      </div>
       {ready ? (
         <Canvas
           camera={{ fov: FOV, near: 0.01, far: 400, position: [0, 6, 26] }}
@@ -209,7 +213,7 @@ export default function PlantStage() {
         </p>
       )}
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-5">
+      <div className="plant-controls pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-4 p-5">
         <div className="pointer-events-auto">
           <Breadcrumb
             cam={cam}
