@@ -67,6 +67,19 @@ class Schema(BaseModel):
     optional: list[str]
 
 
+class Thresholds(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    accept: float
+    ask: float
+    tie_margin: float
+
+
+class Aliases(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    thresholds: Thresholds
+    fields: dict[str, list[str]]
+
+
 class PackError(ValueError):
     pass
 
@@ -77,6 +90,7 @@ _PARTS = {
     "segregation.json": ("segregation", Segregation),
     "capacity.json": ("capacity", Capacity),
     "schema.json": ("schema", Schema),
+    "aliases.json": ("aliases", Aliases),
 }
 
 
@@ -86,6 +100,7 @@ class Pack(BaseModel):
     segregation: Segregation
     capacity: Capacity
     schema_: Schema
+    aliases: Aliases
     hash: str
 
     @classmethod
@@ -113,6 +128,7 @@ class Pack(BaseModel):
             segregation=parts["segregation"],
             capacity=parts["capacity"],
             schema_=parts["schema"],
+            aliases=parts["aliases"],
             hash=digest,
         )
 

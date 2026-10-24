@@ -1,0 +1,153 @@
+{
+ "thresholds": {
+  "accept": 0.9,
+  "ask": 0.6,
+  "tie_margin": 0.03
+ },
+ "fields": {
+  "tag": [
+   "Tag Number",
+   "Tag No",
+   "Tag Name",
+   "Tag",
+   "Instrument Tag",
+   "Instrument Tag No"
+  ],
+  "tag_compact": [
+   "TagNumber"
+  ],
+  "old_tag": [
+   "Old Tag Number",
+   "Old Tag",
+   "Previous Tag"
+  ],
+  "io_type": [
+   "I/O Type Name",
+   "IO Type",
+   "I/O Type",
+   "IO Type Name",
+   "Signal IO Type"
+  ],
+  "io_type_2": [
+   "I/O Type Name 2",
+   "IO Type 2",
+   "I/O Type 2",
+   "Secondary IO Type"
+  ],
+  "signal_type": [
+   "Signal Type"
+  ],
+  "signal_level": [
+   "Signal Level"
+  ],
+  "instrument_type": [
+   "Instrument Type",
+   "Instrument Type Code"
+  ],
+  "cable": [
+   "Multipair Cable No.",
+   "Multipair Cable No",
+   "Field Cable No",
+   "Field Cable Number",
+   "Cable No",
+   "Cable Number",
+   "Cable Tag",
+   "Cable Name"
+  ],
+  "cable_formation": [
+   "Multi-cable / Cable",
+   "Cable Formation",
+   "Cable Size",
+   "Field Cable Size",
+   "Cable Type"
+  ],
+  "pair": [
+   "Pair Number",
+   "Pair No",
+   "Pair",
+   "Pair #",
+   "Cable Pair",
+   "Field Cable Pair",
+   "Core Pair"
+  ],
+  "group": [
+   "Group",
+   "IO Group",
+   "Affinity Group",
+   "Signal Group"
+  ],
+  "segregation": [
+   "Segregation",
+   "Segregation Code",
+   "Seg",
+   "IO Segregation"
+  ],
+  "io_grouping": [
+   "IO Grouping",
+   "I/O Grouping"
+  ],
+  "logic_number": [
+   "Logic Number",
+   "Logic No",
+   "Logic Ref"
+  ],
+  "area": [
+   "Design Area",
+   "Risk Area",
+   "Area"
+  ],
+  "operating_area": [
+   "OA No.",
+   "OA No",
+   "Operating Area"
+  ],
+  "technical_room": [
+   "Technical Room (Signal Location 2)",
+   "Technical Room",
+   "Tech Room"
+  ],
+  "equipment_name": [
+   "Equipment Name",
+   "Equipment"
+  ],
+  "service": [
+   "Service",
+   "Service Description",
+   "Tag Service 1 and 2"
+  ],
+  "loop_name": [
+   "Loop Name"
+  ],
+  "execution": [
+   "Execution",
+   "NON-IS / IS",
+   "IS Status"
+  ],
+  "external_power": [
+   "External Power Supply",
+   "External Power"
+  ],
+  "contact_type": [
+   "Contact Type"
+  ],
+  "revision": [
+   "Revision #",
+   "Revision No",
+   "Revision",
+   "Rev"
+  ],
+  "change_type": [
+   "Revision Change Type",
+   "Change Type"
+  ],
+  "remarks": [
+   "Revision Comments",
+   "Remarks",
+   "Comments"
+  ],
+  "status": [
+   "Status",
+   "Tag Status"
+  ]
+ }
+}
