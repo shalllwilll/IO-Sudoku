@@ -90,18 +90,21 @@ def _majority(values: list[str | None]) -> str | None:
     return min(c, key=lambda k: (-c[k], k)) if c else None
 
 
-def pack_blocks(
-    blocks: BlockSet, layout: Layout, pack: Pack, rules: list[Rule] | None = None
-) -> Allocation:
-    """First-fit-decreasing into a fixed layout. Never mutates its inputs."""
-    alloc = Allocation(layout=layout.model_copy(deep=True), solver="greedy")
-    alloc.issues.extend(layout.issues)
-    grid = _Grid(layout, pack)
-    active = [r for r in rules or [] if r.enabled and r.enforced and r.strength == "hard"]
-    ctx = Ctx(layout, pack)
-    families: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
-    groups: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
+def block_hw(block: Block) -> tuple:
+    """Majority (io_type, duty, signal_type, signal_level) a block's wired spares inherit."""
+    io = _majority([s.io_type for s in block.signals])
+    same = [s for s in block.signals if s.io_type == io]
+    return (
+        io,
+        _majority([s.duty_class for s in same]),
+        _majority([s.signal_type for s in same]),
+        _majority([s.signal_level for s in same]),
+    )
 
+
+def place_fixed(alloc: Allocation, blocks: BlockSet, layout: Layout, pack: Pack) -> None:
+    """Cabinet alarms (reserved baseplates, cabinet order) and held-out signals: no choices."""
+    width = pack.capacity.channels_per_baseplate
     # cabinet alarms go into each cabinet's reserved baseplate, in cabinet order
     slots = [
         (cab.ciocs[0], bp.n)
@@ -110,12 +113,12 @@ def pack_blocks(
         if bp.reserved == "alarm"
     ]
     alarms = sorted(blocks.alarm_signals, key=lambda s: (s.service or "", s.tag or ""))
-    cells = [(c, n, ch) for c, n in slots for ch in range(1, grid.ch + 1)]
+    cells = [(c, n, k) for c, n in slots for k in range(1, width + 1)]
     for i, s in enumerate(alarms):
         if i < len(cells):
-            c, n, ch = cells[i]
+            c, n, k = cells[i]
             alloc.placements.append(
-                Placement(cioc_no=c, baseplate=n, channel=ch, kind="cabinet_alarm", signal=s)
+                Placement(cioc_no=c, baseplate=n, channel=k, kind="cabinet_alarm", signal=s)
             )
         else:
             alloc.unplaced.append(
@@ -135,6 +138,21 @@ def pack_blocks(
         if h.signal:
             alloc.unplaced.append(Unplaced(signal=h.signal, issues=h.issues))
 
+
+def pack_blocks(
+    blocks: BlockSet, layout: Layout, pack: Pack, rules: list[Rule] | None = None
+) -> Allocation:
+    """First-fit-decreasing into a fixed layout. Never mutates its inputs."""
+    alloc = Allocation(layout=layout.model_copy(deep=True), solver="greedy")
+    alloc.issues.extend(layout.issues)
+    grid = _Grid(layout, pack)
+    active = [r for r in rules or [] if r.enabled and r.enforced and r.strength == "hard"]
+    ctx = Ctx(layout, pack)
+    families: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
+    groups: dict[int, set[str]] = {c.no: set() for c in layout.ciocs}
+
+    place_fixed(alloc, blocks, layout, pack)
+
     for block in sorted(blocks.blocks, key=lambda b: (-b.size, b.id)):
         bad = block_ok(block, pack)
         if bad:
@@ -142,13 +160,7 @@ def pack_blocks(
             continue
         hosts = [c.no for c in layout.ciocs if block.group in groups[c.no]]
         order = hosts + [c.no for c in layout.ciocs if c.no not in hosts]
-        io = _majority([s.io_type for s in block.signals])
-        same = [s for s in block.signals if s.io_type == io]
-        duty = _majority([s.duty_class for s in same])
-        st = _majority([s.signal_type for s in same])
-        lvl = _majority([s.signal_level for s in same])
-
-        hw = (io, duty, st, lvl)
+        hw = block_hw(block)
 
         rejected_by: set[str] = set()
         chosen: tuple[int, list[Placement], list[tuple[int, int]]] | None = None

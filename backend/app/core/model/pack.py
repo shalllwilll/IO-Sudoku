@@ -85,6 +85,9 @@ class Capacity(BaseModel):
     spare_rounding: str
     controllers_per_system_cabinet: int = 1
     max_cabinets: int | None = None
+    cpsat_seed: int = 1
+    cpsat_deterministic_time: float = 10.0  # primary stop: reproducible across machines
+    cpsat_wall_seconds: float = 60.0  # backstop only; never the normal stop
 
 
 class Schema(BaseModel):

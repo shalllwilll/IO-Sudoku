@@ -7,5 +7,8 @@
  "spare_percent": 10,
  "spare_rounding": "floor",
  "controllers_per_system_cabinet": 1,
- "max_cabinets": null
+ "max_cabinets": null,
+ "cpsat_seed": 1,
+ "cpsat_deterministic_time": 10.0,
+ "cpsat_wall_seconds": 60.0
 }
