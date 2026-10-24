@@ -5,7 +5,13 @@ from app.core.layout.blocks import build_blocks
 from app.core.model.pack import Pack
 from app.core.model.signal import Signal
 from app.core.reports import build_report
-from app.core.revision.baseline import Baseline, BaselineError, RunStore, baseline_from_workbook
+from app.core.revision.baseline import (
+    SCHEMA_VERSION,
+    Baseline,
+    BaselineError,
+    RunStore,
+    baseline_from_workbook,
+)
 from app.core.revision.match import (
     filter_revision,
     label_order,
@@ -162,9 +168,9 @@ def test_label_order_and_normalising():
 def test_schema_creation_twice_is_harmless(tmp_path):
     path = str(tmp_path / "s.db")
     a = RunStore(path)
-    assert a.schema_version() == 1
+    assert a.schema_version() == SCHEMA_VERSION
     b = RunStore(path)
-    assert b.schema_version() == 1
+    assert b.schema_version() == SCHEMA_VERSION
     assert b.db.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 1
     assert RunStore(path).list_runs() == []
 
@@ -249,3 +255,18 @@ def test_report_still_builds_for_a_loaded_baseline(pack):
     rep = build_report(base.allocation, pack, s, [])
     assert rep.kpi.allocated == 26
     assert isinstance(base, Baseline)
+
+
+def test_an_older_database_file_is_migrated(tmp_path):
+    import sqlite3
+
+    path = str(tmp_path / "old.db")
+    db = sqlite3.connect(path)
+    db.executescript(
+        "CREATE TABLE schema_version (version INTEGER NOT NULL); INSERT INTO schema_version VALUES (1);"
+    )
+    db.commit()
+    db.close()
+    store = RunStore(path)
+    assert store.schema_version() == SCHEMA_VERSION
+    assert store.db.execute("SELECT COUNT(*) FROM revisions").fetchone()[0] == 0

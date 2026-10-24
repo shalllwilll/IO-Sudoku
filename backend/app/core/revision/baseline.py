@@ -16,7 +16,7 @@ from app.core.model.layout import Baseplate, Cabinet, Cioc, Controller, Layout
 from app.core.model.pack import Pack
 from app.core.model.signal import Signal
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2 added the revisions table
 SLOT = tuple[int, int, int]  # (cioc_no, baseplate, channel)
 WORKBOOK_FIELDS = [
     "tag", "io_type", "signal_type", "signal_level", "cable", "pair", "cable_formation",
@@ -72,10 +72,19 @@ class RunStore:
                 run_id TEXT PRIMARY KEY, layout_json TEXT NOT NULL,
                 allocation_json TEXT NOT NULL, signals_json TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS revisions (
+                id TEXT PRIMARY KEY, seq INTEGER NOT NULL, label TEXT NOT NULL UNIQUE,
+                run_id TEXT NOT NULL, parent_id TEXT, created_at TEXT,
+                impact_json TEXT, changes_json TEXT
+            );
             """
         )
         if self.db.execute("SELECT COUNT(*) FROM schema_version").fetchone()[0] == 0:
             self.db.execute("INSERT INTO schema_version VALUES (?)", (SCHEMA_VERSION,))
+        else:  # migrate an older file: the tables above were just created if they were missing
+            self.db.execute(
+                "UPDATE schema_version SET version=? WHERE version<?", (SCHEMA_VERSION,) * 2
+            )
         self.db.commit()
 
     def schema_version(self) -> int:
