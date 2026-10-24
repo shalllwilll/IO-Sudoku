@@ -43,9 +43,46 @@ def validate_allocation(
         if len(cab.ciocs) > cap.ciocs_per_cabinet:
             v("CAPACITY", f"cabinet {cab.name} has {len(cab.ciocs)} CIOCs")
     cioc_by_no = {c.no: c for c in lay.ciocs}
+    cabinet_by_no = {cab.no: cab for cab in lay.cabinets}
+    controller_by_no = {ctl.no: ctl for ctl in lay.controllers}
+    if len(cioc_by_no) != len(lay.ciocs):
+        v("HIERARCHY", "CIOC numbers are not unique")
+    if len(cabinet_by_no) != len(lay.cabinets):
+        v("HIERARCHY", "cabinet numbers are not unique")
+    if len(controller_by_no) != len(lay.controllers):
+        v("HIERARCHY", "controller numbers are not unique")
     for c in lay.ciocs:
         if len(c.baseplates) > bpn:
             v("CAPACITY", f"CIOC {c.name} has {len(c.baseplates)} baseplates")
+        if c.cabinet not in cabinet_by_no:
+            v("HIERARCHY", f"CIOC {c.name} refers to unknown cabinet {c.cabinet}")
+        elif c.no not in cabinet_by_no[c.cabinet].ciocs:
+            v("HIERARCHY", f"CIOC {c.name} is missing from cabinet {c.cabinet}")
+        if c.controller not in controller_by_no:
+            v("HIERARCHY", f"CIOC {c.name} refers to unknown controller {c.controller}")
+        elif c.no not in controller_by_no[c.controller].ciocs:
+            v("HIERARCHY", f"CIOC {c.name} is missing from controller {c.controller}")
+        baseplates = {(b.cioc_no, b.n) for b in c.baseplates}
+        if len(baseplates) != len(c.baseplates):
+            v("HIERARCHY", f"CIOC {c.name} has duplicate baseplate numbers")
+        for b in c.baseplates:
+            if b.cioc_no != c.no:
+                v("HIERARCHY", f"baseplate {b.name} belongs to CIOC {b.cioc_no}, not {c.no}")
+    for cab in lay.cabinets:
+        for cno in cab.ciocs:
+            if cno not in cioc_by_no:
+                v("HIERARCHY", f"cabinet {cab.name} lists unknown CIOC {cno}")
+    for ctl in lay.controllers:
+        for cno in ctl.ciocs:
+            if cno not in cioc_by_no:
+                v("HIERARCHY", f"controller {ctl.name} lists unknown CIOC {cno}")
+    cabinet_membership = Counter(cno for cab in lay.cabinets for cno in cab.ciocs)
+    controller_membership = Counter(cno for ctl in lay.controllers for cno in ctl.ciocs)
+    for cno in cioc_by_no:
+        if cabinet_membership[cno] != 1:
+            v("HIERARCHY", f"CIOC {cno} is listed by {cabinet_membership[cno]} cabinets")
+        if controller_membership[cno] != 1:
+            v("HIERARCHY", f"CIOC {cno} is listed by {controller_membership[cno]} controllers")
 
     # every signal exactly once: allocated (field/alarm) or in the TQ list
     seen: Counter = Counter()
@@ -95,6 +132,11 @@ def validate_allocation(
             v("CHARM_NO", f"CHARM_No {charm_no} out of range")
         if p.kind == "wired_spare" and not p.io_type:
             v("INVARIANT", f"wired spare at {p.cioc_no}/{p.baseplate}/{p.channel} has no IO type")
+        if p.kind == "wired_spare" and p.signal is not None:
+            v(
+                "STATUS",
+                f"wired spare at {p.cioc_no}/{p.baseplate}/{p.channel} carries a field signal",
+            )
         if p.kind == "spare_slot" and p.signal is not None:
             v(
                 "INVARIANT",
@@ -106,7 +148,11 @@ def validate_allocation(
 
     # reserved baseplates
     for cab in lay.cabinets:
-        first = cioc_by_no[cab.ciocs[0]]
+        if not cab.ciocs:
+            continue
+        first = cioc_by_no.get(cab.ciocs[0])
+        if first is None:
+            continue
         for p in alloc.placements:
             is_alarm_bp = p.cioc_no == first.no and p.baseplate == cap.alarm_baseplate_index
             if is_alarm_bp and p.kind != "cabinet_alarm":
@@ -182,7 +228,10 @@ def validate_allocation(
             if (s.technical_room or s.operating_area or s.area)
             else None
         )
-        actual = cab_owner.get(cioc_by_no[p.cioc_no].cabinet)
+        cioc = cioc_by_no.get(p.cioc_no)
+        if cioc is None:
+            continue
+        actual = cab_owner.get(cioc.cabinet)
         if owner is not None and actual is not None and actual != owner:
             v("OWNERSHIP", f"signal {s.tag} is in cabinet owned by {actual or '-'}, not {owner}")
     # rule primitives: hard rules are violations; soft and advisory ones are reported by rule_check

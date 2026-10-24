@@ -90,6 +90,22 @@ def test_alarm_baseplate_misuse(base, pack):
     assert "RESERVED" in codes(b, pack, s)
 
 
+def test_broken_controller_or_cabinet_hierarchy(base, pack):
+    a, s = base
+    b = a.model_copy(deep=True)
+    b.layout.cabinets[0].ciocs = []
+    b.layout.controllers[0].ciocs = []
+    assert "HIERARCHY" in codes(b, pack, s)
+
+
+def test_wired_spare_cannot_carry_a_field_signal(base, pack):
+    a, s = base
+    b = a.model_copy(deep=True)
+    spare = next(p for p in b.placements if p.kind == "wired_spare")
+    spare.signal = s[0]
+    assert "STATUS" in codes(b, pack, s)
+
+
 def test_sample_validates(pack, sample_mdb_path):
     ss = merge_files([sample_mdb_path], pack)
     bs = build_blocks(ss.signals, pack)

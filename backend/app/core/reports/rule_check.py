@@ -14,11 +14,14 @@ BUILTIN = [
      {"MISSING", "DUPLICATE", "UNKNOWN_SIGNAL", "INVARIANT"}),
     ("R-CAP", "Capacity: 12 channels, 8 baseplates, 4 CIOCs, one signal per position",
      {"CAPACITY", "CHARM_NO"}),
+    ("R-HIERARCHY", "CIOCs, cabinets, controllers and baseplates form one consistent hierarchy",
+     {"HIERARCHY"}),
     ("R-BLOCK", "Cable blocks are contiguous and start on channel 1 when larger than a baseplate",
      {"BLOCK"}),
     ("R-SEG", "Conflicting segregation families never share a CIOC", {"SEGREGATION"}),
     ("R-RESERVE", "Alarm and spare baseplates are used only as reserved", {"RESERVED"}),
     ("R-OWNER", "Signals stay in their MDB ownership context when one is supplied", {"OWNERSHIP"}),
+    ("R-STATUS", "Field, Wired Spare and Spare Slot retain their required engineering state", {"STATUS"}),
 ]  # fmt: skip
 
 
