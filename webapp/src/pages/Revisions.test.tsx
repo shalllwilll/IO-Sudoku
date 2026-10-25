@@ -37,7 +37,7 @@ afterEach(() => vi.unstubAllGlobals())
 describe('Revisions', () => {
   it('asks for a baseline first and sets it from a finished run with the default label', async () => {
     mount([])
-    await userEvent.click(await screen.findByRole('button', { name: 'Use this run' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Start from this run' }))
     expect(calls.find((c) => c.path.endsWith('/baseline'))?.body).toEqual({ run_id: 'abcdef123456', label: '00' })
   })
 

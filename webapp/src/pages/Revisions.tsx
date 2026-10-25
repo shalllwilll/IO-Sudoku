@@ -26,8 +26,8 @@ function Baseline({ pid }: { pid: string }) {
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface-1 p-5 shadow-card">
       <div>
-        <h2 className="text-[13px] font-medium">Set the baseline</h2>
-        <p className="mt-1 text-xs text-fg-muted text-pretty">The first issue of the chain. Later revisions are compared against it, and signals that did not change keep their slot.</p>
+        <h2 className="text-[13px] font-medium">Step 1. Choose the starting point</h2>
+        <p className="mt-1 text-xs text-fg-muted text-pretty">The layout you issued. When the signal list changes later, signals that did not change keep their slot.</p>
       </div>
       <Field label="Issue label (optional)" placeholder="00" value={label} onChange={(e) => setLabel(e.target.value)} className="max-w-40 font-mono" />
       <div className="grid gap-4 sm:grid-cols-2">
@@ -47,7 +47,7 @@ function Baseline({ pid }: { pid: string }) {
                 ))}
               </select>
               <Button variant="primary" className="self-start" disabled={set.fromRun.isPending} onClick={() => set.fromRun.mutate({ run_id: chosen, ...(label.trim() ? { label: label.trim() } : {}) })}>
-                Use this run
+                Start from this run
               </Button>
             </>
           )}
@@ -77,6 +77,47 @@ function ImpactLine({ e }: { e: ChainEntry }) {
   return <span className="text-xs text-fg-muted tnum">{parts.join(' · ')}</span>
 }
 
+const pctKept = (i: NonNullable<ChainEntry['impact']>) => {
+  const base = i.total_baseline ?? 0
+  return base > 0 ? Math.round((100 * (base - (i.deleted ?? 0) - (i.moved ?? 0))) / base) : 100
+}
+
+/** The answer in one glance: how much of the issued layout survived the latest change. */
+function Headline({ pid, last }: { pid: string; last: ChainEntry }) {
+  const i = last.impact
+  if (!i) return null
+  const reasons = Object.entries(i.moves_by_reason ?? {}).sort((a, b) => b[1] - a[1])
+  return (
+    <section aria-label="Latest change impact" className="rounded-xl border border-border bg-surface-1 p-5 shadow-card">
+      <p className="text-[13px] text-fg-muted">Issue {last.parent_label} to Issue {last.label}</p>
+      <p className="mt-1 text-2xl font-semibold tracking-tight text-balance tnum">{pctKept(i)}% of the issued layout stayed in place</p>
+      <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+        {([['Added', i.added], ['Deleted', i.deleted], ['Modified', i.modified], ['Moved', i.moved], ['Unchanged', i.unchanged]] as const).map(([k, v]) => (
+          <div key={k} className="rounded-lg bg-surface-2 p-3">
+            <dt className="text-xs text-fg-muted">{k}</dt>
+            <dd className="text-xl font-semibold tnum">{v ?? 0}</dd>
+          </div>
+        ))}
+      </dl>
+      {reasons.length > 0 && (
+        <p className="mt-3 text-[13px] text-fg-muted text-pretty">
+          Why signals moved: {reasons.map(([k, v]) => `${k.replace(/_/g, ' ')} (${v})`).join(', ')}.
+        </p>
+      )}
+      <div className="mt-4 flex flex-wrap gap-2">
+        {last.parent_label && (
+          <Link to={`/projects/${pid}/revisions/report?from=${encodeURIComponent(last.parent_label)}&to=${encodeURIComponent(last.label)}`} className="inline-flex h-9 items-center rounded-md bg-accent px-3.5 text-[13px] font-medium text-accent-fg shadow-card transition-[background-color] duration-150 ease-out hover:bg-accent-strong">
+            Open the revision report
+          </Link>
+        )}
+        <Link to={`/projects/${pid}/runs/${last.run_id}`} className="inline-flex h-9 items-center rounded-md border border-border-strong bg-surface-2 px-3.5 text-[13px] font-medium transition-[background-color] duration-150 ease-out hover:bg-surface-3">
+          Open results
+        </Link>
+      </div>
+    </section>
+  )
+}
+
 function Chain({ pid, chain }: { pid: string; chain: ChainEntry[] }) {
   const nav = useNavigate()
   const start = useStartRevision(pid)
@@ -84,6 +125,7 @@ function Chain({ pid, chain }: { pid: string; chain: ChainEntry[] }) {
   const last = chain[chain.length - 1]
   return (
     <div className="flex flex-col gap-5">
+      {last && <Headline pid={pid} last={last} />}
       <ol className="flex flex-col" aria-label="Revision chain">
         {chain.map((e, idx) => (
           <li key={e.label} className="flex gap-4">
@@ -115,15 +157,15 @@ function Chain({ pid, chain }: { pid: string; chain: ChainEntry[] }) {
       </ol>
       <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface-1 p-5 shadow-card">
         <div>
-          <h2 className="text-[13px] font-medium">Start the next revision</h2>
+          <h2 className="text-[13px] font-medium">{last?.impact ? "Check another change" : "Steps 2 and 3. Replace the data, then see the impact"}</h2>
           <p className="mt-1 text-xs text-fg-muted text-pretty">
-            Allocates the files currently on the <Link className="text-accent hover:underline" to={`/projects/${pid}/data`}>Data</Link> step against Issue {last?.label}. Replace the old file with the revised one there first.
+            First replace the old signal list with the revised one on the <Link className="text-accent hover:underline" to={`/projects/${pid}/data`}>Import</Link> step. Then run it against Issue {last?.label}: unchanged signals keep their slot, and the result shows what moved and why.
           </p>
         </div>
         <Field label="Issue label (optional)" className="max-w-40 font-mono" value={label} onChange={(e) => setLabel(e.target.value)} />
         {start.isError && <p role="alert" className="text-[13px] text-danger">{describeError(start.error)}</p>}
         <Button variant="primary" className="self-start" icon={<Play size={15} strokeWidth={1.75} />} disabled={start.isPending} onClick={() => start.mutate(label.trim() ? { label: label.trim() } : {}, { onSuccess: (r) => nav(`/projects/${pid}/run?run=${String((r as { id?: string }).id ?? '')}`) })}>
-          {start.isPending ? 'Starting…' : 'Run revision'}
+          {start.isPending ? 'Starting…' : 'See the impact'}
         </Button>
       </div>
     </div>
@@ -259,12 +301,12 @@ export default function Revisions() {
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 p-8">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Revisions</h1>
-        <p className="mt-1 text-[13px] text-fg-muted text-pretty">When the signal list changes after an issue, allocate the new list against the issued layout so unchanged signals keep their slot.</p>
+        <h1 className="text-lg font-semibold tracking-tight">Change impact</h1>
+        <p className="mt-1 text-[13px] text-fg-muted text-pretty">The signal list changed after an issue. See how much of the issued layout survives, what moved and why.</p>
       </div>
       {chain.isLoading ? <p className="text-[13px] text-fg-muted">Loading…</p> : chain.isError ? <p role="alert" className="text-[13px] text-danger">{describeError(chain.error)}</p> : entries.length === 0 ? <Baseline pid={pid} /> : (
         <>
-          <Segmented<Tab> label="Revision view" value={tab} onChange={setTab} options={[{ value: 'chain', label: 'Chain' }, { value: 'compare', label: 'Compare' }, { value: 'cumulative', label: 'Cumulative' }, { value: 'history', label: 'Signal history' }]} />
+          <Segmented<Tab> label="Revision view" value={tab} onChange={setTab} options={[{ value: 'chain', label: 'Impact' }, { value: 'compare', label: 'Compare' }, { value: 'cumulative', label: 'Cumulative' }, { value: 'history', label: 'Signal history' }]} />
           {tab === 'chain' && <Chain pid={pid} chain={entries} />}
           {tab === 'compare' && (entries.length < 2 ? <p className="text-[13px] text-fg-muted">Run a revision to have two issues to compare.</p> : <Compare pid={pid} chain={entries} />)}
           {tab === 'cumulative' && <Cumulative pid={pid} />}

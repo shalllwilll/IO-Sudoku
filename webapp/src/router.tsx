@@ -60,7 +60,7 @@ export const routes: RouteObject[] = [
                   { path: 'tqs', element: <Tqs />, handle: { crumb: 'Technical queries' } },
                   { path: 'revisions/report', element: <RevisionReport />, handle: { crumb: 'Revision report' } },
                   { path: 'runs/:rid/report/:kind', element: <RunReport />, handle: { crumb: 'Report' } },
-                  { path: 'revisions', element: <Revisions />, handle: { crumb: 'Revisions' } },
+                  { path: 'revisions', element: <Revisions />, handle: { crumb: 'Change impact' } },
                   { path: 'runs/:rid/plant', element: <Plant />, handle: { crumb: '3D plant' } },
                 ],
               },

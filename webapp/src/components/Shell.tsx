@@ -75,7 +75,7 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
           {pid && (
             <NavLink to={`/projects/${pid}/revisions`} className={navLink}>
               <GitCompareArrows size={16} strokeWidth={1.75} />
-              Revisions
+              Change impact
             </NavLink>
           )}
           {pid && (
