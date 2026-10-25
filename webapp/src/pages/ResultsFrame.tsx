@@ -9,6 +9,7 @@ const TABS = [
   ['', 'Overview'],
   ['allocation', 'Allocation'],
   ['layout', 'Layout'],
+  ['tqs', 'TQs'],
 ] as const
 
 const tab = ({ isActive }: { isActive: boolean }) =>

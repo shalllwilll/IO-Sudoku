@@ -11,6 +11,8 @@ import ResultsFrame from './pages/ResultsFrame'
 import Overview from './pages/results/Overview'
 import Allocation from './pages/results/Allocation'
 import LayoutTab from './pages/results/LayoutTab'
+import Tqs from './pages/Tqs'
+import RunTqs from './pages/results/RunTqs'
 import Login from './pages/Login'
 import Placeholder from './pages/Placeholder'
 import Projects from './pages/Projects'
@@ -50,9 +52,10 @@ export const routes: RouteObject[] = [
                       { index: true, element: <Overview /> },
                       { path: 'allocation', element: <Allocation /> },
                       { path: 'layout', element: <LayoutTab /> },
+                      { path: 'tqs', element: <RunTqs /> },
                     ],
                   },
-                  { path: 'tqs', element: stub('TQ inbox', 'U7'), handle: { crumb: 'TQ inbox' } },
+                  { path: 'tqs', element: <Tqs />, handle: { crumb: 'TQ inbox' } },
                   { path: 'revisions', element: stub('Revisions', 'U9'), handle: { crumb: 'Revisions' } },
                   { path: 'plant', element: stub('3D plant', 'U10'), handle: { crumb: '3D plant' } },
                 ],

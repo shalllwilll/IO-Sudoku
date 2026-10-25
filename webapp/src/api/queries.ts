@@ -247,3 +247,35 @@ export const useLayout = (pid: string, rid: string) =>
     queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs/{rid}/layout', { params: { path: { pid, rid } }, signal })),
     ...finished,
   })
+
+// -- TQs ----------------------------------------------------------------------------------
+
+export type TqItem = Schemas['TQ']
+export type AnswerResult = Schemas['AnswerOut']
+
+export const projectTqsQuery = (pid: string) =>
+  queryOptions({
+    queryKey: keys.tqs(pid, 'all'),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/tqs', { params: { path: { pid } }, signal })),
+  })
+export const useProjectTqs = (pid: string) => useQuery(projectTqsQuery(pid))
+export const useRunTqs = (pid: string, rid: string) =>
+  useQuery({
+    queryKey: [...sub(pid, 'runs'), rid, 'tqs'],
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs/{rid}/tqs', { params: { path: { pid, rid } }, signal })),
+  })
+
+export function useAnswerTq(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ tid, body }: { tid: string; body: Schemas['AnswerIn'] }) =>
+      unwrap(api.POST('/api/projects/{pid}/tqs/{tid}/answer', { params: { path: { pid, tid } }, body })),
+    // statuses change in every list that shows this TQ: inbox, run tab and the sidebar badge
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', pid] }),
+  })
+}
+
+export const useExplainTq = (pid: string) =>
+  useMutation({
+    mutationFn: (tid: string) => unwrap(api.GET('/api/projects/{pid}/tqs/{tid}/explain', { params: { path: { pid, tid } } })),
+  })

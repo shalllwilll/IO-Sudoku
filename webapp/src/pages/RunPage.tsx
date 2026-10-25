@@ -10,6 +10,7 @@ import { cn } from '@/lib/cn'
 import { currentSelection, missingRequired } from '@/lib/mapping'
 import { PRESETS } from '@/lib/presets'
 import { useRunStream } from '@/lib/useRunStream'
+import { usePending } from '@/state/pending'
 import { undecided } from '@/lib/values'
 import { useEffect, useRef } from 'react'
 
@@ -41,6 +42,8 @@ function Setup({ pid }: { pid: string }) {
   const rules = useRules(pid)
   const runs = useRuns(pid)
   const start = useStartRun(pid)
+  const pending = usePending((s) => s.changed[pid] ?? 0)
+  const clearPending = usePending((s) => s.clear)
   const [open, setOpen] = useState(false)
   const [cpsat, setCpsat] = useState<Tri>('default')
   const [qiga, setQiga] = useState<Tri>('default')
@@ -52,7 +55,12 @@ function Setup({ pid }: { pid: string }) {
 
   const go = () => {
     const body: RunOptions = { cpsat: tri(cpsat), qiga: tri(qiga), seed: seed.trim() === '' ? null : Number(seed) }
-    start.mutate(body, { onSuccess: (r) => nav(`?run=${r.id}`, { replace: true }) })
+    start.mutate(body, {
+      onSuccess: (r) => {
+        clearPending(pid)
+        nav(`?run=${r.id}`, { replace: true })
+      },
+    })
   }
 
   return (
@@ -65,6 +73,7 @@ function Setup({ pid }: { pid: string }) {
         <Check_ ok={hasData} title="Data" detail={hasData ? `${project.data?.uploads} ${project.data?.uploads === 1 ? 'file' : 'files'} uploaded` : 'Upload a workbook first'} to={`/projects/${pid}/data`} />
         <Check_ ok={missing.length === 0} warn title="Mapping" detail={!hasData ? 'Waiting for data' : missing.length ? `Required fields not mapped: ${[...new Set(missing)].join(', ')}` : 'Every required field is mapped'} to={`/projects/${pid}/map`} />
         <Check_ ok={open_ === 0} warn title="Values" detail={!hasData ? 'Waiting for data' : open_ ? `${open_} unrecognised ${open_ === 1 ? 'value' : 'values'} will become questions` : 'Every value is recognised'} to={`/projects/${pid}/values`} />
+        <Check_ ok={pending === 0} warn title="Answers" detail={pending ? `${pending} ${pending === 1 ? 'answer' : 'answers'} given since the last run will apply now` : 'No new answers since the last run'} to={`/projects/${pid}/tqs`} />
         <Check_ ok title="Rules" detail={presetLabel} to={`/projects/${pid}/rules`} />
       </ul>
 
