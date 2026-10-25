@@ -94,7 +94,7 @@ describe('Results', () => {
     expect(screen.getByRole('button', { name: /Open questions/ })).toHaveTextContent('1')
     await userEvent.click(screen.getByRole('button', { name: /Open questions/ }))
     expect(screen.getByRole('button', { name: /baseplate 2, channel 2:/ }).className).toMatch(/opacity-20/)
-    expect(screen.getByText(/3D view — coming soon/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /open 3d view/i })).toHaveAttribute('href', '/projects/p1/runs/r1/plant')
   })
 
   it('opens with a verdict sentence and a Resolve action while questions are open', async () => {

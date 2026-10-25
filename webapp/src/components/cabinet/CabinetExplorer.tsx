@@ -96,7 +96,7 @@ export function CabinetExplorer({ pid, layout, allocation, slots, tqKeys }: Prop
               ))}
             </div>
           )}
-          <span title="The 3D model will be enabled after integration" className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border px-3.5 text-[13px] text-fg-subtle"><Box size={15} strokeWidth={1.75} /> 3D view — coming soon</span>
+          <Link to={`/projects/${pid}/runs/${allocation.run_id}/plant`} className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border px-3.5 text-[13px] font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg"><Box size={15} strokeWidth={1.75} /> Open 3D view</Link>
         </div>
 
         <div className="mb-5 flex flex-wrap items-center gap-2">
