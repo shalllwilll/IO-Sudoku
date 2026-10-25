@@ -20,7 +20,7 @@ const layout = {
   },
 }
 const placements = [
-  { cioc_no: 1, baseplate: 2, channel: 1, kind: 'field', pair: 1, signal: { tag: 'FT-100', io_type: 'AIR', cable: 'C-1', segregation_family: 'A' } },
+  { cioc_no: 1, baseplate: 2, channel: 1, kind: 'field', pair: 1, signal: { tag: 'FT-100', io_type: 'AIR', cable: 'C-1', segregation_family: 'A', source_file: 'f.xlsx', source_row: 7 } },
   { cioc_no: 1, baseplate: 2, channel: 2, kind: 'wired_spare', io_type: 'DOR', block_id: 'C-9', pair: 3 },
 ]
 const allocation = { run_id: 'r1', solver: 'cpsat', utilisation: {}, placements, unplaced: [], issues: [], rows: [{ cioccslsname: 'CIOC1', baseplate: 'BP-2', channelno: 1, charmtype: 'SE4301' }] }
@@ -37,6 +37,7 @@ const run = (o: object = {}) => ({ id: 'r1abcdef0', project_id: 'p1', status: 'f
 function mount(path: string, runOut = run()) {
   vi.stubGlobal('fetch', vi.fn(async (req: Request) => {
     const p = new URL(req.url).pathname
+    if (p.endsWith('/tqs')) return json([{ id: 'TQ-1', status: 'open', severity: 'blocking', signal_keys: ['f.xlsx:7'] }])
     if (p.endsWith('/report')) return json(report)
     if (p.endsWith('/allocation')) return json(allocation)
     if (p.endsWith('/layout')) return json(layout)
@@ -84,11 +85,15 @@ describe('Results', () => {
     expect(await screen.findByText('SE4301')).toBeInTheDocument()
   })
 
-  it('layout shows the CIOC grid and a positions inspector', async () => {
+  it('drills from the cabinet to a CIOC to one CHARM, with open questions pinned', async () => {
     mount('/projects/p1/runs/r1/layout')
-    expect(await screen.findByRole('region', { name: 'CIOC 1' })).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: 'Open CIOC 1' }))
+    expect(screen.getByRole('region', { name: 'CIOC 1' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /CIOC 1, baseplate 2, channel 1:/ }))
     expect(screen.getByText('CIOC 1 · BP 2 · CH 1')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Open questions/ })).toHaveTextContent('1')
+    await userEvent.click(screen.getByRole('button', { name: /Open questions/ }))
+    expect(screen.getByRole('button', { name: /baseplate 2, channel 2:/ }).className).toMatch(/opacity-20/)
     expect(screen.getByRole('link', { name: /view in 3d/i })).toHaveAttribute('href', '/projects/p1/runs/r1/plant')
   })
 

@@ -7,11 +7,13 @@ interface Props {
   size?: number
   selected?: boolean
   dimmed?: boolean
+  pin?: boolean
+  onHover?: (s: Slot | null) => void
   onSelect?: (s: Slot) => void
 }
 
 /** One CHARM position. Kind is carried by shape and texture as well as colour. */
-export function CharmCell({ slot, size = 20, selected, dimmed, onSelect }: Props) {
+export function CharmCell({ slot, size = 20, selected, dimmed, pin, onHover, onSelect }: Props) {
   const { kind, io } = slot
   return (
     <button
@@ -19,6 +21,10 @@ export function CharmCell({ slot, size = 20, selected, dimmed, onSelect }: Props
       aria-label={describe(slot)}
       aria-pressed={selected}
       onClick={() => onSelect?.(slot)}
+      onMouseEnter={() => onHover?.(slot)}
+      onMouseLeave={() => onHover?.(null)}
+      onFocus={() => onHover?.(slot)}
+      onBlur={() => onHover?.(null)}
       style={{ width: size, height: size }}
       className={cn(
         'relative grid shrink-0 place-items-center rounded-[5px] transition-[opacity,box-shadow,background-color] duration-150 ease-out',
@@ -32,6 +38,7 @@ export function CharmCell({ slot, size = 20, selected, dimmed, onSelect }: Props
       )}
     >
       {kind === 'wired_spare' && io && <span className={cn('size-1.5 rounded-full', IO_BG[io])} />}
+      {pin && <span aria-hidden className="absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-bg bg-danger" />}
     </button>
   )
 }
