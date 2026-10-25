@@ -1,5 +1,5 @@
 import type { Io } from '@/lib/hierarchy'
-import type { Slot } from '@/preview/mock'
+import type { Slot } from '@/lib/results'
 
 export const IO_BG: Record<Io, string> = {
   AIR: 'bg-io-air',

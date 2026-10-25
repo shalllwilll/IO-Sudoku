@@ -7,13 +7,15 @@ import MapPage from './pages/Map'
 import Values from './pages/Values'
 import Rules from './pages/Rules'
 import RunPage from './pages/RunPage'
-import Layout from './pages/Layout'
+import ResultsFrame from './pages/ResultsFrame'
+import Overview from './pages/results/Overview'
+import Allocation from './pages/results/Allocation'
+import LayoutTab from './pages/results/LayoutTab'
 import Login from './pages/Login'
 import Placeholder from './pages/Placeholder'
 import Projects from './pages/Projects'
 import Plant from './pages/Plant'
 import ProjectFrame from './pages/ProjectFrame'
-import Run from './pages/Run'
 
 const stub = (title: string, milestone: string) => <Placeholder title={title} milestone={milestone} />
 
@@ -40,7 +42,16 @@ export const routes: RouteObject[] = [
                   { path: 'values', element: <Values />, handle: { crumb: 'Values' } },
                   { path: 'rules', element: <Rules />, handle: { crumb: 'Rules' } },
                   { path: 'run', element: <RunPage />, handle: { crumb: 'Run' } },
-                  { path: 'runs/:rid', element: stub('Results', 'U6'), handle: { crumb: 'Results' } },
+                  {
+                    path: 'runs/:rid',
+                    element: <ResultsFrame />,
+                    handle: { crumb: 'Results' },
+                    children: [
+                      { index: true, element: <Overview /> },
+                      { path: 'allocation', element: <Allocation /> },
+                      { path: 'layout', element: <LayoutTab /> },
+                    ],
+                  },
                   { path: 'tqs', element: stub('TQ inbox', 'U7'), handle: { crumb: 'TQ inbox' } },
                   { path: 'revisions', element: stub('Revisions', 'U9'), handle: { crumb: 'Revisions' } },
                   { path: 'plant', element: stub('3D plant', 'U10'), handle: { crumb: '3D plant' } },
@@ -52,8 +63,6 @@ export const routes: RouteObject[] = [
         ],
       },
       // Design-lock screens, kept as a visual reference until the real ones replace them.
-      { path: '/preview/run', element: <Run /> },
-      { path: '/preview/layout', element: <Layout /> },
       { path: '/preview/plant', element: <Plant /> },
       { path: '*', element: <Navigate to="/projects" replace /> },
     ],

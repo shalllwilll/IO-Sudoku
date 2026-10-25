@@ -6,3 +6,10 @@ afterEach(() => {
   cleanup()
   localStorage.clear()
 })
+
+// jsdom has no ResizeObserver; the virtualized table needs one to exist.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}

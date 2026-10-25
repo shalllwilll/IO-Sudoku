@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn'
-import type { Slot } from '@/preview/mock'
+import type { Slot } from '@/lib/results'
 import { describe, IO_BG, IO_BORDER } from './kinds'
 
 interface Props {

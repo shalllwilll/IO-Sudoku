@@ -213,3 +213,37 @@ export function useRefreshAfterRun(pid: string) {
   const qc = useQueryClient()
   return () => qc.invalidateQueries({ queryKey: keys.project(pid) })
 }
+
+// -- Results ------------------------------------------------------------------------------
+
+export type Report = Schemas['CompletionReport']
+export type Allocation = Schemas['AllocationOut']
+export type LayoutData = Schemas['LayoutOut']
+export type PlacementOut = Allocation['placements'][number]
+
+const finished = { staleTime: Infinity, retry: false } as const // a finished run never changes
+
+export const useRun = (pid: string, rid: string) =>
+  useQuery({
+    ...runQuery(pid, rid),
+    // a run opened before it ends keeps refreshing until it does
+    refetchInterval: (q) => (q.state.data?.status === 'running' ? 1500 : false),
+  })
+export const useReport = (pid: string, rid: string) =>
+  useQuery({
+    queryKey: [...sub(pid, 'runs'), rid, 'report'],
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs/{rid}/report', { params: { path: { pid, rid } }, signal })),
+    ...finished,
+  })
+export const useAllocation = (pid: string, rid: string) =>
+  useQuery({
+    queryKey: [...sub(pid, 'runs'), rid, 'allocation'],
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs/{rid}/allocation', { params: { path: { pid, rid } }, signal })),
+    ...finished,
+  })
+export const useLayout = (pid: string, rid: string) =>
+  useQuery({
+    queryKey: [...sub(pid, 'runs'), rid, 'layout'],
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs/{rid}/layout', { params: { path: { pid, rid } }, signal })),
+    ...finished,
+  })
