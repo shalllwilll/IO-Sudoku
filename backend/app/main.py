@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, demo, errors, events, projects, revisions, runs
+from app.api import ai, demo, errors, events, projects, reports, revisions, runs
 from app.api.service import Service
 from app.api.store import ApiStore
 from app.config import Settings
@@ -35,6 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.service.recover()
     app.include_router(projects.router)
     app.include_router(runs.router)
+    app.include_router(reports.router)  # before revisions: /revisions/report is not a label
     app.include_router(revisions.router)
     app.include_router(events.router)
     app.include_router(ai.router)

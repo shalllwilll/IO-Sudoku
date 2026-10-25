@@ -1163,6 +1163,29 @@
     "title": "ErrorBody",
     "type": "object"
    },
+   "Fig": {
+    "properties": {
+     "hint": {
+      "default": "",
+      "title": "Hint",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "value": {
+      "title": "Value",
+      "type": "string"
+     }
+    },
+    "required": [
+     "label",
+     "value"
+    ],
+    "title": "Fig",
+    "type": "object"
+   },
    "Finding": {
     "properties": {
      "message": {
@@ -2437,6 +2460,46 @@
     "title": "Recommended",
     "type": "object"
    },
+   "ReportDoc": {
+    "properties": {
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "meta": {
+      "items": {
+       "items": {
+        "type": "string"
+       },
+       "type": "array"
+      },
+      "title": "Meta",
+      "type": "array"
+     },
+     "sections": {
+      "items": {
+       "$ref": "#/components/schemas/Section"
+      },
+      "title": "Sections",
+      "type": "array"
+     },
+     "subtitle": {
+      "default": "",
+      "title": "Subtitle",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     }
+    },
+    "required": [
+     "kind",
+     "title"
+    ],
+    "title": "ReportDoc",
+    "type": "object"
+   },
    "ReportOut": {
     "properties": {
      "report": {
@@ -2896,6 +2959,40 @@
      "created"
     ],
     "title": "SampleOut",
+    "type": "object"
+   },
+   "Section": {
+    "properties": {
+     "figures": {
+      "items": {
+       "$ref": "#/components/schemas/Fig"
+      },
+      "title": "Figures",
+      "type": "array"
+     },
+     "heading": {
+      "title": "Heading",
+      "type": "string"
+     },
+     "tables": {
+      "items": {
+       "$ref": "#/components/schemas/Table"
+      },
+      "title": "Tables",
+      "type": "array"
+     },
+     "text": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Text",
+      "type": "array"
+     }
+    },
+    "required": [
+     "heading"
+    ],
+    "title": "Section",
     "type": "object"
    },
    "SheetInfo": {
@@ -3606,6 +3703,51 @@
      "message"
     ],
     "title": "TQ",
+    "type": "object"
+   },
+   "Table": {
+    "properties": {
+     "columns": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Columns",
+      "type": "array"
+     },
+     "rows": {
+      "items": {
+       "items": {
+        "anyOf": [
+         {
+          "type": "string"
+         },
+         {
+          "type": "integer"
+         },
+         {
+          "type": "number"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "type": "array"
+      },
+      "title": "Rows",
+      "type": "array"
+     },
+     "title": {
+      "default": "",
+      "title": "Title",
+      "type": "string"
+     }
+    },
+    "required": [
+     "columns",
+     "rows"
+    ],
+    "title": "Table",
     "type": "object"
    },
    "TqGroup": {
@@ -4879,6 +5021,88 @@
     "summary": "Cumulative"
    }
   },
+  "/api/projects/{pid}/revisions/report": {
+   "get": {
+    "operationId": "revision_doc_api_projects__pid__revisions_report_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "from",
+      "required": true,
+      "schema": {
+       "title": "From",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "to",
+      "required": true,
+      "schema": {
+       "title": "To",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "enum": [
+        "json",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportDoc"
+        }
+       },
+       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Revision Doc"
+   }
+  },
   "/api/projects/{pid}/revisions/{label}": {
    "get": {
     "operationId": "revision_api_projects__pid__revisions__label__get",
@@ -5975,6 +6199,102 @@
      }
     },
     "summary": "Report"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/reports/{kind}": {
+   "get": {
+    "operationId": "run_report_api_projects__pid__runs__rid__reports__kind__get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "kind",
+      "required": true,
+      "schema": {
+       "enum": [
+        "allocation",
+        "tq"
+       ],
+       "title": "Kind",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "format",
+      "required": false,
+      "schema": {
+       "default": "json",
+       "enum": [
+        "json",
+        "xlsx"
+       ],
+       "title": "Format",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ReportDoc"
+        }
+       },
+       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {}
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Run Report"
    }
   },
   "/api/projects/{pid}/runs/{rid}/tqs": {
