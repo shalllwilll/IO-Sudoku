@@ -24,7 +24,7 @@ function Row({ label, value, mono }: { label: string; value?: string | number | 
 
 const text = (v: unknown) => (v === null || v === undefined || v === '' ? undefined : String(v))
 
-/** Right-hand panel on wide screens; a bottom sheet below xl that exists only while a slot is selected. */
+/** Context drawer, rendered only when a user selects a physical position. */
 export function SlotInspector({ slot, rows, onClose }: { slot?: Slot; rows: Allocation['rows']; onClose: () => void }) {
   const row = slot ? rowFor(rows, slot) : undefined
   const sig = slot?.placement?.signal
@@ -32,16 +32,15 @@ export function SlotInspector({ slot, rows, onClose }: { slot?: Slot; rows: Allo
     <aside
       aria-label="Slot inspector"
       className={cn(
-        'overflow-auto overscroll-contain border-border bg-surface-1 p-5 xl:static xl:block xl:border-l',
-        'max-xl:fixed max-xl:inset-x-0 max-xl:bottom-0 max-xl:z-40 max-xl:max-h-[55%] max-xl:rounded-t-xl max-xl:border-t max-xl:shadow-float',
-        !slot && 'max-xl:hidden',
+        'fixed inset-y-0 right-0 z-40 w-full max-w-[380px] overflow-auto overscroll-contain border-l border-border-strong bg-surface-1 p-5 shadow-float',
+        'max-md:inset-x-0 max-md:top-auto max-md:max-w-none max-md:max-h-[60%] max-md:rounded-t-xl max-md:border-l-0 max-md:border-t',
       )}
     >
       {slot ? (
         <>
           <div className="flex items-center justify-between">
             <span className="text-xs text-fg-muted">Position</span>
-            <button className="rounded px-1.5 text-xs text-fg-muted hover:text-fg xl:hidden" onClick={onClose}>
+            <button className="rounded px-1.5 text-xs text-fg-muted hover:text-fg" onClick={onClose}>
               Close
             </button>
           </div>

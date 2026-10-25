@@ -1,4 +1,3 @@
-import { motion } from 'motion/react'
 import { Box, ChevronRight, CircleHelp, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -12,7 +11,6 @@ import type { Allocation, LayoutData } from '@/api/queries'
 
 interface Props {
   pid: string
-  rid: string
   layout: LayoutData['layout']
   allocation: Allocation
   slots: Slot[]
@@ -44,7 +42,7 @@ function Mini({ cells, filter, tq }: { cells: Slot[]; filter: (s: Slot) => boole
   )
 }
 
-export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }: Props) {
+export function CabinetExplorer({ pid, layout, allocation, slots, tqKeys }: Props) {
   const cabinets = layout.cabinets ?? []
   const [cab, setCab] = useState<number | null>(null)
   const [cioc, setCioc] = useState<number | null>(null)
@@ -75,7 +73,7 @@ export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }:
   const cabinet = cabinets.find((c) => c.no === active)
 
   return (
-    <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[1fr_320px]">
+    <div className="min-h-0 flex-1">
       <div className="min-w-0 overflow-auto p-6">
         <div className="mb-4 flex flex-wrap items-center gap-3">
           <nav aria-label="Location" className="flex items-center gap-1 text-[13px]">
@@ -98,9 +96,7 @@ export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }:
               ))}
             </div>
           )}
-          <Link to={`/projects/${pid}/runs/${rid}/plant`} className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3.5 text-[13px] font-medium transition-[background-color] duration-150 ease-out hover:bg-surface-3">
-            <Box size={15} strokeWidth={1.75} /> View in 3D
-          </Link>
+          <span title="The 3D model will be enabled after integration" className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border px-3.5 text-[13px] text-fg-subtle"><Box size={15} strokeWidth={1.75} /> 3D view — coming soon</span>
         </div>
 
         <div className="mb-5 flex flex-wrap items-center gap-2">
@@ -128,16 +124,16 @@ export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }:
         </div>
 
         {current === undefined ? (
-          <section aria-label="Cabinet front" className="mx-auto max-w-3xl [perspective:1400px]">
-            <div className="rounded-2xl border border-border-strong bg-surface-2 p-4 shadow-float [transform:rotateY(-6deg)_rotateX(2deg)]">
+          <section aria-label="Cabinet front" className="mx-auto max-w-4xl">
+            <div className="rounded-xl border border-border-strong bg-surface-2 p-4 shadow-card">
               <p className="mb-3 font-mono text-xs text-fg-muted">{cabinet?.name}</p>
               <ul className="flex flex-col gap-3">
-                {ciocs.map((c, i) => {
+                {ciocs.map((c) => {
                   const cells = slots.filter((s) => s.cioc === c.no)
                   const n = cells.filter(used).length
                   const pins = cells.filter(hasTq).length
                   return (
-                    <motion.li key={c.no} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: i * 0.06, ease: 'easeOut' }}>
+                    <li key={c.no}>
                       <button type="button" aria-label={`Open CIOC ${c.no}`} onClick={() => setCioc(c.no)} className="flex w-full items-center gap-4 rounded-lg border border-border bg-surface-1 p-3 text-left shadow-card transition-[background-color,box-shadow] duration-150 ease-out hover:bg-surface-2">
                         <div className="w-28 shrink-0">
                           <div className="text-[13px] font-medium">CIOC {c.no}</div>
@@ -147,7 +143,7 @@ export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }:
                         </div>
                         <Mini cells={cells} filter={(s) => !filtering || pass(s)} tq={hasTq} />
                       </button>
-                    </motion.li>
+                    </li>
                   )
                 })}
               </ul>
@@ -155,13 +151,13 @@ export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }:
             <p className="mt-3 text-center text-xs text-fg-subtle">Schematic view. Each square is one CHARM position. Select a CIOC to open it.</p>
           </section>
         ) : (
-          <section aria-label={`CIOC ${current.no}`} className="mx-auto max-w-3xl [perspective:1400px]">
-            <div className="flex flex-col gap-2 [transform:rotateX(14deg)] [transform-origin:50%_100%]">
+          <section aria-label={`CIOC ${current.no}`} className="mx-auto max-w-4xl">
+            <div className="flex flex-col gap-2">
               {Array.from({ length: BASEPLATES }, (_, i) => i + 1).map((bp) => {
                 const row = slots.filter((s) => s.cioc === current.no && s.bp === bp)
                 const reserved = row[0]?.reserved
                 return (
-                  <motion.div key={bp} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: bp * 0.04, ease: 'easeOut' }} className={cn('flex items-center gap-3 rounded-lg border border-border bg-surface-1 px-3 py-2 shadow-card', reserved === 'spare' && 'pat-reserved')}>
+                  <div key={bp} className={cn('flex items-center gap-3 rounded-lg border border-border bg-surface-1 px-3 py-2 shadow-card', reserved === 'spare' && 'pat-reserved')}>
                     <span className="w-12 font-mono text-[11px] text-fg-subtle">{row[0]?.bpName ?? `BP${bp}`}</span>
                     <div className="flex gap-1.5">
                       {row.map((s) => (
@@ -169,7 +165,7 @@ export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }:
                       ))}
                     </div>
                     {reserved && <span className="ml-auto text-[11px] text-fg-subtle">{reserved === 'alarm' ? 'alarms' : 'reserved'}</span>}
-                  </motion.div>
+                  </div>
                 )
               })}
             </div>
@@ -187,7 +183,7 @@ export function CabinetExplorer({ pid, rid, layout, allocation, slots, tqKeys }:
           <li className="flex items-center gap-2"><span className="size-2.5 rounded-full bg-danger" />Open question</li>
         </ul>
       </div>
-      <SlotInspector slot={sel} rows={allocation.rows} onClose={() => setSel(undefined)} />
+      {sel && <SlotInspector slot={sel} rows={allocation.rows} onClose={() => setSel(undefined)} />}
     </div>
   )
 }

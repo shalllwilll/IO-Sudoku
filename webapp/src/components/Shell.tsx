@@ -70,18 +70,18 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
         <nav className="flex flex-col gap-0.5" aria-label="Primary">
           <NavLink to="/projects" end className={navLink}>
             <FolderKanban size={16} strokeWidth={1.75} />
-            Projects
+            New allocation
           </NavLink>
           {pid && (
             <NavLink to={`/projects/${pid}/revisions`} className={navLink}>
               <GitCompareArrows size={16} strokeWidth={1.75} />
-              Change impact
+              Revision impact
             </NavLink>
           )}
           {pid && (
             <NavLink to={`/projects/${pid}/tqs`} className={navLink}>
               <CircleHelp size={16} strokeWidth={1.75} />
-              Technical queries
+              Decisions
               {open > 0 && (
                 <span className="ml-auto rounded-full bg-danger/20 px-1.5 text-[11px] font-medium text-danger tnum" aria-label={`${open} open`}>
                   {open}
@@ -120,12 +120,12 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
                 )}
               >
                 <Sparkles size={14} strokeWidth={1.75} />
-                Assistant
-                <span className={cn('rounded-full px-1.5 py-px text-[11px] font-medium', aiOn ? 'bg-success/15 text-success' : 'bg-surface-3 text-fg-muted')}>{aiOn ? 'AI ready' : 'AI off'}</span>
+                Copilot
+                <span className={cn('rounded-full px-1.5 py-px text-[11px] font-medium', aiOn ? 'bg-success/15 text-success' : 'bg-surface-3 text-fg-muted')}>{aiOn ? 'Assisted' : 'Templates'}</span>
               </button>
             ) : (
               <span className="flex items-center gap-1.5 text-xs text-fg-muted" title={aiOn ? 'AI features are advisory only' : 'AI is not configured. Everything else works.'}>
-                <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} /> {aiOn ? 'AI ready' : 'AI off'}
+                <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} /> {aiOn ? 'Assisted previews' : 'Checked templates'}
               </span>
             )}
             <ThemeToggle />

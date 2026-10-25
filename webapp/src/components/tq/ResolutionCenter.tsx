@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { describeError } from '@/api/errors'
 import { useAnswerTq, useBulkAnswer, useRules, useRuns, useStartRun, useTqGroups, useTqPlacements, type GroupOption, type TqGroup } from '@/api/queries'
 import { Button } from '@/components/ui/Button'
+import { Dialog } from '@/components/ui/Dialog'
 import { inputClass } from '@/components/ui/Field'
 import { cn } from '@/lib/cn'
 import { usePending } from '@/state/pending'
@@ -34,6 +35,7 @@ function PlaceFix({ pid, g }: { pid: string; g: TqGroup }) {
   const cables = (g.cables ?? []).filter((c) => c.open)
   const [sel, setSel] = useState<string | null>(cables[0]?.tq_id ?? null)
   const [pick, setPick] = useState(0)
+  const [waive, setWaive] = useState<string | null>(null)
   const p = useTqPlacements(pid, rid, sel)
   const cable = cables.find((c) => c.tq_id === sel)
   const name = (id: string): string => String(rules.data?.rules.find((r) => r.id === id)?.name ?? id)
@@ -89,8 +91,8 @@ function PlaceFix({ pid, g }: { pid: string; g: TqGroup }) {
                 <li key={id} className="flex flex-wrap items-center gap-2 text-[13px]">
                   <span className="font-mono text-xs">{id}</span>
                   <span className="min-w-0 flex-1 text-xs text-fg-muted text-pretty">{name(id)} · rejected {n} {n === 1 ? 'position' : 'positions'}</span>
-                  <Button disabled={bulk.isPending || bulk.isSuccess} onClick={() => bulk.mutate({ tq_ids: g.open_ids, option: 'Waive the rule', fields: { rule: id }, scope: 'everywhere', author }, { onSuccess: (r) => { for (let i = 0; i < r.answered.length; i++) mark(pid) } })}>
-                    {bulk.isSuccess ? 'Waived' : `Waive ${id}`}
+                  <Button disabled={bulk.isPending || bulk.isSuccess} onClick={() => setWaive(id)}>
+                    {bulk.isSuccess ? 'Waived' : `Review ${id}`}
                   </Button>
                 </li>
               ))}
@@ -100,6 +102,10 @@ function PlaceFix({ pid, g }: { pid: string; g: TqGroup }) {
           {bulk.isError && <p role="alert" className="text-xs text-danger">{describeError(bulk.error)}</p>}
         </div>
       )}
+      <Dialog open={waive !== null} onClose={() => setWaive(null)} title="Review project-wide rule change">
+        <p className="text-[13px] text-fg-muted text-pretty">Waiving <span className="font-mono text-fg">{waive}</span> stops enforcing it everywhere in this project on the next run. This decision is recorded in the report and can change the allocation.</p>
+        <div className="mt-5 flex justify-end gap-2"><Button variant="ghost" onClick={() => setWaive(null)}>Keep rule</Button><Button variant="primary" disabled={bulk.isPending} onClick={() => { if (!waive) return; bulk.mutate({ tq_ids: g.open_ids, option: 'Waive the rule', fields: { rule: waive }, scope: 'everywhere', author }, { onSuccess: (r) => { for (let i = 0; i < r.answered.length; i++) mark(pid); setWaive(null) } }) }}>{bulk.isPending ? 'Saving…' : 'Waive and record'}</Button></div>
+      </Dialog>
     </div>
   )
 }

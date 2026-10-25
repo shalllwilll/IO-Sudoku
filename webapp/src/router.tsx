@@ -1,3 +1,4 @@
+import { createElement, lazy, Suspense, type ReactNode } from 'react'
 import { Navigate, createBrowserRouter, type RouteObject } from 'react-router-dom'
 import AppShell from './AppShell'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -11,16 +12,18 @@ import ResultsFrame from './pages/ResultsFrame'
 import Overview from './pages/results/Overview'
 import { RevisionReport, RunReport } from './pages/Report'
 import Landing from './pages/results/Landing'
-import Allocation from './pages/results/Allocation'
-import LayoutTab from './pages/results/LayoutTab'
 import Tqs from './pages/Tqs'
 import RunTqs from './pages/results/RunTqs'
 import Login from './pages/Login'
 import Projects from './pages/Projects'
 import Revisions from './pages/Revisions'
 import Settings from './pages/Settings'
-import Plant from './pages/Plant'
 import ProjectFrame from './pages/ProjectFrame'
+
+const allocationPage = lazy(() => import('./pages/results/Allocation'))
+const layoutPage = lazy(() => import('./pages/results/LayoutTab'))
+const plantPage = lazy(() => import('./pages/Plant'))
+const later = (view: ReactNode) => <Suspense fallback={<p className="p-8 text-[13px] text-fg-muted">Loading view…</p>}>{view}</Suspense>
 
 export const routes: RouteObject[] = [
   {
@@ -52,8 +55,8 @@ export const routes: RouteObject[] = [
                     children: [
                       { index: true, element: <Landing /> },
                       { path: 'summary', element: <Overview /> },
-                      { path: 'allocation', element: <Allocation /> },
-                      { path: 'layout', element: <LayoutTab /> },
+                      { path: 'allocation', element: later(createElement(allocationPage)) },
+                      { path: 'layout', element: later(createElement(layoutPage)) },
                       { path: 'tqs', element: <RunTqs /> },
                     ],
                   },
@@ -61,7 +64,7 @@ export const routes: RouteObject[] = [
                   { path: 'revisions/report', element: <RevisionReport />, handle: { crumb: 'Revision report' } },
                   { path: 'runs/:rid/report/:kind', element: <RunReport />, handle: { crumb: 'Report' } },
                   { path: 'revisions', element: <Revisions />, handle: { crumb: 'Change impact' } },
-                  { path: 'runs/:rid/plant', element: <Plant />, handle: { crumb: '3D plant' } },
+                  { path: 'runs/:rid/plant', element: later(createElement(plantPage)), handle: { crumb: '3D plant' } },
                 ],
               },
               { path: '/settings', element: <Settings />, handle: { crumb: 'Settings' } },

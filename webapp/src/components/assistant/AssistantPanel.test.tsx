@@ -34,7 +34,7 @@ function mount(intent: unknown, ai = true) {
   )
 }
 const ask = async (text: string) => {
-  await userEvent.type(screen.getByLabelText('Describe a constraint'), text)
+  await userEvent.type(screen.getByLabelText('Ask the allocation copilot'), text)
   await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 }
 beforeEach(() => useAssistant.setState({ open: false }))
@@ -62,7 +62,7 @@ describe('AssistantPanel', () => {
 
   it('treats AI being off as a normal state', async () => {
     mount({ state: 'unavailable', intent: 'rule', message: 'AI is not configured.', locked_rules: [], questions: [], rule_preview: null }, false)
-    expect(await screen.findByText('AI off')).toBeInTheDocument()
+    expect(await screen.findByText('Checked template preview')).toBeInTheDocument()
     await ask('Keep AIR and DOR on separate CIOCs')
     expect(await screen.findByRole('link', { name: 'Build the rule with the form instead' })).toBeInTheDocument()
   })

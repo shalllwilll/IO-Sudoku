@@ -97,13 +97,12 @@ describe('Run page', () => {
       es.emit(5, 'run.finished', { allocated: 189, held_out: 0, tqs: 1, solver: 'cpsat' })
     })
     expect(screen.queryByText('AIR spares assumed')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open results' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.queryByRole('link', { name: 'Inspect allocation' })).not.toBeInTheDocument()
     await act(async () => {
       await vi.advanceTimersByTimeAsync(3000)
     })
-    expect(screen.getByText('AIR spares assumed')).toBeInTheDocument()
-    expect(screen.getByText(/Validator: every hard rule holds/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open results' })).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.getByText('Allocation completed successfully')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Inspect allocation' })).toHaveAttribute('href', '/projects/p1/runs/r9/layout')
     expect(es.closed).toBe(true)
   })
 
@@ -124,6 +123,6 @@ describe('Run page', () => {
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000)
     })
-    expect(screen.getByRole('link', { name: 'Open results' })).toHaveAttribute('aria-disabled', 'false')
+    expect(screen.getByRole('link', { name: 'Inspect allocation' })).toHaveAttribute('href', '/projects/p1/runs/r9/layout')
   })
 })

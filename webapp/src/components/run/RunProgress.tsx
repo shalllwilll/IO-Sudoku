@@ -27,6 +27,21 @@ export function RunProgress({ pid, rid, view, status, onReplay }: { pid: string;
   const fell = view.fallbacks.length > 0
   const blocking = view.tqs.filter((t) => t.severity === 'blocking').length
 
+  if (done) {
+    const needsDecision = heldOut > 0 || blocking > 0
+    return (
+      <div className="mx-auto flex w-full max-w-[900px] flex-col gap-5 p-6">
+        <section className={cn('flex flex-wrap items-center gap-4 rounded-xl border p-6', needsDecision ? 'border-warning/40 bg-warning/10' : 'border-success/40 bg-success/10')}>
+          {needsDecision ? <CircleHelp size={24} className="text-warning" /> : <ShieldCheck size={24} className="text-success" />}
+          <div className="min-w-0 flex-1"><h1 className="text-xl font-semibold tracking-tight">{needsDecision ? 'Allocation needs a decision' : 'Allocation completed successfully'}</h1><p className="mt-1 text-[13px] text-fg-muted text-pretty">{needsDecision ? `${placed} signals placed; ${heldOut} are waiting for a safe decision.` : `${placed} signals placed and every hard rule was validated.`}</p></div>
+          <Link to={`/projects/${pid}/runs/${rid}${needsDecision ? '/tqs' : '/layout'}`} className="inline-flex h-10 items-center rounded-md bg-accent px-4 text-[13px] font-medium text-accent-fg shadow-card">{needsDecision ? 'Resolve decisions' : 'Inspect allocation'}</Link>
+        </section>
+        <div className="grid gap-3 sm:grid-cols-3"><Stat label="Placed" value={String(placed)} hint={view.counts.wired_spare ? `plus ${view.counts.wired_spare} wired spares` : 'field signals and alarms'} /><Stat label="Held out" value={String(heldOut)} hint={heldOut ? 'need a decision' : 'nothing held back'} /><Stat label="Rule validation" value={view.validation?.ok ? 'Passed' : 'Review'} hint={view.validation?.ok ? 'every hard rule holds' : `${view.validation?.violations ?? 0} issue(s) found`} /></div>
+        <details className="group rounded-lg border border-border bg-surface-1 shadow-card"><summary className="flex cursor-pointer list-none items-center gap-2 p-4 text-[13px] font-medium">Run details <span className="text-xs font-normal text-fg-subtle">stages, solver and event log</span></summary><div className="border-t border-border p-4"><ol className="grid gap-2 sm:grid-cols-2">{STAGE_ORDER.map((id) => <li key={id} className="flex items-center gap-2 text-[13px]"><Check size={14} className="text-success" />{STAGE_INFO[id].label}<span className="ml-auto font-mono text-xs text-fg-subtle">{view.stages[id]?.reused ? 'reused' : `${(view.stages[id]?.seconds ?? 0).toFixed(2)}s`}</span></li>)}</ol></div></details>
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-[1180px] flex-col gap-6 p-6">
       <div className="flex items-end justify-between gap-4">

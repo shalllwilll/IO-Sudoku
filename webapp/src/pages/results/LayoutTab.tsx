@@ -11,5 +11,5 @@ export default function LayoutTab() {
   if (error) return <ErrorPanel error={error} onRetry={refetch} />
   if (loading || !layout || !allocation) return <p className="p-8 text-[13px] text-fg-muted">Loading layout…</p>
   const tqKeys = new Set((openTqs.data ?? []).flatMap((t) => t.signal_keys ?? []))
-  return <CabinetExplorer pid={pid} rid={rid} layout={layout} allocation={allocation} slots={slots} tqKeys={tqKeys} />
+  return <CabinetExplorer pid={pid} layout={layout} allocation={allocation} slots={slots} tqKeys={tqKeys} />
 }

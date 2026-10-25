@@ -1,5 +1,5 @@
-import { Check, X } from 'lucide-react'
-import { useParams } from 'react-router-dom'
+import { Check, ChevronDown, CircleAlert, CircleCheck, X } from 'lucide-react'
+import { Link, useParams } from 'react-router-dom'
 import { useReport } from '@/api/queries'
 import { ErrorPanel } from '@/components/ErrorView'
 import { IO_BG } from '@/components/charm/kinds'
@@ -45,11 +45,15 @@ export default function Overview() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1100px] flex-col gap-5 p-6">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Placed" value={`${kpi.allocated} / ${kpi.signals_total}`} hint={kpi.held_out ? `${kpi.held_out} held out` : 'every signal placed'} />
-        <Stat label="Utilisation" value={percent(kpi.utilisation, 1)} hint={`${kpi.occupied} of ${kpi.positions} positions`} />
-        <Stat label="Hardware" value={`${kpi.cabinets} · ${kpi.ciocs}`} hint={`cabinets · CIOCs · ${kpi.baseplates_used}/${kpi.baseplates} baseplates used`} />
-        <Stat label="Rule check" value={failing.length === 0 ? 'Pass' : `${failing.length} failing`} hint={`${rules.filter((r) => r.passed).length} of ${rules.length} rules hold`} />
+      <section className={cn('flex flex-wrap items-center gap-4 rounded-xl border p-5', kpi.held_out || failing.length ? 'border-warning/40 bg-warning/10' : 'border-success/40 bg-success/10')}>
+        {kpi.held_out || failing.length ? <CircleAlert size={22} className="text-warning" /> : <CircleCheck size={22} className="text-success" />}
+        <div className="min-w-0 flex-1"><h1 className="text-lg font-semibold tracking-tight">{kpi.held_out ? 'Allocation needs decisions' : 'Allocation is ready'}</h1><p className="mt-1 text-[13px] text-fg-muted text-pretty">{kpi.held_out ? `${kpi.held_out} signals are held out until their assumptions are resolved.` : `All ${kpi.signals_total} signals are placed and the checked rules hold.`}</p></div>
+        {kpi.held_out > 0 && <Link to={`/projects/${pid}/runs/${rid}/tqs`} className="inline-flex h-9 items-center rounded-md bg-accent px-3.5 text-[13px] font-medium text-accent-fg">Resolve decisions</Link>}
+      </section>
+      <div className="grid gap-3 md:grid-cols-3">
+        <Stat label="Allocation" value={`${kpi.allocated} / ${kpi.signals_total}`} hint={kpi.held_out ? `${kpi.held_out} held out` : 'every signal placed'} />
+        <Stat label="Capacity and spares" value={percent(kpi.utilisation, 1)} hint={`${kpi.occupied} of ${kpi.positions} positions · ${kpi.cabinets} cabinets`} />
+        <Stat label="Rule health" value={failing.length === 0 ? 'Passed' : `${failing.length} need review`} hint={`${rules.filter((r) => r.passed).length} of ${rules.length} checks hold`} />
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -110,7 +114,9 @@ export default function Overview() {
         </Card>
       </div>
 
-      <Card title="Rule check" hint="every rule, checked on the finished layout">
+      <details className="group rounded-lg border border-border bg-surface-1 shadow-card">
+        <summary className="flex cursor-pointer list-none items-center gap-2 p-4 text-[13px] font-medium">Rule check <span className="text-xs font-normal text-fg-subtle">every rule, checked on the finished layout</span><ChevronDown size={15} className="ml-auto text-fg-muted transition-[rotate] duration-150 group-open:rotate-180" /></summary>
+        <div className="border-t border-border px-4 pb-4">
         <ul>
           {rules.map((r) => (
             <li key={r.rule} className="flex items-start gap-3 border-b border-border py-2 last:border-0">
@@ -126,9 +132,12 @@ export default function Overview() {
             </li>
           ))}
         </ul>
-      </Card>
+        </div>
+      </details>
 
-      <Card title="What this result assumes" hint={`rule set: ${declaration.rule_set}`}>
+      <details className="group rounded-lg border border-border bg-surface-1 shadow-card">
+        <summary className="flex cursor-pointer list-none items-center gap-2 p-4 text-[13px] font-medium">Assumptions and implementation notes <span className="text-xs font-normal text-fg-subtle">rule set: {declaration.rule_set}</span><ChevronDown size={15} className="ml-auto text-fg-muted transition-[rotate] duration-150 group-open:rotate-180" /></summary>
+        <div className="border-t border-border p-4">
         <div className="grid gap-4 md:grid-cols-3">
           {notes.map(([label, items]) => (
             <div key={label}>
@@ -145,7 +154,8 @@ export default function Overview() {
             </div>
           ))}
         </div>
-      </Card>
+        </div>
+      </details>
     </div>
   )
 }
