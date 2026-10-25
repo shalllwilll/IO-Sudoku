@@ -1,6 +1,6 @@
-import { AlertTriangle, Check, Info, Lock, Plus, Trash2, Wand2, XCircle } from 'lucide-react'
+import { AlertTriangle, Check, ChevronDown, Info, Lock, Plus, Trash2, Wand2, XCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { describeError } from '@/api/errors'
 import { useAiStatus, useLint, usePutRules, useRules, type DryRun, type Finding } from '@/api/queries'
 import { ErrorPanel } from '@/components/ErrorView'
@@ -108,6 +108,7 @@ const SECTIONS = [
 
 export default function Rules() {
   const { pid = '' } = useParams()
+  const location = useLocation()
   const rules = useRules(pid)
   const put = usePutRules(pid)
   const ai = useAiStatus()
@@ -116,6 +117,11 @@ export default function Rules() {
   const [mining, setMining] = useState(false)
   const [confirmPreset, setConfirmPreset] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [advanced, setAdvanced] = useState(false)
+  const [ruleDetails, setRuleDetails] = useState(false)
+  const initialRule = typeof (location.state as { initialRule?: unknown } | null)?.initialRule === 'string'
+    ? (location.state as { initialRule: string }).initialRule
+    : ''
 
   const server = useMemo(() => (rules.data ? asRules(rules.data.rules) : []), [rules.data])
   const current = edit ?? server
@@ -134,6 +140,7 @@ export default function Rules() {
   const change = (next: Rule[]) => {
     setSaved(false)
     setEdit(next)
+    setRuleDetails(true)
   }
   const replace = (r: Rule) => change(current.map((x) => (x.id === r.id ? r : x)))
   const add = (r: Rule) => change([...current, current.some((x) => x.id === r.id) ? { ...r, id: nextRuleId(current, r.primitive ?? 'capacity') } : r])
@@ -172,19 +179,24 @@ export default function Rules() {
         </div>
       </div>
 
-      <DescribeRule pid={pid} aiOn={ai.data?.ai_available === true} disabled={dirty ? 'Save or discard your edits below first, then describe the next rule.' : undefined} />
+      <DescribeRule pid={pid} aiOn={ai.data?.ai_available === true} initialText={initialRule} disabled={dirty ? 'Save or discard your edits below first, then describe the next rule.' : undefined} />
 
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium">Or start from a preset</span>
+      <section aria-label="Advanced rule tools" className="rounded-lg border border-border bg-surface-1 shadow-card">
+        <button type="button" aria-expanded={advanced} onClick={() => setAdvanced((v) => !v)} className="flex w-full items-center gap-2 px-4 py-3 text-left transition-[background-color] duration-150 ease-out hover:bg-surface-2">
+          <span className="text-[13px] font-medium">More ways to add or configure rules</span>
           {(data.custom || dirty) && <span className="rounded bg-warning/15 px-1.5 text-[11px] text-warning">{dirty ? 'Edited, not saved' : 'Customised'}</span>}
-        </div>
+          <ChevronDown size={15} strokeWidth={1.75} className={cn('ml-auto text-fg-muted transition-[rotate] duration-150 ease-out', advanced && 'rotate-180')} />
+        </button>
+        {advanced && <div className="flex flex-col gap-4 border-t border-border p-4">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-[13px] font-medium">Start from a preset</span>
         <Segmented<string>
           label="Rule preset"
           value={data.custom || dirty ? '' : data.preset}
           onChange={switchPreset}
           options={data.presets.map((p) => ({ value: p, label: PRESETS.find((x) => x.value === p)?.label ?? p, hint: PRESETS.find((x) => x.value === p)?.hint }))}
         />
+        </div>
         {confirmPreset && (
           <div role="alertdialog" className="flex flex-wrap items-center gap-3 rounded-md border border-border-strong bg-surface-1 px-3 py-2 text-[13px]">
             <span className="text-pretty">Switching to {PRESETS.find((x) => x.value === confirmPreset)?.label ?? confirmPreset} discards your custom rules.</span>
@@ -198,7 +210,11 @@ export default function Rules() {
             </Button>
           </div>
         )}
-      </div>
+        <div className="flex flex-wrap gap-2">
+          <Button icon={<Plus size={15} strokeWidth={1.75} />} onClick={() => setAdding(true)}>Add rule with the form</Button>
+          <Button icon={<Wand2 size={15} strokeWidth={1.75} />} onClick={() => setMining(true)}>Learn from an issued layout</Button>
+        </div>
+      </div>}</section>
 
       {put.isError && (
         <p role="alert" className="text-[13px] text-danger">
@@ -220,7 +236,13 @@ export default function Rules() {
         </ul>
       )}
 
-      {SECTIONS.map(({ key, title, blurb, pick }) => {
+      <section aria-label="Current rule set" className="rounded-lg border border-border bg-surface-1 shadow-card">
+        <button type="button" aria-expanded={ruleDetails} onClick={() => setRuleDetails((v) => !v)} className="flex w-full items-center gap-2 px-4 py-3 text-left transition-[background-color] duration-150 ease-out hover:bg-surface-2">
+          <span className="text-[13px] font-medium">Current rule set</span>
+          <span className="text-xs text-fg-muted tnum">{current.length} rules · {groups.hard.length} enforced</span>
+          <ChevronDown size={15} strokeWidth={1.75} className={cn('ml-auto text-fg-muted transition-[rotate] duration-150 ease-out', ruleDetails && 'rotate-180')} />
+        </button>
+        {ruleDetails && <div className="border-t border-border p-4">{SECTIONS.map(({ key, title, blurb, pick }) => {
         const rows = pick(groups)
         return rows.length === 0 ? null : (
           <section key={key} aria-label={`${title} rules`}>
@@ -235,15 +257,10 @@ export default function Rules() {
             </ul>
           </section>
         )
-      })}
+        })}</div>}
+      </section>
 
       <div className="flex flex-wrap gap-2">
-        <Button icon={<Plus size={15} strokeWidth={1.75} />} onClick={() => setAdding(true)}>
-          Add rule with the form
-        </Button>
-        <Button icon={<Wand2 size={15} strokeWidth={1.75} />} onClick={() => setMining(true)}>
-          Learn from an issued layout
-        </Button>
         <Link to={`/projects/${pid}/run`} className="ml-auto self-center text-[13px] text-accent hover:underline">
           Continue to Run
         </Link>

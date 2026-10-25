@@ -8,10 +8,10 @@ import { IntentCard, type Exchange } from '@/components/assistant/IntentCard'
 const EXAMPLES = ['Keep AIR and DOR on separate CIOCs', 'Keep each cable on one CIOC', 'No more than 80 signals per CIOC', 'Keep baseplate 8 empty']
 
 /** The plain-English way in: type a rule, see a checked preview, add it. Nothing is applied before Add. */
-export function DescribeRule({ pid, aiOn, disabled }: { pid: string; aiOn: boolean; disabled?: string }) {
+export function DescribeRule({ pid, aiOn, disabled, initialText = '' }: { pid: string; aiOn: boolean; disabled?: string; initialText?: string }) {
   const intent = useIntent(pid)
   const confirm = useConfirmRule(pid)
-  const [text, setText] = useState('')
+  const [text, setText] = useState(initialText)
   const [ex, setEx] = useState<Exchange | null>(null)
   const counter = useRef(0)
 
