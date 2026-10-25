@@ -297,3 +297,71 @@ export function useConfirmRule(pid: string) {
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: sub(pid, 'rules') }), qc.invalidateQueries({ queryKey: sub(pid, 'lint') })]),
   })
 }
+
+// -- Revisions ----------------------------------------------------------------------------
+
+export type ChainEntry = Schemas['ChainEntry']
+export type Comparison = Schemas['Comparison']
+export type CumulativeRow = Schemas['CumulativeRow']
+export type HistoryEntry = Schemas['HistoryEntry']
+
+export const chainQuery = (pid: string) =>
+  queryOptions({
+    queryKey: sub(pid, 'revisions'),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/revisions', { params: { path: { pid } }, signal })),
+  })
+export const useChain = (pid: string) => useQuery(chainQuery(pid))
+
+export const useComparison = (pid: string, from: string, to: string) =>
+  useQuery({
+    queryKey: [...sub(pid, 'revisions'), 'compare', from, to] as const,
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/revisions/compare', { params: { path: { pid }, query: { from, to } }, signal })),
+    enabled: !!from && !!to && from !== to,
+  })
+
+export const useCumulative = (pid: string, enabled: boolean) =>
+  useQuery({
+    queryKey: [...sub(pid, 'revisions'), 'cumulative'] as const,
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/revisions/cumulative', { params: { path: { pid } }, signal })),
+    enabled,
+  })
+
+export const useSignalHistory = (pid: string, tag: string) =>
+  useQuery({
+    queryKey: [...sub(pid, 'revisions'), 'history', tag] as const,
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/signals/history', { params: { path: { pid }, query: { tag } }, signal })),
+    enabled: tag.length > 0,
+  })
+
+export function useSetBaseline(pid: string) {
+  const qc = useQueryClient()
+  const done = () => qc.invalidateQueries({ queryKey: sub(pid, 'revisions') })
+  return {
+    fromRun: useMutation({
+      mutationFn: (v: { run_id: string; label?: string }) => unwrap(api.POST('/api/projects/{pid}/baseline', { params: { path: { pid } }, body: { run_id: v.run_id, label: v.label || '00' } })),
+      onSuccess: done,
+    }),
+    fromFile: useMutation({
+      mutationFn: (v: { file: File; label?: string }) => {
+        const form = new FormData()
+        form.append('file', v.file)
+        return unwrap(
+          api.POST('/api/projects/{pid}/baseline/upload', {
+            params: { path: { pid }, query: v.label ? { label: v.label } : {} },
+            body: { file: '' },
+            bodySerializer: () => form,
+          }),
+        )
+      },
+      onSuccess: done,
+    }),
+  }
+}
+
+export function useStartRevision(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Schemas['RevisionCreate']) => unwrap(api.POST('/api/projects/{pid}/revisions', { params: { path: { pid } }, body })),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: sub(pid, 'runs') }), qc.invalidateQueries({ queryKey: sub(pid, 'revisions') })]),
+  })
+}

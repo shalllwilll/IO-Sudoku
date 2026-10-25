@@ -16,6 +16,7 @@ import RunTqs from './pages/results/RunTqs'
 import Login from './pages/Login'
 import Placeholder from './pages/Placeholder'
 import Projects from './pages/Projects'
+import Revisions from './pages/Revisions'
 import Plant from './pages/Plant'
 import ProjectFrame from './pages/ProjectFrame'
 
@@ -56,7 +57,7 @@ export const routes: RouteObject[] = [
                     ],
                   },
                   { path: 'tqs', element: <Tqs />, handle: { crumb: 'TQ inbox' } },
-                  { path: 'revisions', element: stub('Revisions', 'U9'), handle: { crumb: 'Revisions' } },
+                  { path: 'revisions', element: <Revisions />, handle: { crumb: 'Revisions' } },
                   { path: 'plant', element: stub('3D plant', 'U10'), handle: { crumb: '3D plant' } },
                 ],
               },
