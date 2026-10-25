@@ -66,3 +66,17 @@ export function logicalRoute(geometry, dataset, record, index = 0) {
   const points = record.kind === "cabinet alarm" ? [field, [cabinet.position[0], y, 1.6], [x, y, 1.6], [x, y, z + 0.22]] : [field, [cabinet.position[0], 0.4, 3.5], [cabinet.position[0], cabinet.size[1] - 0.4, 2.5], [x, cabinet.size[1] - 0.4, 2.1], [x, y, 1.6], [x, y, z + 0.22]];
   return ["AO", "DO"].includes(recordIo(record).code) ? points.reverse() : points;
 }
+
+/**
+ * The field-to-CHARM path (`logicalRoute`), normalized to run field-first regardless of signal
+ * direction, then continued to the control-room structure — a full visual route for highlighting one
+ * selected TQ or error, not a claim that the workbook defines this exact physical cable end to end.
+ */
+export function fullSignalRoute(geometry, dataset, record) {
+  const base = logicalRoute(geometry, dataset, record, 0);
+  if (!base) return null;
+  const forward = ["AO", "DO"].includes(recordIo(record).code) ? [...base].reverse() : base;
+  const control = geometry.get("site-control");
+  if (!control) return forward;
+  return [...forward, [control.position[0] - control.size[0] * 0.35, control.size[1] * 0.5, control.position[2]]];
+}

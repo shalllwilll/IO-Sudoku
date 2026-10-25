@@ -36,8 +36,8 @@ The compact summary reports source records, positions and spares; the data bar r
 ## Rendering and interaction
 
 - Geometry is a schematic display configuration defined in `geometry.js`, not a surveyed plant model. Cabinet counts, hierarchy, labels, and occupancy come from the dataset. Numeric slot ordering is for inspection and does not certify dimensions or hardware compatibility.
-- Cabinets have solid back/side frames and open fronts. Hardware and channel bodies use instanced meshes and shared geometry/materials.
-- Up to 4,096 positions are visible throughout the overview and presentation. Above that, detailed positions use existing hardware LOD, retaining the active presentation cabinet and selected records. Source records remain available in the table.
+- Cabinets have solid back/side frames and open fronts. Hardware and channel bodies use instanced meshes and shared geometry/materials. A separate front panel (`CabinetDoor`) fades in or out of that open front, giving each cabinet an opaque exterior in normal inspection; see "Two scene states" below.
+- Above 4,096 positions, the overview falls back to the existing cabinet/CIOC-focus gating in `HardwareInstances`, retaining the active presentation cabinet and selected records. Source records remain available in the table. Below that, visibility instead follows the zoom-based reveal described below.
 - Slot colors/type names use `IO_TYPES` in `ioTypes.js`: AI blue, AO purple, DI green, DO orange, neutral spare/unknown. Allocation and validation messages are separate. Error/warning/TQ outlines never replace I/O colors. See [io-type-colors.md](io-type-colors.md) for mappings and checks.
 - Left drag orbits, right drag pans, and the wheel zooms. `F` fits the selection, `Home` frames the scene, and `Escape` selects the parent when focus is outside form controls.
 - Labels fade with distance while the selected object's label, outline, breadcrumbs, and details remain available.
@@ -45,6 +45,17 @@ The compact summary reports source records, positions and spares; the data bar r
 - A static field structure and a static control-room structure sit either side of the cabinets, inside the same 3D scene, for orientation. They are schematic (`SiteStructures.jsx`), hold no workbook data, and never animate, highlight, or take pointer input: raycasting is switched off on every mesh, so they can never be clicked, hovered, or mistaken for a hardware position or counted as a cabinet.
 - Unplaced/global issues are listed without navigating to unrelated equipment. Issues affecting multiple positions fit all resolved locations and expose each related source record.
 - The paginated record table, equipment tree, and details remain usable without WebGL. Rendering errors are isolated from the rest of the application. Only the two global filter dropdowns are exposed, including in the issue inspector.
+
+## Two scene states, zoom-based reveal, and route highlighting
+
+The scene has two explicit states, driven by `snapshot.running` from `useAllocationPlayback` (`animating` below):
+
+- **State A — allocation animation.** While a run's presentation plays, every cabinet door is open and every CIOC, baseplate and CHARM position is rendered — `cabinetVisibility.js`'s `computeLod` is bypassed entirely (`LodController`'s `everything` branch) so there is nothing to reveal mid-animation. A single continuous wire (`AllocationRoute.jsx`) runs Field → Cabinet 1 → Cabinet 2 → … → Control room, with a pulse whose position is `routeCurveT` (`allocationRoute.js`) mapped from the same `ARRIVAL_MS`/`FILL_MS`/`PLAYBACK_MS` phase timings the per-slot reveal already uses, so the wire reaching a cabinet lines up with that cabinet starting to fill. It is a visual explanation of the direction signals move, not a claim that every signal shares one physical cable, and it draws no conclusion the workbook does not support.
+- **State B — normal inspection.** Once the animation completes, `LodController` takes over: every 0.18 seconds (skipped once the camera has actually stopped moving, so an idle view costs nothing) it recomputes which cabinets, CIOCs and baseplates are "open" from the live camera distance, via `computeLod` in `cabinetVisibility.js`. Each level's enter/exit thresholds scale with that node's own bounding diagonal, with hysteresis (enter closer than exit) so holding the camera near a boundary cannot flicker. A cabinet opens before its CIOCs, which open before their baseplates — opening a CIOC requires its cabinet already open, and a baseplate requires its CIOC already open — and `CabinetDoor` fades the cabinet's opaque front panel out once that cabinet is open (and stops intercepting clicks only once it is, so interior slots stay clickable through it). CIOC/baseplate meshes and CHARM positions are not rendered at all outside their open set, instead of merely being dimmed.
+
+**Selecting a TQ or an errored CHARM** (`routeIssue` in `AllocationExplorer.jsx`, derived from the inspector's open issue or, failing that, the first unresolved TQ/error on the selected position) forces that issue's cabinet/CIOC/baseplate open regardless of camera distance (`forcedLodFor`), and `TqRouteHighlight.jsx` draws one bright line from the field side through the affected CHARM to the control room (`fullSignalRoute` in `geometry.js`, the existing field-to-CHARM route continued on to the control-room structure). Selecting a different issue replaces the line; clearing the selection removes it and lets the camera-driven LOD take back over — the camera itself never moves for this, only for the selection's own existing focus-to-node behaviour.
+
+Known limitation: the route for a selected TQ is the same best-effort schematic path the field-arrival animation always used (field → cabinet → CIOC → baseplate → CHARM → control room), not a cable route the workbook defines explicitly — the workbook has no field-instrument or cable-geometry columns to draw a truer one from.
 
 ## Existing allocation runs
 
@@ -58,7 +69,7 @@ Use `npm run check` and `npm run e2e -- --workers=1`. Optional tests load the su
 
 Tests cover automatic import, a separate four-cabinet fixture, sequential slot playback, cancellation, global combined filters, manual camera controls, exact rendered I/O colors, error navigation, accessibility and fallback. The supplied local workbooks contain three cabinet identifiers: these are preserved exactly, rather than inventing a fourth. Live backend integration remains excluded.
 
-Verification for the simplified workflow: lint passes, all 192 unit tests pass, production build succeeds, and all 19 Chromium end-to-end tests pass. The build retains the documented 3D/parser chunk-size warning. No changes were committed or pushed.
+Verification for the simplified workflow: lint passes, all 212 unit tests pass, production build succeeds, and all 20 Chromium end-to-end tests pass. The build retains the documented 3D/parser chunk-size warning.
 
 For a local normalization/geometry/filter/memory profile:
 
@@ -74,9 +85,12 @@ The benchmark prints counts/timings only. It does not establish browser GPU memo
 |---|---|
 | `src/pages/PlantStage.jsx`, `features/explorer/AllocationExplorer.jsx` | Route replacement, dataset lifecycle, selection, camera actions, and workflow controls. |
 | `features/explorer/workbook.js`, `workbook.worker.js`, `directWorkbook.js` | Existing local workbook/CSV parsing and automatic mapping with concise errors. |
-| `features/explorer/allocationPlayback.js`, `useAllocationPlayback.js`, `FlowDiagram.jsx` | Cancellable reveal timeline, global filter rules and decorative signal flow. |
+| `features/explorer/allocationPlayback.js`, `useAllocationPlayback.js` | Cancellable reveal timeline and global filter rules. |
 | `features/explorer/model.js`, `store.js` | Normalized hardware/records/issues, conflicts, statuses, filters, optional mock runs, and memory-only retention. |
-| `features/explorer/ExplorerScene.jsx`, `geometry.js`, `EquipmentContext.jsx` | Instanced scene, schematic layout, contextual equipment, interruptible camera focus, and optional signal paths. |
+| `features/explorer/ExplorerScene.jsx`, `geometry.js`, `SiteStructures.jsx` | Instanced scene, schematic layout, interruptible camera focus, cabinet doors, and the static field/control-room structures. |
+| `features/explorer/cabinetVisibility.js` | Pure camera-distance LOD logic (State B's open cabinet/CIOC/baseplate sets), unit-tested without WebGL. |
+| `features/explorer/allocationRoute.js`, `AllocationRoute.jsx` | State A's continuous field→cabinets→control-room wire and pulse timing. |
+| `features/explorer/TqRouteHighlight.jsx` | State B's selected-TQ/error route highlight. |
 | `features/explorer/Panels.jsx`, `explorer.css` | Hardware browser, record/issue lists, source details, status cues, and responsive layout. |
 | `src/pages/Projects.jsx`, `Result.jsx`, `src/auth/session.js` | Entry links and clearing local workbook data on sign-out. |
 | `vite.config.js`, `package.json`, lockfile | ES worker output and the existing ExcelJS dependency used by the importer. |

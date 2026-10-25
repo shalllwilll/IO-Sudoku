@@ -12,8 +12,15 @@ const DIM = "#6f859c";
 const NO_RAY = () => null;
 const inert = { raycast: NO_RAY };
 
-function Caption({ position, text }) {
-  return <Html position={position} center zIndexRange={[5, 0]}><span className="explorer-world-label pointer-events-none site-caption">{text}</span></Html>;
+// Same typography as a cabinet's own world label (explorer-world-label, with a dim 9px subtitle
+// line), so the two side structures read as part of the same labelling system as the cabinets.
+function Caption({ position, title, subtitle }) {
+  return <Html position={position} center zIndexRange={[5, 0]}>
+    <div className="explorer-world-label pointer-events-none site-caption">
+      <span>{title}</span>
+      {subtitle && <span className="block text-[9px] text-soft-white/80">{subtitle}</span>}
+    </div>
+  </Html>;
 }
 
 // A storage vessel, a pump, an instrument stand and a short pipe run — a schematic process area,
@@ -33,7 +40,7 @@ function FieldStructure({ box }) {
     <mesh {...inert} position={[1.5, 3.2, -0.1]}><sphereGeometry args={[0.16, 10, 8]} /><meshLambertMaterial color={BODY} /></mesh>
     <mesh {...inert} position={[-0.3, 0.22, 0.9]} rotation={[0, 0, Math.PI / 2]}><cylinderGeometry args={[0.07, 0.07, 1.8, 8]} /><meshLambertMaterial color={DIM} /></mesh>
     <mesh {...inert} position={[0.4, 0.22, 1.5]} rotation={[Math.PI / 2, 0, 0]}><cylinderGeometry args={[0.07, 0.07, 1.2, 8]} /><meshLambertMaterial color={DIM} /></mesh>
-    <Caption position={[x, h + 0.55, z]} text="Field" />
+    <Caption position={[x, h + 0.6, z]} title="FIELD INSTRUMENTS" subtitle="Field signals entering the marshalling system" />
   </group>;
 }
 
@@ -55,7 +62,7 @@ function ControlRoomStructure({ box }) {
       <mesh {...inert} position={[dx, 1.1, 0.75]}><boxGeometry args={[0.1, 0.65, 0.65]} /><meshLambertMaterial color={PANEL} /><Edges color={STROKE} /></mesh>
       <mesh {...inert} position={[dx, 0.7, 0.75]}><boxGeometry args={[0.08, 0.12, 0.3]} /><meshLambertMaterial color={DIM} /></mesh>
     </group>)}
-    <Caption position={[x, h + 0.55, z]} text="Control room" />
+    <Caption position={[x, h + 0.6, z]} title="CONTROL ROOM / CONTROLLER" subtitle="Signals connected to the control system" />
   </group>;
 }
 

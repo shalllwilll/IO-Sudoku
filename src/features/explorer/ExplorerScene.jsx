@@ -1,14 +1,18 @@
-import { Edges, Html, Line, OrbitControls } from "@react-three/drei";
+import { Edges, Html, OrbitControls } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import { memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { CatmullRomCurve3, Color, Object3D, Vector3 } from "three";
-import { combinedBounds, createGeometry, logicalRoute, OVERVIEW_POSITION_LIMIT } from "./geometry.js";
-import { STATUS } from "./model.js";
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Color, Mesh, Object3D, Vector3 } from "three";
+import { combinedBounds, createGeometry } from "./geometry.js";
+import { STATUS, ancestors } from "./model.js";
 import SiteStructures from "./SiteStructures.jsx";
+import AllocationRoute from "./AllocationRoute.jsx";
+import TqRouteHighlight from "./TqRouteHighlight.jsx";
 import { nodeIo, slotIndicator } from "./IoPresentation.jsx";
-import { recordIo } from "./ioTypes.js";
 import { slotBrightness } from "./allocationPlayback.js";
 import { nodeLabel } from "./displayNames.js";
+import { computeLod, emptyLod, forcedLodFor, sameLod } from "./cabinetVisibility.js";
+
+const NO_RAY = () => null;
 
 function CameraController({ geometry, request, locked, reducedMotion }) {
   const controls = useRef(null);
@@ -36,6 +40,73 @@ function CameraController({ geometry, request, locked, reducedMotion }) {
     if (fraction === 1) transition.current = null;
   });
   return <OrbitControls ref={controls} makeDefault enabled={!locked} enableDamping dampingFactor={0.12} minDistance={0.18} maxDistance={600} maxPolarAngle={Math.PI * 0.94} onStart={() => { transition.current = null; }} />;
+}
+
+// Recomputes the open cabinet/CIOC/baseplate sets from camera distance, throttled to a few times a
+// second so panning the camera does not thrash React state. During State A (the allocation
+// animation) everything reads as open, matching the "cabinets open, hardware visible" requirement
+// regardless of where the camera sits.
+function LodController({ dataset, geometry, animating, forcedOpen, onChange }) {
+  const previous = useRef(emptyLod());
+  const accumulated = useRef(1);
+  const lastCamera = useRef(new Vector3(Infinity, Infinity, Infinity));
+  const everything = useMemo(() => {
+    if (!animating) return null;
+    const all = emptyLod();
+    for (const cabinetId of dataset.root.childIds) {
+      all.cabinets.add(cabinetId);
+      for (const ciocId of dataset.nodes.get(cabinetId).childIds) {
+        all.ciocs.add(ciocId);
+        for (const plateId of dataset.nodes.get(ciocId).childIds) all.baseplates.add(plateId);
+      }
+    }
+    return all;
+  }, [animating, dataset]);
+  useEffect(() => {
+    if (!everything) return;
+    if (!sameLod(previous.current, everything)) { previous.current = everything; onChange(everything); }
+  }, [everything, onChange]);
+  useFrame((state, delta) => {
+    if (everything) return;
+    accumulated.current += delta;
+    if (accumulated.current < 0.18) return;
+    accumulated.current = 0;
+    // Skip once the camera (OrbitControls' damping included) has settled, so the hierarchy stops
+    // changing once nothing is actually moving rather than converging over several more ticks.
+    if (state.camera.position.distanceToSquared(lastCamera.current) < 1e-6) return;
+    lastCamera.current.copy(state.camera.position);
+    const next = computeLod(dataset, geometry, state.camera.position.toArray(), previous.current, forcedOpen);
+    if (!sameLod(previous.current, next)) { previous.current = next; onChange(next); }
+  });
+  return null;
+}
+
+// The opaque exterior face State B adds in front of each cabinet's open frame. It fades out (and
+// stops intercepting clicks) once that cabinet is open, so zooming in reveals the interior instead of
+// an invisible wall, and fades back in on the way out — a short transition rather than a hard cut.
+function CabinetDoor({ shape, open, nodeId, onSelect }) {
+  const material = useRef(null);
+  useFrame((_state, delta) => {
+    if (!material.current) return;
+    const target = open ? 0 : 0.95;
+    const next = material.current.opacity + (target - material.current.opacity) * Math.min(1, delta * 2.4);
+    // Snap once within a hair of the target so the fade actually settles — an asymptotic lerp never
+    // quite reaches it, which would otherwise keep every frame (and a "nothing is animating"
+    // screenshot comparison) subtly different forever.
+    material.current.opacity = Math.abs(target - next) < 0.001 ? target : next;
+  });
+  const [w, h, d] = shape.size;
+  return <mesh position={[shape.position[0], shape.position[1], shape.position[2] + d / 2 + 0.03]} raycast={open ? NO_RAY : Mesh.prototype.raycast} onClick={(event) => { event.stopPropagation(); onSelect(nodeId); }}>
+    <boxGeometry args={[w, h, 0.08]} />
+    <meshLambertMaterial ref={material} color="#313e4d" transparent opacity={open ? 0 : 0.02} depthWrite={false} />
+  </mesh>;
+}
+
+function CabinetDoors({ dataset, geometry, lod, animating, onSelect }) {
+  return dataset.root.childIds.map((id) => {
+    const shape = geometry.get(id);
+    return shape ? <CabinetDoor key={id} shape={shape} nodeId={id} open={animating || lod.cabinets.has(id)} onSelect={onSelect} /> : null;
+  });
 }
 
 function EquipmentLabel({ node, position, selected, onSelect, dataset, onHover, matching, presenting }) {
@@ -126,27 +197,29 @@ function PositionIndicators({ positions, geometry, dataset, visibleIds, filtered
   return <instancedMesh ref={mesh} args={[null, null, Math.max(1, positions.length * 8)]} raycast={() => null}><boxGeometry args={[1, 1, 1]} /><meshBasicMaterial toneMapped={false} /></instancedMesh>;
 }
 
-function HardwareInstances({ dataset, geometry, visibleIds, filteredOnly, focusCabinet, focusCioc, onSelect }) {
+// Cabinet frames are always drawn (their CabinetDoor controls whether the interior reads as open);
+// CIOCs and baseplates are drawn only once `lod` (or the running allocation animation) opens them.
+function HardwareInstances({ dataset, geometry, visibleIds, filteredOnly, lod, animating, onSelect }) {
   const mesh = useRef(null);
   const shapes = useMemo(() => {
     const list = [];
     for (const node of dataset.nodes.values()) {
       if (filteredOnly && !node.recordIds.some((id) => visibleIds.has(id))) continue;
-      if (node.type === "baseplate") {
-        const cioc = dataset.nodes.get(node.parentId);
-        if (dataset.counts.positions > 4096 && focusCioc && cioc.id !== focusCioc) continue;
-        if (dataset.counts.positions > 4096 && focusCabinet && cioc.parentId !== focusCabinet) continue;
-        if (!focusCabinet && dataset.counts.positions > 4096) continue;
-      }
-      const shape = geometry.get(node.id);
       if (node.type === "cabinet") {
+        const shape = geometry.get(node.id);
         const [w, h, d] = shape.size;
         const parts = [[[0, 0, -d / 2], [w, h, 0.16]], [[-w / 2, 0, 0], [0.16, h, d]], [[w / 2, 0, 0], [0.16, h, d]], [[0, h / 2, 0], [w, 0.16, d]], [[0, -h / 2, 0], [w, 0.16, d]]];
         for (const [offset, size] of parts) list.push({ id: node.id, position: shape.position.map((value, axis) => value + offset[axis]), size, color: "#384352" });
-      } else if (["cioc", "baseplate"].includes(node.type)) list.push({ id: node.id, ...shape, color: node.type === "cioc" ? "#293847" : "#485363" });
+      } else if (node.type === "cioc") {
+        if (!animating && !lod.cabinets.has(node.parentId)) continue;
+        list.push({ id: node.id, ...geometry.get(node.id), color: "#1f2e3f" });
+      } else if (node.type === "baseplate") {
+        if (!animating && !lod.ciocs.has(node.parentId)) continue;
+        list.push({ id: node.id, ...geometry.get(node.id), color: "#5a6b80" });
+      }
     }
     return list;
-  }, [dataset, geometry, visibleIds, filteredOnly, focusCabinet, focusCioc]);
+  }, [dataset, geometry, visibleIds, filteredOnly, lod, animating]);
   useLayoutEffect(() => {
     if (!mesh.current) return;
     const transform = new Object3D();
@@ -161,36 +234,6 @@ function HardwareInstances({ dataset, geometry, visibleIds, filteredOnly, focusC
   }, [shapes]);
   const capacity = dataset.nodes.size + dataset.root.childIds.length * 5;
   return <instancedMesh ref={mesh} args={[null, null, Math.max(1, capacity)]} onClick={(event) => { event.stopPropagation(); const shape = shapes[event.instanceId]; if (shape) onSelect(shape.id); }}><boxGeometry args={[1, 1, 1]} /><meshLambertMaterial /></instancedMesh>;
-}
-
-function SignalPaths({ dataset, geometry, recordIds, playback, reducedMotion, onComplete }) {
-  const paths = useMemo(() => recordIds.slice(0, 12).map((id, index) => {
-    const record = dataset.recordMap.get(id);
-    const route = record && logicalRoute(geometry, dataset, record, index);
-    if (!route) return null;
-    const curve = new CatmullRomCurve3(route.map((point) => new Vector3(...point)), false, "centripetal");
-    const info = recordIo(record);
-    return { record, info, curve, points: curve.getPoints(80) };
-  }).filter(Boolean), [recordIds, geometry, dataset]);
-  const pulses = useRef([]);
-  const elapsed = useRef(0);
-  const completed = useRef(false);
-  useEffect(() => { elapsed.current = 0; completed.current = false; }, [recordIds, playback.generation]);
-  useFrame((_state, delta) => {
-    if (playback.mode !== "playing" || reducedMotion) return;
-    elapsed.current += Math.min(delta, 0.1);
-    const progress = Math.min(1, elapsed.current / 5);
-    paths.forEach((path, index) => { if (path.info.code !== "UNKNOWN") pulses.current[index]?.position.copy(path.curve.getPoint(progress)); });
-    if (progress === 1 && !completed.current) { completed.current = true; onComplete(); }
-  });
-  if (playback.mode === "off") return null;
-  return paths.map((path, index) => <group key={path.record.id}>
-    <Line points={path.points} color={path.info.color} lineWidth={1.6} transparent opacity={0.8} />
-    <mesh ref={(node) => { pulses.current[index] = node; }} position={path.points[0]} visible={!reducedMotion && playback.mode !== "stopped" && path.info.code !== "UNKNOWN"}>
-      <sphereGeometry args={[0.11, 10, 8]} /><meshBasicMaterial color="#ffffff" />
-    </mesh>
-    <Html position={path.points[["AO", "DO"].includes(path.info.code) ? path.points.length - 1 : 0]} center zIndexRange={[10, 0]}><span className="explorer-world-label">{path.record.tag || "Unlabelled signal"} · {path.record.kind === "cabinet alarm" ? "internal cabinet source" : "logical field endpoint"}{path.info.code === "UNKNOWN" ? " · direction unknown" : ""}</span></Html>
-  </group>);
 }
 
 function FrameStats({ onStats }) {
@@ -229,40 +272,40 @@ function RevealHighlights({ reveal, geometry }) {
   return <instancedMesh ref={mesh} args={[null, null, 1024]} raycast={() => null}><boxGeometry args={[1, 1, 1]} /><meshBasicMaterial color="#e6f5ff" toneMapped={false} /></instancedMesh>;
 }
 
-export default memo(function ExplorerScene({ dataset, selectedNodeId, focusRequest, visibleIds, selectedIds, filteredOnly, locked, reducedMotion, playback, animationIds, onComplete, onSelect, onStats, onHover, reveal, activeCabinetId }) {
+/**
+ * `animating` is State A (the allocation animation): everything opens regardless of camera distance,
+ * and `AllocationRoute` draws the continuous field→cabinets→control-room wire. Otherwise this is
+ * State B (normal inspection): `LodController` opens each cabinet/CIOC/baseplate only once the
+ * camera is close enough, plus whatever `routeIssue` (a selected TQ/error) forces open so its route
+ * stays visible without exposing unrelated hardware.
+ */
+export default memo(function ExplorerScene({ dataset, selectedNodeId, focusRequest, visibleIds, selectedIds, filteredOnly, locked, reducedMotion, onSelect, onStats, onHover, reveal, activeCabinetId, animating, routeIssue }) {
   const geometry = useMemo(() => createGeometry(dataset), [dataset]);
-  const scope = useMemo(() => {
-    const chain = [];
-    for (let node = dataset.nodes.get(selectedNodeId); node; node = dataset.nodes.get(node.parentId)) chain.push(node);
-    return { cabinet: chain.find((node) => node.type === "cabinet")?.id, cioc: chain.find((node) => node.type === "cioc")?.id, baseplate: chain.find((node) => node.type === "baseplate")?.id };
-  }, [dataset, selectedNodeId]);
-  const positions = useMemo(() => {
-    const animated = new Set(animationIds.map((id) => dataset.recordMap.get(id)?.nodeId));
-    return [...dataset.nodes.values()].filter((node) => {
-      if (node.type !== "position") return false;
-      if (dataset.counts.positions <= 4096) return true;
-      if (activeCabinetId && dataset.nodes.get(dataset.nodes.get(node.parentId).parentId).parentId === activeCabinetId) return true;
-      if (animated.has(node.id) || node.recordIds.some((id) => selectedIds.has(id))) return true;
-      const plate = dataset.nodes.get(node.parentId), cioc = dataset.nodes.get(plate.parentId);
-      if (scope.baseplate) return plate.id === scope.baseplate;
-      if (scope.cioc) return cioc.id === scope.cioc;
-      if (scope.cabinet) return cioc.parentId === scope.cabinet;
-      return dataset.counts.positions <= OVERVIEW_POSITION_LIMIT;
-    });
-  }, [dataset, scope, animationIds, selectedIds, activeCabinetId]);
+  const [lod, setLod] = useState(emptyLod);
+  const forcedOpen = useMemo(() => (routeIssue ? forcedLodFor(dataset, ancestors, routeIssue.nodeIds) : emptyLod()), [routeIssue, dataset]);
+  const positions = useMemo(() => [...dataset.nodes.values()].filter((node) => {
+    if (node.type !== "position") return false;
+    if (animating) return true;
+    if (lod.baseplates.has(node.parentId)) return true;
+    return node.recordIds.some((id) => selectedIds.has(id));
+  }), [dataset, lod, animating, selectedIds]);
   const selectedNode = dataset.nodes.get(selectedNodeId);
   const selectedShape = geometry.get(selectedNodeId);
   const contextual = selectedNode ? [selectedNode, ...selectedNode.childIds.map((id) => dataset.nodes.get(id))] : [];
   const labelNodes = [...new Map([...dataset.root.childIds.map((id) => dataset.nodes.get(id)), ...contextual].map((node) => [node.id, node])).values()].filter((node) => node.type !== "overview");
   return <>
     <CameraController geometry={geometry} request={focusRequest} locked={locked} reducedMotion={reducedMotion} />
+    <LodController dataset={dataset} geometry={geometry} animating={animating} forcedOpen={forcedOpen} onChange={setLod} />
     <ambientLight intensity={1.2} /><directionalLight position={[12, 18, 20]} intensity={2.2} /><directionalLight position={[-15, 7, 2]} intensity={0.7} />
     <gridHelper args={[Math.max(60, geometry.get("overview").size[0] * 1.6), 60, "#343e4b", "#252b34"]} position={[0, -0.2, 0]} />
     <SiteStructures geometry={geometry} />
-    <HardwareInstances dataset={dataset} geometry={geometry} visibleIds={visibleIds} filteredOnly={filteredOnly} focusCabinet={scope.cabinet} focusCioc={scope.cioc} onSelect={onSelect} />
+    <HardwareInstances dataset={dataset} geometry={geometry} visibleIds={visibleIds} filteredOnly={filteredOnly} lod={lod} animating={animating} onSelect={onSelect} />
+    <CabinetDoors dataset={dataset} geometry={geometry} lod={lod} animating={animating} onSelect={onSelect} />
     <PositionInstances positions={positions} geometry={geometry} dataset={dataset} visibleIds={visibleIds} filteredOnly={filteredOnly} onSelect={onSelect} onHover={onHover} reveal={reveal} />
     <PositionIndicators positions={positions} geometry={geometry} dataset={dataset} visibleIds={visibleIds} selectedIds={selectedIds} filteredOnly={filteredOnly} />
     <RevealHighlights reveal={reveal} geometry={geometry} />
+    {animating && <AllocationRoute geometry={geometry} dataset={dataset} reveal={reveal} reducedMotion={reducedMotion} />}
+    <TqRouteHighlight dataset={dataset} geometry={geometry} issue={routeIssue} />
     {activeCabinetId && geometry.has(activeCabinetId) && <mesh position={geometry.get(activeCabinetId).position} raycast={() => null}><boxGeometry args={geometry.get(activeCabinetId).size.map((value) => value + 0.12)} /><meshBasicMaterial visible={false} /><Edges color="#bfe4ff" /></mesh>}
     {selectedShape && selectedNodeId !== "overview" && <mesh position={selectedShape.position} raycast={() => null}>
       <boxGeometry args={selectedShape.size.map((value) => value + 0.08)} /><meshBasicMaterial visible={false} /><Edges color="#ffffff" scale={1.01} />
@@ -272,7 +315,6 @@ export default memo(function ExplorerScene({ dataset, selectedNodeId, focusReque
       const matching = node.type !== "position" || node.io?.code === "SPARE" || node.recordIds.some((id) => visibleIds.has(id));
       return <EquipmentLabel key={node.id} node={node} dataset={dataset} onHover={onHover} matching={matching} presenting={node.id === activeCabinetId} position={[shape.position[0], shape.position[1] + shape.size[1] / 2 + 0.26, shape.position[2] + 1]} selected={node.id === selectedNodeId} onSelect={onSelect} />;
     })}
-    <SignalPaths dataset={dataset} geometry={geometry} recordIds={animationIds} playback={playback} reducedMotion={reducedMotion} onComplete={onComplete} />
     <FrameStats onStats={onStats} />
   </>;
 });

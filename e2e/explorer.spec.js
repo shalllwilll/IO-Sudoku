@@ -100,6 +100,29 @@ test("field, four-cabinet sequence and individual slot progress complete in 5–
   await expect(page.locator("footer")).toContainText("Engineering validation has not run");
 });
 
+test("labels the side structures, starts cabinets closed in the wide view, and opens/highlights/clears on selection", async ({ page }) => {
+  await openExplorer(page); await runCsv(page);
+  // Requirement 1: both side structures carry their fixed label, readable at the default distance.
+  await expect(page.getByText("FIELD INSTRUMENTS", { exact: true })).toBeVisible();
+  await expect(page.getByText("CONTROL ROOM / CONTROLLER", { exact: true })).toBeVisible();
+  // Requirement 3 (State B, wide view): nothing internal is visible until the user zooms in.
+  expect(await colorPixels(page, "#1976D2")).toBeLessThan(20);
+
+  // Requirement 5: selecting a TQ highlights its route and opens just the hardware it needs.
+  await page.getByRole("button", { name: /^Issues/ }).click();
+  await page.getByRole("list", { name: "Allocation issues" }).getByRole("button").filter({ hasText: "Review A channel 1" }).click();
+  await page.waitForTimeout(900); // let the forced-open hierarchy and route line settle
+  const inspector = page.getByRole("complementary", { name: "Selection inspector" });
+  await expect(inspector).toContainText("Proposed resolution");
+  expect(await colorPixels(page, "#1976D2")).toBeGreaterThan(50); // cabinet A's CHARM slots are now visible
+
+  // Selecting a different TQ replaces the highlight; nothing stale lingers for the first one.
+  await page.getByRole("button", { name: /^Issues/ }).click();
+  await page.getByRole("list", { name: "Allocation issues" }).getByRole("button").filter({ hasText: "Review D channel 1" }).click();
+  await page.waitForTimeout(900);
+  await expect(inspector).toContainText("Review D channel 1");
+});
+
 test("two filters combine across every cabinet even after selecting one cabinet", async ({ page }) => {
   await openExplorer(page); await runCsv(page);
   await page.getByRole("combobox", { name: "I/O Type", exact: true }).selectOption("AI");
@@ -151,8 +174,18 @@ test("manual focus during playback persists after completion, with working orbit
   const canvas = page.locator("canvas"), box = await canvas.boundingBox();
   await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
   await page.mouse.down(); await page.mouse.move(box.x + box.width * 0.62, box.y + box.height * 0.52, { steps: 12 }); await page.mouse.up();
-  await ready(page); await page.mouse.move(0, 0); await page.waitForTimeout(1000);
-  const settled = await canvas.screenshot(); await page.waitForTimeout(1700);
+  await ready(page); await page.mouse.move(0, 0);
+  // OrbitControls' damping keeps easing the camera for a moment after the drag; wait for two
+  // consecutive identical frames (rather than a fixed delay) so this isn't sensitive to exactly how
+  // long that easing, or the scene's own zoom-based reveal settling, takes on a given machine.
+  let settled = await canvas.screenshot();
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await page.waitForTimeout(300);
+    const next = await canvas.screenshot();
+    if (next.equals(settled)) break;
+    settled = next;
+  }
+  await page.waitForTimeout(500);
   expect((await canvas.screenshot()).equals(settled)).toBe(true);
   await expect(page.getByRole("navigation", { name: "Hardware hierarchy" })).toContainText("Channel 2");
   await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5); await page.mouse.wheel(0, 180); await page.waitForTimeout(600);

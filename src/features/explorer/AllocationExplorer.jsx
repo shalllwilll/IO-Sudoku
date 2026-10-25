@@ -8,7 +8,7 @@ import ExplorerScene from "./ExplorerScene.jsx";
 import RecordTable from "./RecordTable.jsx";
 import { HardwareTree, IssueList, SelectionDetails } from "./Panels.jsx";
 import { IoTypeBadge, SlotHoverCard, ValidationChecks } from "./IoPresentation.jsx";
-import { ancestors, datasetFromRun } from "./model.js";
+import { ancestors, datasetFromRun, issueResolved } from "./model.js";
 import { nodeLabel } from "./displayNames.js";
 import { allocatedWorkbook } from "./directWorkbook.js";
 import { inspectionRecords } from "./allocationPlayback.js";
@@ -19,7 +19,6 @@ import "./explorer.css";
 
 const INITIAL_CAMERA = { position: [0, 8, 45], fov: 42, near: 0.01, far: 2000 };
 const GL_OPTIONS = { antialias: false, powerPreference: "high-performance" };
-const NO_PATHS = [], MANUAL_OFF = { mode: "off", generation: 0 }, NOOP = () => {};
 const initialView = () => ({ dataset: explorerStore.get(), selectedId: "overview", activeRecordId: null, issueId: null, picked: [], focus: { ids: ["overview"], serial: 0 } });
 
 class SceneBoundary extends Component {
@@ -78,6 +77,19 @@ export default function AllocationExplorer() {
   const path = dataset ? ancestors(dataset, view.selectedId) : [];
   const selectedNode = dataset?.nodes.get(view.selectedId);
   const matchingSignals = records.filter((record) => record.active).length;
+  // Drives the State-B route highlight: an explicitly selected TQ/issue, or — when the user clicked a
+  // CHARM slot directly rather than opening the issues list — the first unresolved error/TQ on it.
+  const routeIssue = useMemo(() => {
+    if (!dataset) return null;
+    if (view.issueId) return dataset.issues.find((item) => item.id === view.issueId) ?? null;
+    if (selectedNode?.type !== "position") return null;
+    const issueIds = new Set(selectedNode.recordIds.flatMap((id) => dataset.recordMap.get(id)?.issueIds ?? []));
+    for (const id of issueIds) {
+      const issue = dataset.issues.find((item) => item.id === id);
+      if (issue && (issue.kind === "tq" || issue.severity === "error") && !issueResolved(issue)) return issue;
+    }
+    return null;
+  }, [dataset, view.issueId, selectedNode]);
 
   const selectNode = useCallback((id) => {
     setView((previous) => previous.dataset?.nodes.has(id) ? { ...previous, selectedId: id, activeRecordId: null, issueId: null, focus: { ids: [id], serial: previous.focus.serial + 1 } } : previous);
@@ -153,7 +165,7 @@ export default function AllocationExplorer() {
           <div className="explorer-camera-toolbar" role="group" aria-label="Camera controls"><button type="button" className="explorer-button" disabled={!selectedNode || selectedNode.type === "overview"} onClick={goBack}>Parent</button><button type="button" className="explorer-button" onClick={() => focus([view.selectedId || "overview"])}>Fit selection</button><button type="button" className="explorer-button" onClick={() => focus(["overview"])}>Fit scene / reset</button>{["selection", "equipment", "issues", "records"].map((tab) => <button key={tab} type="button" className="explorer-button" onClick={() => setDrawer(tab)}>{tab === "selection" ? "Details" : tab === "equipment" ? "Equipment" : tab === "issues" ? "Issues (" + dataset.issues.length + ")" : "Records"}</button>)}</div>
           <div className="explorer-viewport simple-viewport">
             {webgl && dataset.counts.positions ? <SceneBoundary resetKey={dataset.id} fallback={<RecordTable records={records} onInspect={inspectRecord} />}><Canvas role="region" aria-label="Interactive schematic allocation scene" camera={INITIAL_CAMERA} dpr={[1, 1.5]} gl={GL_OPTIONS}>
-              <color attach="background" args={["#111923"]} /><ExplorerScene dataset={dataset} selectedNodeId={view.selectedId} focusRequest={view.focus} visibleIds={visibleIds} selectedIds={pickedIds} filteredOnly={false} locked={false} reducedMotion={reducedMotion} playback={MANUAL_OFF} animationIds={NO_PATHS} onComplete={NOOP} onSelect={selectNode} onStats={updateFps} onHover={setHoveredId} reveal={playback} activeCabinetId={snapshot.activeCabinetId} />
+              <color attach="background" args={["#111923"]} /><ExplorerScene key={dataset.id} dataset={dataset} selectedNodeId={view.selectedId} focusRequest={view.focus} visibleIds={visibleIds} selectedIds={pickedIds} filteredOnly={false} locked={false} reducedMotion={reducedMotion} onSelect={selectNode} onStats={updateFps} onHover={setHoveredId} reveal={playback} activeCabinetId={snapshot.activeCabinetId} animating={snapshot.running} routeIssue={routeIssue} />
             </Canvas></SceneBoundary> : <div className="explorer-viewport-fallback"><h2 className="text-lg font-semibold">{webgl ? "No assigned hardware to display" : "3D rendering is unavailable"}</h2><p className="mt-3 text-sm">{webgl ? "This workbook has no complete hardware assignments. Use an allocated workbook to display cabinets; the source records remain available below." : "Use the allocation records and inspection details below."}</p></div>}
             {dataset.nodes.get(hoveredId)?.type === "position" && <div className="explorer-hover-anchor"><SlotHoverCard node={dataset.nodes.get(hoveredId)} dataset={dataset} /></div>}
             <div className="simple-reveal-caption" aria-live="off">{snapshot.running && snapshot.current ? snapshot.current.code + " · " + snapshot.current.label + " · " + snapshot.current.baseplate + " / Channel " + snapshot.current.channel : "Drag to orbit · right-drag to pan · scroll to zoom · click to inspect"}</div>
