@@ -149,6 +149,7 @@ export default function Result() {
       <div className="flex items-center gap-3">
         {chip}
         <h1 className="text-2xl font-semibold">Result</h1>
+        <Link className="focus-ring rounded-full border border-steel px-3 py-1.5 text-xs" to={`/plant?project=${encodeURIComponent(id)}&run=${encodeURIComponent(runId)}`}>3D Allocation Explorer</Link>
         <Button variant="secondary" className="ml-auto" onClick={() => replay(model.placements.length)}>
           Replay
         </Button>

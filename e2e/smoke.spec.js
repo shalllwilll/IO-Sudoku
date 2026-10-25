@@ -24,28 +24,13 @@ async function signIn(page) {
   await expect(page.getByRole("heading", { level: 1, name: "Projects" })).toBeVisible();
 }
 
-test("the 3D stage renders its canvas and nothing else", async ({ page }) => {
+test("3D explorer opens with explicit data loading and no automatic tour", async ({ page }) => {
   await signIn(page);
   await page.getByRole("link", { name: /3D plant view/ }).click();
   await expect(page).toHaveURL(/\/plant$/);
-
-  // The scene itself: a canvas, the breadcrumb, the ladder and the legend.
-  const crumbs = page.getByRole("navigation", { name: "Camera levels" });
-  await expect(page.locator("canvas")).toBeVisible();
-  await expect(crumbs).toBeVisible();
-  await expect(page.getByRole("list", { name: "The seven levels" })).toBeVisible();
-  await expect(page.getByRole("list", { name: "Legend" })).toBeVisible();
-
-  // No application shell: the presentation screen carries no navigation of its own.
-  await expect(page.getByRole("link", { name: "Projects", exact: true })).toHaveCount(0);
-
-  // The tour starts by itself and walks on without any input (T-6.6-1 and T-6.6-2).
-  await expect(crumbs.getByRole("button", { name: "Cabinets", exact: true })).toBeVisible({ timeout: 15000 });
-  await expect(crumbs.getByRole("button", { name: "Cabinet interior", exact: true })).toBeVisible({ timeout: 20000 });
-
-  // Skip hands control back, and the breadcrumb then jumps levels.
-  await page.getByRole("button", { name: "Skip" }).click();
-  await expect(page.getByRole("button", { name: "Replay" })).toBeVisible();
-  await crumbs.getByRole("button", { name: "Plant", exact: true }).click();
-  await expect(crumbs.getByRole("button", { name: "Cabinet interior", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "IO Signal Sudoku" })).toBeVisible();
+  await expect(page.getByLabel("Excel workbook")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Run", exact: true })).toBeDisabled();
+  await expect(page.locator("canvas")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Skip", exact: true })).toHaveCount(0);
 });

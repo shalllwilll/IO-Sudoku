@@ -23,6 +23,7 @@ export default defineConfig(({ mode }) => {
   const connectSources = allowedConnectSources(env.VITE_API_BASE_URL);
 
   return {
+    worker: { format: "es" },
     plugins: [
       react(),
       {

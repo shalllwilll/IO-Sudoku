@@ -51,7 +51,7 @@ npm run check-contrast # contrast check for base chrome colors
 npm run verify-output  # validate generated report output
 ```
 
-Run the offline demo from the built copy with `npm run build` followed by `npm run preview`. The scene is generated locally from mock run data; do not commit scene exports or workbook data.
+Run the offline demo from the built copy with `npm run build` followed by `npm run preview`. The 3D explorer starts with one workbook upload and **Run**. Existing mappings apply automatically, followed by a 6.5-second reveal of actual cabinet assignments between decorative field/control-room diagrams. Two global I/O and TQ filters become available afterward. Camera controls remain manual throughout. Completed mock runs can also be opened explicitly. See [the explorer guide](docs/allocation-explorer.md). Do not commit scene exports or workbook data.
 
 ## Branch and data rules
 

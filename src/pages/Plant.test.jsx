@@ -43,7 +43,7 @@ describe("the stage without WebGL", () => {
     expect(hasWebgl()).toBe(false); // jsdom gives no WebGL context
   });
 
-  it("shows the seven levels as a still diagram and a way back", async () => {
+  it("keeps the local workbook entry available without WebGL or a fabricated dataset", async () => {
     render(
       <MemoryRouter initialEntries={["/plant"]}>
         <Routes>
@@ -51,11 +51,11 @@ describe("the stage without WebGL", () => {
         </Routes>
       </MemoryRouter>,
     );
-    expect(await screen.findByText("3D plant view is unavailable")).toBeInTheDocument();
-    expect(screen.getByText(/Level 1: Plant/)).toBeInTheDocument();
-    expect(screen.getByText(/Level 7: Channel/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to the dashboard" })).toHaveAttribute("href", "/projects");
-    // The stage carries no navigation of its own.
+    expect(await screen.findByRole("heading", { name: "IO Signal Sudoku" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Excel workbook")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Run", exact: true })).toBeDisabled();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+    expect(screen.queryByText(/MOCK-/)).not.toBeInTheDocument();
     expect(screen.queryByRole("navigation", { name: "Camera levels" })).not.toBeInTheDocument();
   });
 });

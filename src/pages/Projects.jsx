@@ -13,7 +13,7 @@ function PlantCard() {
       className="focus-ring block rounded-panel border border-steel bg-carbon p-4 text-sm hover:bg-gunmetal"
     >
       <span className="font-semibold">3D plant view</span>
-      <span className="block text-xs text-soft-white/70">Watch a guided tour of the plant, cabinets and channels.</span>
+      <span className="block text-xs text-soft-white/70">Explore Excel allocations, hardware positions, and issues with a camera you control.</span>
     </Link>
   );
 }

@@ -1,5 +1,9 @@
 # Where the 3D scene gets its data
 
+**Current viewer:** `/plant` now uses the local workbook-driven interactive explorer. See [allocation-explorer.md](allocation-explorer.md) for its mapping, status rules, schematic layout, and optional run adapter. It starts empty and has no automatic tour or substituted sample.
+
+The remaining notes below describe the earlier Phase 6 presentation scene. Its helpers remain in the repository, but that scene is no longer mounted by `/plant`.
+
 ## The one deliberate deviation from the playbook
 
 Milestone 6.1 asks for `scripts/build-scene.mjs`: a build-time script that reads the sample

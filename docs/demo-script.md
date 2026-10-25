@@ -9,7 +9,7 @@ This is the offline, mock-mode rehearsal. Use a clean browser session and a loca
 | 1:15–2:15 | Create/open the project, correct a column mapping, and confirm values. | Confidence, mapping validation, and IO type assignment. |
 | 2:15–3:00 | Review rules and save a revision. | Rule controls, validation feedback, and revision history. |
 | 3:00–4:00 | Start a mock run and follow progress to the result. | Stage progress, placements, TQs, and result tabs. |
-| 4:00–5:00 | Open the 2D cabinet result, then the 3D plant tour. | State legend, cabinet details, tour Skip/Replay, and camera ladder. |
+| 4:00–5:00 | Open the 2D result, then the 3D explorer. Upload one allocation workbook and click Run. | Watch the 6.5-second field/cabinet/control-room reveal; combine I/O Type and TQ Status filters across all cabinets. Inspect source details and issues using manual camera controls. No mapping wizard or camera tour. |
 | 5:00–5:30 | Return to History and use the available report/download actions. | Run history, revisions, and exported report. |
 
 Before presenting, run `npm run build`, then `npm run preview`, and walk the script twice from the built copy. The real backend flow is not rehearsable until the auth mechanism, final API contract, CORS origin, and live service are supplied.

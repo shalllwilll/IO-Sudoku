@@ -1,6 +1,7 @@
 // Session store. In memory, with an optional sessionStorage copy of the email only.
 // No token is ever stored in localStorage (the backend defines auth, MI-2).
 import { useSyncExternalStore } from "react";
+import { explorerStore } from "../features/explorer/store.js";
 
 const KEY = "iosudoku.session";
 const listeners = new Set();
@@ -37,6 +38,7 @@ export function signInSession(user) {
 }
 
 export function signOutSession({ expired = false } = {}) {
+  explorerStore.clear();
   current = null;
   expiredNote = expired;
   try {

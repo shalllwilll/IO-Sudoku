@@ -46,6 +46,6 @@ test("small screens announce the larger-screen layout and remain accessible", as
 test("3D view controls and text alternatives have no axe WCAG 2.1 A/AA violations", async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem("iosudoku.session", JSON.stringify({ email: "demo@example.com" })));
   await page.goto("/plant");
-  await expect(page.getByRole("navigation", { name: "Camera levels" })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("heading", { name: "IO Signal Sudoku" })).toBeVisible({ timeout: 15000 });
   await expectAccessible(page);
 });

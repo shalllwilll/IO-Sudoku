@@ -2,7 +2,7 @@
 
 ## Checks completed
 
-- `npm audit --omit=dev` reports no production dependency vulnerabilities after upgrading Zod to v4.6.7.
+- Zod was upgraded to v4.6.7. With the local workbook importer, ExcelJS is now a production dependency: `npm audit --omit=dev` reports two moderate findings in the ExcelJS/uuid chain and no high or critical findings. The UUID advisory concerns v3/v5/v6 buffer bounds; the importer reads workbooks with ExcelJS's prebuilt browser reader. A compatible upstream dependency update remains pending.
 - Full-history Gitleaks scan of the `frontend` branch found no secrets in the scanned 20 commits.
 - Built asset search found no `AIza`, `sk-`, or `api_key` strings and no source maps.
 - No workbook or CSV dataset files are tracked. The source has no `dangerouslySetInnerHTML` use.
@@ -18,3 +18,4 @@
 - CSP should also be configured as an HTTP response header by the eventual hosting platform. A meta policy cannot provide `frame-ancestors` protection.
 - Live upload enforcement, session transport, CSRF behavior, production CORS, and live chat redaction need verification with backend owners before release.
 - Never put credentials, private backend URLs, or secrets in `VITE_*` variables or committed files. Keep `.env` local and ignored.
+- Workbook parsing runs in a same-origin worker and does not send file contents to an API or AI service. The file buffer and parsed rows stay in local memory; clearing the dataset or signing out discards the explorer's retained data. Workbook source values render as text, and cached formulas are read without execution.
