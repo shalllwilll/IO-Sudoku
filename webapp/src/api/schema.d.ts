@@ -1781,9 +1781,9 @@ export interface components {
             /**
              * Source
              * @default ai
-             * @constant
+             * @enum {string}
              */
-            source: "ai";
+            source: "ai" | "template";
             /**
              * Status
              * @enum {string}

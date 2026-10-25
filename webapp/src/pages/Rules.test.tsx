@@ -35,6 +35,8 @@ afterEach(() => vi.unstubAllGlobals())
 
 const base = (req: Request, extra: Record<string, () => Response> = {}) => {
   const path = new URL(req.url).pathname
+  if (path.endsWith('/intent')) return extra.intent!()
+  if (path.endsWith('/confirm')) return extra.confirm!()
   if (path.endsWith('/lint')) return (extra.lint ?? (() => json(200, { findings: [], dry_run: [{ rule_id: 'PS-CAP', enforced: true, matched_signals: 189, affected_blocks: 15 }] })))()
   if (path.endsWith('/runs')) return json(200, [])
   if (req.method === 'PUT') return (extra.put ?? (() => json(200, rulesOut({ custom: true }))))()
@@ -72,7 +74,7 @@ describe('Rules page', () => {
 
   it('adds a custom rule to the draft', async () => {
     mount((req) => base(req))
-    await userEvent.click(await screen.findByRole('button', { name: 'Add rule' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Add rule with the form' }))
     const dialog = screen.getByRole('dialog')
     await userEvent.type(within(dialog).getByLabelText('Name'), 'Cap 80')
     await userEvent.selectOptions(within(dialog).getByLabelText('Per'), 'cioc')
@@ -89,5 +91,30 @@ describe('Rules page', () => {
     await userEvent.click(screen.getByRole('radio', { name: /strict/i }))
     expect(screen.getByRole('alertdialog')).toHaveTextContent(/discards your custom rules/)
     expect(calls.some((c) => c.method === 'PUT')).toBe(false)
+  })
+
+  it('leads with a describe box; a typed sentence becomes a checked template rule that is added only on request', async () => {
+    const NEW = rule({ id: 'NL-1', name: 'Keep AIR and DOR on separate CIOCs', primitive: 'separate', parameters: { a: 'io_type = AIR', b: 'io_type = DOR', level: 'cioc' } })
+    const calls = mount((req) =>
+      base(req, {
+        intent: () => json(200, { state: 'preview', intent: 'rule', message: 'ok', locked_rules: [], questions: [], rule_preview: { status: 'ok', message: 'review', rule: NEW, findings: [], dry_run: [{ rule_id: 'NL-1', enforced: true, matched_signals: 40, affected_blocks: 6 }], confidence: 1, source: 'template', applied: false } }),
+        confirm: () => json(200, rulesOut()),
+      }),
+    )
+    const box = await screen.findByLabelText('Describe a rule')
+    await userEvent.type(box, 'Keep AIR and DOR on separate CIOCs')
+    await userEvent.click(screen.getByRole('button', { name: 'Check rule' }))
+    expect(await screen.findByText(/Built from a template, no AI/)).toBeInTheDocument()
+    expect(screen.getByText(/Touches 40 signals in 6 cable blocks/)).toBeInTheDocument()
+    expect(calls.some((c) => c.url.endsWith('/rules/compile/confirm'))).toBe(false)
+    await userEvent.click(screen.getByRole('button', { name: 'Add to rules' }))
+    expect(await screen.findByText(/Added as NL-1/)).toBeInTheDocument()
+    expect(calls.find((c) => c.url.endsWith('/intent'))?.body).toEqual({ request: 'Keep AIR and DOR on separate CIOCs' })
+  })
+
+  it('groups locked invariants apart from enforced rules', async () => {
+    mount((req) => base(req))
+    expect(await screen.findByRole('region', { name: 'Locked rules' })).toHaveTextContent('Contiguous blocks')
+    expect(screen.getByRole('region', { name: 'Enforced rules' })).toHaveTextContent('Capacity per CIOC')
   })
 })

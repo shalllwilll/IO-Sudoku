@@ -2,8 +2,9 @@ import { AlertTriangle, Check, Info, Lock, Plus, Trash2, Wand2, XCircle } from '
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { describeError } from '@/api/errors'
-import { useLint, usePutRules, useRules, type DryRun, type Finding } from '@/api/queries'
+import { useAiStatus, useLint, usePutRules, useRules, type DryRun, type Finding } from '@/api/queries'
 import { ErrorPanel } from '@/components/ErrorView'
+import { DescribeRule } from '@/components/rules/DescribeRule'
 import { MineDialog } from '@/components/rules/MineDialog'
 import { RuleEditor } from '@/components/rules/RuleEditor'
 import { Button } from '@/components/ui/Button'
@@ -98,10 +99,18 @@ function RuleRow({ rule, findings, dry, onChange, onDelete }: { rule: Rule; find
   )
 }
 
+const SECTIONS = [
+  { key: 'locked', title: 'Locked', blurb: 'Built in. The validator always enforces these.', pick: (g: Record<Strength, Rule[]>) => g.hard.filter((r) => r.builtin !== null) },
+  { key: 'hard', title: 'Enforced', blurb: 'Never broken. A layout that breaks one is rejected.', pick: (g: Record<Strength, Rule[]>) => g.hard.filter((r) => r.builtin === null) },
+  { key: 'soft', title: 'Preferred', blurb: 'Followed where possible; a break is reported.', pick: (g: Record<Strength, Rule[]>) => g.soft },
+  { key: 'advisory', title: 'Advisory', blurb: 'Recorded and checked, never changes the layout.', pick: (g: Record<Strength, Rule[]>) => g.advisory },
+]
+
 export default function Rules() {
   const { pid = '' } = useParams()
   const rules = useRules(pid)
   const put = usePutRules(pid)
+  const ai = useAiStatus()
   const [edit, setEdit] = useState<Rule[] | null>(null)
   const [adding, setAdding] = useState(false)
   const [mining, setMining] = useState(false)
@@ -139,7 +148,7 @@ export default function Rules() {
       <div className="flex items-start gap-4">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Rules</h1>
-          <p className="mt-1 text-[13px] text-fg-muted text-pretty">What the layout must and should respect. Pick a preset, then adjust. Hard rules are never broken.</p>
+          <p className="mt-1 text-[13px] text-fg-muted text-pretty">What the layout must and should respect. Say it in plain words, start from a preset, or learn it from an issued layout.</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {saved && !dirty && (
@@ -163,9 +172,11 @@ export default function Rules() {
         </div>
       </div>
 
+      <DescribeRule pid={pid} aiOn={ai.data?.ai_available === true} disabled={dirty ? 'Save or discard your edits below first, then describe the next rule.' : undefined} />
+
       <div className="flex flex-col gap-1.5">
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-medium">Preset</span>
+          <span className="text-[13px] font-medium">Or start from a preset</span>
           {(data.custom || dirty) && <span className="rounded bg-warning/15 px-1.5 text-[11px] text-warning">{dirty ? 'Edited, not saved' : 'Customised'}</span>}
         </div>
         <Segmented<string>
@@ -209,28 +220,29 @@ export default function Rules() {
         </ul>
       )}
 
-      {(['hard', 'soft', 'advisory'] as const).map((s) =>
-        groups[s].length === 0 ? null : (
-          <section key={s} aria-label={`${s} rules`}>
+      {SECTIONS.map(({ key, title, blurb, pick }) => {
+        const rows = pick(groups)
+        return rows.length === 0 ? null : (
+          <section key={key} aria-label={`${title} rules`}>
             <div className="mb-2 flex items-baseline gap-2">
-              <h2 className="text-[13px] font-medium capitalize">{s}</h2>
-              <span className="text-xs text-fg-subtle">{STRENGTHS.find((x) => x.value === s)?.blurb}</span>
+              <h2 className="text-[13px] font-medium">{title}</h2>
+              <span className="text-xs text-fg-subtle">{blurb}</span>
             </div>
             <ul className="overflow-hidden rounded-lg border border-border bg-surface-1 shadow-card">
-              {groups[s].map((r) => (
+              {rows.map((r) => (
                 <RuleRow key={r.id} rule={r} findings={forRule(r.id)} dry={lint.data?.dry_run?.find((d) => d.rule_id === r.id)} onChange={replace} onDelete={() => change(current.filter((x) => x.id !== r.id))} />
               ))}
             </ul>
           </section>
-        ),
-      )}
+        )
+      })}
 
       <div className="flex flex-wrap gap-2">
         <Button icon={<Plus size={15} strokeWidth={1.75} />} onClick={() => setAdding(true)}>
-          Add rule
+          Add rule with the form
         </Button>
         <Button icon={<Wand2 size={15} strokeWidth={1.75} />} onClick={() => setMining(true)}>
-          Suggest from a layout
+          Learn from an issued layout
         </Button>
         <Link to={`/projects/${pid}/run`} className="ml-auto self-center text-[13px] text-accent hover:underline">
           Continue to Run
