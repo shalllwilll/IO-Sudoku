@@ -9,6 +9,7 @@ import Rules from './pages/Rules'
 import RunPage from './pages/RunPage'
 import ResultsFrame from './pages/ResultsFrame'
 import Overview from './pages/results/Overview'
+import Landing from './pages/results/Landing'
 import Allocation from './pages/results/Allocation'
 import LayoutTab from './pages/results/LayoutTab'
 import Tqs from './pages/Tqs'
@@ -48,7 +49,8 @@ export const routes: RouteObject[] = [
                     element: <ResultsFrame />,
                     handle: { crumb: 'Results' },
                     children: [
-                      { index: true, element: <Overview /> },
+                      { index: true, element: <Landing /> },
+                      { path: 'summary', element: <Overview /> },
                       { path: 'allocation', element: <Allocation /> },
                       { path: 'layout', element: <LayoutTab /> },
                       { path: 'tqs', element: <RunTqs /> },

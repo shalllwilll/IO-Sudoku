@@ -1,15 +1,15 @@
-import { Download } from 'lucide-react'
-import { NavLink, Outlet, useParams } from 'react-router-dom'
+import { CircleCheck, CircleHelp, Download } from 'lucide-react'
+import { Link, NavLink, Outlet, useParams } from 'react-router-dom'
 import { downloadUrl } from '@/api/client'
-import { useRun } from '@/api/queries'
+import { useOpenTqs, useReport, useRun } from '@/api/queries'
 import { ErrorPanel } from '@/components/ErrorView'
 import { cn } from '@/lib/cn'
 
 const TABS = [
-  ['', 'Overview'],
+  ['tqs', 'Resolve'],
+  ['layout', 'Cabinets'],
   ['allocation', 'Allocation'],
-  ['layout', 'Layout'],
-  ['tqs', 'TQs'],
+  ['summary', 'Summary'],
 ] as const
 
 const tab = ({ isActive }: { isActive: boolean }) =>
@@ -17,6 +17,30 @@ const tab = ({ isActive }: { isActive: boolean }) =>
     'relative flex h-11 items-center px-3 text-[13px] transition-[color] duration-150 ease-out',
     isActive ? 'text-fg after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-accent' : 'text-fg-muted hover:text-fg',
   )
+
+/** One sentence and one action: how the run went and what to do next. */
+function Verdict({ pid, rid }: { pid: string; rid: string }) {
+  const report = useReport(pid, rid)
+  const open = useOpenTqs(pid).data?.length ?? 0
+  const kpi = report.data?.report.kpi
+  if (!kpi) return null
+  const held = kpi.held_out
+  const clean = held === 0 && open === 0
+  return (
+    <div className="flex flex-wrap items-center gap-3 border-b border-border bg-surface-1 px-6 py-3" role="status">
+      {clean ? <CircleCheck size={18} className="text-success" /> : <CircleHelp size={18} className="text-warning" />}
+      <p className="text-[14px] text-pretty">
+        <strong className="font-semibold tnum">{kpi.allocated} of {kpi.signals_total}</strong> signals placed.{' '}
+        {clean ? 'Nothing needs your decision.' : <span className="text-fg-muted tnum">{held > 0 ? `${held} held out. ` : ''}{open} {open === 1 ? 'question needs' : 'questions need'} your decision.</span>}
+      </p>
+      {open > 0 && (
+        <Link to={`/projects/${pid}/runs/${rid}/tqs`} className="ml-auto inline-flex h-8 items-center rounded-md bg-accent px-3 text-[13px] font-medium text-accent-fg shadow-card transition-[background-color] duration-150 ease-out hover:bg-accent-strong">
+          Resolve now
+        </Link>
+      )}
+    </div>
+  )
+}
 
 export default function ResultsFrame() {
   const { pid = '', rid = '' } = useParams()
@@ -30,7 +54,7 @@ export default function ResultsFrame() {
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-1 border-b border-border px-6">
         {TABS.map(([to, label]) => (
-          <NavLink key={label} to={to || '.'} end className={tab}>
+          <NavLink key={label} to={to} end className={tab}>
             {label}
           </NavLink>
         ))}
@@ -47,6 +71,7 @@ export default function ResultsFrame() {
           </span>
         )}
       </div>
+      {ready && <Verdict pid={pid} rid={rid} />}
       {ready ? (
         <div className="flex min-h-0 flex-1 flex-col overflow-auto">
           <Outlet />

@@ -141,6 +141,13 @@ function Follow({ pid, rid, onReplay }: { pid: string; rid: string; onReplay: ()
   const { view, status } = useRunStream(pid, rid)
   const refresh = useRefreshAfterRun(pid)
   const refreshed = useRef(false)
+  const nav = useNavigate()
+  const ok = status === 'done' && view.finished !== undefined && view.error === undefined
+  useEffect(() => {
+    if (!ok) return
+    const t = setTimeout(() => nav(`/projects/${pid}/runs/${rid}`, { replace: true }), 1600)
+    return () => clearTimeout(t)
+  }, [ok, nav, pid, rid])
   useEffect(() => {
     if (status === 'done' && !refreshed.current) {
       refreshed.current = true

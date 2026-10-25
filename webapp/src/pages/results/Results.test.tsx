@@ -97,6 +97,14 @@ describe('Results', () => {
     expect(screen.getByRole('link', { name: /view in 3d/i })).toHaveAttribute('href', '/projects/p1/runs/r1/plant')
   })
 
+  it('opens with a verdict sentence and a Resolve action while questions are open', async () => {
+    mount('/projects/p1/runs/r1/layout')
+    expect(await screen.findByText(/2 of 2/)).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('1 question needs your decision')
+    expect(screen.getByRole('link', { name: 'Resolve now' })).toHaveAttribute('href', '/projects/p1/runs/r1/tqs')
+    expect(screen.getAllByRole('link').map((l) => l.textContent)).toEqual(expect.arrayContaining(['Resolve', 'Cabinets', 'Allocation', 'Summary']))
+  })
+
   it('explains an unfinished run instead of showing empty tabs', async () => {
     mount('/projects/p1/runs/r1', run({ status: 'failed', error: 'boom', download_ready: false }))
     expect(await screen.findByText(/This run failed: boom/)).toBeInTheDocument()
