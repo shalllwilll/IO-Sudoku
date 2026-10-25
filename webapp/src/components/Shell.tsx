@@ -1,4 +1,4 @@
-import { CircleHelp, FolderKanban, LogOut, Settings, Sparkles } from 'lucide-react'
+import { CircleHelp, FolderKanban, GitCompareArrows, LogOut, Settings, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink, useMatches, useNavigate, useParams } from 'react-router-dom'
 import { useAiStatus, useOpenTqs, useProject } from '@/api/queries'
@@ -73,6 +73,12 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
             <FolderKanban size={16} strokeWidth={1.75} />
             Projects
           </NavLink>
+          {pid && (
+            <NavLink to={`/projects/${pid}/revisions`} className={navLink}>
+              <GitCompareArrows size={16} strokeWidth={1.75} />
+              Revisions
+            </NavLink>
+          )}
           {pid && (
             <NavLink to={`/projects/${pid}/tqs`} className={navLink}>
               <CircleHelp size={16} strokeWidth={1.75} />
