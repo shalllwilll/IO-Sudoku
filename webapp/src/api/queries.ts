@@ -57,3 +57,80 @@ export function useCreateProject() {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.projects }),
   })
 }
+
+// -- Data, mapping, values ---------------------------------------------------------------
+
+export type Upload = Schemas['UploadOut']
+export type MappingSheet = Schemas['MappingSheet']
+export type UnknownValue = Schemas['UnknownValueOut']
+export type ValueMaps = Schemas['ValueMaps']
+
+const sub = (pid: string, part: string) => ['projects', pid, part] as const
+
+export const uploadsQuery = (pid: string) =>
+  queryOptions({
+    queryKey: sub(pid, 'uploads'),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/uploads', { params: { path: { pid } }, signal })),
+  })
+export const mappingQuery = (pid: string) =>
+  queryOptions({
+    queryKey: sub(pid, 'mapping'),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/mapping', { params: { path: { pid } }, signal })),
+  })
+export const valuesQuery = (pid: string) =>
+  queryOptions({
+    queryKey: sub(pid, 'values'),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/values', { params: { path: { pid } }, signal })),
+  })
+
+export const useUploads = (pid: string) => useQuery(uploadsQuery(pid))
+export const useMapping = (pid: string, enabled = true) => useQuery({ ...mappingQuery(pid), enabled })
+export const useValues = (pid: string, enabled = true) => useQuery({ ...valuesQuery(pid), enabled })
+
+/** Anything derived from the uploaded data changes when an upload, mapping or value map does. */
+function useInvalidateData(pid: string) {
+  const qc = useQueryClient()
+  return () => Promise.all([keys.project(pid), sub(pid, 'uploads'), sub(pid, 'mapping'), sub(pid, 'values')].map((queryKey) => qc.invalidateQueries({ queryKey })))
+}
+
+export function useUploadFile(pid: string) {
+  const done = useInvalidateData(pid)
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return unwrap(
+        api.POST('/api/projects/{pid}/uploads', {
+          params: { path: { pid } },
+          body: { file: '' },
+          bodySerializer: () => form,
+        }),
+      )
+    },
+    onSuccess: done,
+  })
+}
+
+export function useDeleteUpload(pid: string) {
+  const done = useInvalidateData(pid)
+  return useMutation({
+    mutationFn: (uid: string) => unwrap(api.DELETE('/api/projects/{pid}/uploads/{uid}', { params: { path: { pid, uid } } })),
+    onSuccess: done,
+  })
+}
+
+export function usePutMapping(pid: string) {
+  const done = useInvalidateData(pid)
+  return useMutation({
+    mutationFn: (confirmed: Record<string, Record<string, string>>) => unwrap(api.PUT('/api/projects/{pid}/mapping', { params: { path: { pid } }, body: { confirmed } })),
+    onSuccess: done,
+  })
+}
+
+export function usePutValues(pid: string) {
+  const done = useInvalidateData(pid)
+  return useMutation({
+    mutationFn: (body: ValueMaps) => unwrap(api.PUT('/api/projects/{pid}/values', { params: { path: { pid } }, body })),
+    onSuccess: done,
+  })
+}

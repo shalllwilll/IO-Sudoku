@@ -2,6 +2,9 @@ import { Navigate, createBrowserRouter, type RouteObject } from 'react-router-do
 import AppShell from './AppShell'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { RouteError } from './components/ErrorView'
+import Data from './pages/Data'
+import MapPage from './pages/Map'
+import Values from './pages/Values'
 import Layout from './pages/Layout'
 import Login from './pages/Login'
 import Placeholder from './pages/Placeholder'
@@ -30,9 +33,9 @@ export const routes: RouteObject[] = [
                 element: <ProjectFrame />,
                 children: [
                   { index: true, element: <Navigate to="data" replace /> },
-                  { path: 'data', element: stub('Data', 'U3'), handle: { crumb: 'Data' } },
-                  { path: 'map', element: stub('Map', 'U3'), handle: { crumb: 'Map' } },
-                  { path: 'values', element: stub('Values', 'U3'), handle: { crumb: 'Values' } },
+                  { path: 'data', element: <Data />, handle: { crumb: 'Data' } },
+                  { path: 'map', element: <MapPage />, handle: { crumb: 'Map' } },
+                  { path: 'values', element: <Values />, handle: { crumb: 'Values' } },
                   { path: 'rules', element: stub('Rules', 'U4'), handle: { crumb: 'Rules' } },
                   { path: 'run', element: stub('Run', 'U5'), handle: { crumb: 'Run' } },
                   { path: 'runs/:rid', element: stub('Results', 'U6'), handle: { crumb: 'Results' } },

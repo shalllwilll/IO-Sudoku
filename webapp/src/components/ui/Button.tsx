@@ -20,7 +20,7 @@ export function Button({ variant = 'secondary', icon, static: still, className, 
   return (
     <button
       className={cn(
-        'inline-flex h-9 select-none items-center justify-center gap-2 rounded-md px-3.5 text-[13px] font-medium',
+        'inline-flex h-9 shrink-0 select-none whitespace-nowrap items-center justify-center gap-2 rounded-md px-3.5 text-[13px] font-medium',
         'transition-[scale,background-color,color,box-shadow,opacity] duration-150 ease-out',
         'disabled:cursor-not-allowed disabled:opacity-50',
         !still && 'enabled:active:scale-[0.96]',
