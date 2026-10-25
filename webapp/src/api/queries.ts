@@ -134,3 +134,57 @@ export function usePutValues(pid: string) {
     onSuccess: done,
   })
 }
+
+// -- Rules --------------------------------------------------------------------------------
+
+export type Candidate = Schemas['Candidate']
+export type Finding = Schemas['Finding']
+export type DryRun = Schemas['DryRun']
+
+export const rulesQuery = (pid: string) =>
+  queryOptions({
+    queryKey: sub(pid, 'rules'),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/rules', { params: { path: { pid } }, signal })),
+  })
+export const runsQuery = (pid: string) =>
+  queryOptions({
+    queryKey: sub(pid, 'runs'),
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs', { params: { path: { pid } }, signal })),
+  })
+
+export const useRules = (pid: string) => useQuery(rulesQuery(pid))
+export const useRuns = (pid: string, enabled = true) => useQuery({ ...runsQuery(pid), enabled })
+
+/** Lint and dry-run a candidate rule list against the project's current data. */
+export const useLint = (pid: string, rules: Record<string, unknown>[] | undefined) =>
+  useQuery({
+    queryKey: [...sub(pid, 'lint'), JSON.stringify(rules)],
+    queryFn: ({ signal }) => unwrap(api.POST('/api/projects/{pid}/lint', { params: { path: { pid } }, body: { rules }, signal })),
+    enabled: rules !== undefined,
+    placeholderData: keepPreviousData,
+    retry: false,
+  })
+
+export function usePutRules(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Schemas['RulesIn']) => unwrap(api.PUT('/api/projects/{pid}/rules', { params: { path: { pid } }, body })),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: sub(pid, 'rules') }), qc.invalidateQueries({ queryKey: sub(pid, 'lint') }), qc.invalidateQueries({ queryKey: keys.project(pid) })]),
+  })
+}
+
+export function useMineRun(pid: string) {
+  return useMutation({
+    mutationFn: (run_id: string) => unwrap(api.POST('/api/projects/{pid}/rules/mine', { params: { path: { pid } }, body: { run_id } })),
+  })
+}
+
+export function useMineUpload(pid: string) {
+  return useMutation({
+    mutationFn: (file: File) => {
+      const form = new FormData()
+      form.append('file', file)
+      return unwrap(api.POST('/api/projects/{pid}/rules/mine/upload', { params: { path: { pid } }, body: { file: '' }, bodySerializer: () => form }))
+    },
+  })
+}
