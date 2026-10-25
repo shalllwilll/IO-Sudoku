@@ -565,6 +565,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{pid}/tq-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tq Groups
+         * @description The project's TQs grouped by cause, most urgent first, each with a safe recommendation.
+         */
+        get: operations["tq_groups_api_projects__pid__tq_groups_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{pid}/tqs": {
         parameters: {
             query?: never;
@@ -576,6 +596,27 @@ export interface paths {
         get: operations["project_tqs_api_projects__pid__tqs_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{pid}/tqs/bulk-answer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Bulk Answer
+         * @description Give the same answer to several TQs. Each is validated like a single answer; a TQ that
+         *     fails is reported and the rest still apply.
+         */
+        post: operations["bulk_answer_api_projects__pid__tqs_bulk_answer_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -828,6 +869,43 @@ export interface components {
         Body_upload_api_projects__pid__uploads_post: {
             /** File */
             file: string;
+        };
+        /** BulkAnswerIn */
+        BulkAnswerIn: {
+            /**
+             * Author
+             * @default engineer
+             */
+            author: string;
+            /** Fields */
+            fields?: {
+                [key: string]: unknown;
+            };
+            /** Option */
+            option: string;
+            /**
+             * Scope
+             * @default everywhere
+             */
+            scope: string;
+            /** Tq Ids */
+            tq_ids: string[];
+            /** Value */
+            value?: string | null;
+        };
+        /** BulkAnswerOut */
+        BulkAnswerOut: {
+            /** Answered */
+            answered: string[];
+            /** Failed */
+            failed: components["schemas"]["BulkFailure"][];
+        };
+        /** BulkFailure */
+        BulkFailure: {
+            /** Error */
+            error: string;
+            /** Tq Id */
+            tq_id: string;
         };
         /** Cabinet */
         Cabinet: {
@@ -1096,6 +1174,21 @@ export interface components {
             positions: number;
             /** Signals */
             signals: number;
+        };
+        /** GroupOption */
+        GroupOption: {
+            /** Changes Allocation */
+            changes_allocation: boolean;
+            /** Choices */
+            choices?: string[];
+            /** Consequence */
+            consequence: string;
+            /** Effect */
+            effect: string;
+            /** Label */
+            label: string;
+            /** Needs */
+            needs?: string[];
         };
         /** GroupsOut */
         GroupsOut: {
@@ -1540,6 +1633,20 @@ export interface components {
             /** Unit */
             unit?: string | null;
         };
+        /** Recommended */
+        Recommended: {
+            /** Option */
+            option: string;
+            /** Reason */
+            reason: string;
+            /**
+             * Scope
+             * @default everywhere
+             */
+            scope: string;
+            /** Value */
+            value?: string | null;
+        };
         /** ReportOut */
         ReportOut: {
             report: components["schemas"]["CompletionReport"];
@@ -1934,6 +2041,45 @@ export interface components {
             status: string;
             /** Subject */
             subject: string;
+        };
+        /** TqGroup */
+        TqGroup: {
+            /**
+             * Can Place
+             * @default false
+             */
+            can_place: boolean;
+            /** Category */
+            category: string;
+            /** Code */
+            code: string;
+            /** Key */
+            key: string;
+            /** Open Ids */
+            open_ids: string[];
+            /** Options */
+            options: components["schemas"]["GroupOption"][];
+            /**
+             * Priority
+             * @enum {string}
+             */
+            priority: "P1" | "P2" | "P3";
+            recommended?: components["schemas"]["Recommended"] | null;
+            /** Samples */
+            samples?: string[];
+            /** Signals */
+            signals: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "answered" | "mixed";
+            /** Title */
+            title: string;
+            /** Tq Ids */
+            tq_ids: string[];
+            /** Why */
+            why: string;
         };
         /** TqOption */
         TqOption: {
@@ -3629,6 +3775,46 @@ export interface operations {
             };
         };
     };
+    tq_groups_api_projects__pid__tq_groups_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TqGroup"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     project_tqs_api_projects__pid__tqs_get: {
         parameters: {
             query?: {
@@ -3668,6 +3854,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bulk_answer_api_projects__pid__tqs_bulk_answer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkAnswerIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkAnswerOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
                 };
             };
         };

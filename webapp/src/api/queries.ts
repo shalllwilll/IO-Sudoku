@@ -377,3 +377,23 @@ export function useLoadSample() {
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.projects }),
   })
 }
+
+// -- TQ groups ----------------------------------------------------------------------------
+
+export type TqGroup = Schemas['TqGroup']
+export type GroupOption = Schemas['GroupOption']
+
+export const tqGroupsQuery = (pid: string) =>
+  queryOptions({
+    queryKey: [...sub(pid, 'tq-groups')],
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/tq-groups', { params: { path: { pid } }, signal })),
+  })
+export const useTqGroups = (pid: string) => useQuery(tqGroupsQuery(pid))
+
+export function useBulkAnswer(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Schemas['BulkAnswerIn']) => unwrap(api.POST('/api/projects/{pid}/tqs/bulk-answer', { params: { path: { pid } }, body })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', pid] }),
+  })
+}

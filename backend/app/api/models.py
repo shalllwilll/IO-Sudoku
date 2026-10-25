@@ -200,6 +200,25 @@ class AnswerIn(BaseModel):
     author: str = Field(default="engineer", max_length=80)
 
 
+class BulkAnswerIn(BaseModel):
+    tq_ids: list[str] = Field(min_length=1, max_length=500)
+    option: str
+    value: str | None = None
+    fields: dict[str, object] = Field(default_factory=dict)
+    scope: str = "everywhere"
+    author: str = Field(default="engineer", max_length=80)
+
+
+class BulkFailure(BaseModel):
+    tq_id: str
+    error: str
+
+
+class BulkAnswerOut(BaseModel):
+    answered: list[str]
+    failed: list[BulkFailure]
+
+
 class AnswerOut(BaseModel):
     answer: Answer
     tq: TQ

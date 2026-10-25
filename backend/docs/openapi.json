@@ -365,6 +365,98 @@
     "title": "Body_upload_api_projects__pid__uploads_post",
     "type": "object"
    },
+   "BulkAnswerIn": {
+    "properties": {
+     "author": {
+      "default": "engineer",
+      "maxLength": 80,
+      "title": "Author",
+      "type": "string"
+     },
+     "fields": {
+      "additionalProperties": true,
+      "title": "Fields",
+      "type": "object"
+     },
+     "option": {
+      "title": "Option",
+      "type": "string"
+     },
+     "scope": {
+      "default": "everywhere",
+      "title": "Scope",
+      "type": "string"
+     },
+     "tq_ids": {
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 500,
+      "minItems": 1,
+      "title": "Tq Ids",
+      "type": "array"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "tq_ids",
+     "option"
+    ],
+    "title": "BulkAnswerIn",
+    "type": "object"
+   },
+   "BulkAnswerOut": {
+    "properties": {
+     "answered": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Answered",
+      "type": "array"
+     },
+     "failed": {
+      "items": {
+       "$ref": "#/components/schemas/BulkFailure"
+      },
+      "title": "Failed",
+      "type": "array"
+     }
+    },
+    "required": [
+     "answered",
+     "failed"
+    ],
+    "title": "BulkAnswerOut",
+    "type": "object"
+   },
+   "BulkFailure": {
+    "properties": {
+     "error": {
+      "title": "Error",
+      "type": "string"
+     },
+     "tq_id": {
+      "title": "Tq Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "tq_id",
+     "error"
+    ],
+    "title": "BulkFailure",
+    "type": "object"
+   },
    "Cabinet": {
     "properties": {
      "ciocs": {
@@ -1056,6 +1148,48 @@
      "signals"
     ],
     "title": "Group",
+    "type": "object"
+   },
+   "GroupOption": {
+    "properties": {
+     "changes_allocation": {
+      "title": "Changes Allocation",
+      "type": "boolean"
+     },
+     "choices": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Choices",
+      "type": "array"
+     },
+     "consequence": {
+      "title": "Consequence",
+      "type": "string"
+     },
+     "effect": {
+      "title": "Effect",
+      "type": "string"
+     },
+     "label": {
+      "title": "Label",
+      "type": "string"
+     },
+     "needs": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Needs",
+      "type": "array"
+     }
+    },
+    "required": [
+     "label",
+     "consequence",
+     "effect",
+     "changes_allocation"
+    ],
+    "title": "GroupOption",
     "type": "object"
    },
    "GroupsOut": {
@@ -2149,6 +2283,40 @@
      }
     },
     "title": "ProjectUpdate",
+    "type": "object"
+   },
+   "Recommended": {
+    "properties": {
+     "option": {
+      "title": "Option",
+      "type": "string"
+     },
+     "reason": {
+      "title": "Reason",
+      "type": "string"
+     },
+     "scope": {
+      "default": "everywhere",
+      "title": "Scope",
+      "type": "string"
+     },
+     "value": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Value"
+     }
+    },
+    "required": [
+     "option",
+     "reason"
+    ],
+    "title": "Recommended",
     "type": "object"
    },
    "ReportOut": {
@@ -3317,6 +3485,110 @@
      "message"
     ],
     "title": "TQ",
+    "type": "object"
+   },
+   "TqGroup": {
+    "properties": {
+     "can_place": {
+      "default": false,
+      "title": "Can Place",
+      "type": "boolean"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "code": {
+      "title": "Code",
+      "type": "string"
+     },
+     "key": {
+      "title": "Key",
+      "type": "string"
+     },
+     "open_ids": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Open Ids",
+      "type": "array"
+     },
+     "options": {
+      "items": {
+       "$ref": "#/components/schemas/GroupOption"
+      },
+      "title": "Options",
+      "type": "array"
+     },
+     "priority": {
+      "enum": [
+       "P1",
+       "P2",
+       "P3"
+      ],
+      "title": "Priority",
+      "type": "string"
+     },
+     "recommended": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/Recommended"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "samples": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Samples",
+      "type": "array"
+     },
+     "signals": {
+      "title": "Signals",
+      "type": "integer"
+     },
+     "status": {
+      "enum": [
+       "open",
+       "answered",
+       "mixed"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     },
+     "tq_ids": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Tq Ids",
+      "type": "array"
+     },
+     "why": {
+      "title": "Why",
+      "type": "string"
+     }
+    },
+    "required": [
+     "key",
+     "code",
+     "category",
+     "priority",
+     "title",
+     "why",
+     "tq_ids",
+     "open_ids",
+     "signals",
+     "status",
+     "options"
+    ],
+    "title": "TqGroup",
     "type": "object"
    },
    "TqOption": {
@@ -5713,6 +5985,60 @@
     "summary": "Signal History"
    }
   },
+  "/api/projects/{pid}/tq-groups": {
+   "get": {
+    "description": "The project's TQs grouped by cause, most urgent first, each with a safe recommendation.",
+    "operationId": "tq_groups_api_projects__pid__tq_groups_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/TqGroup"
+         },
+         "title": "Response Tq Groups Api Projects  Pid  Tq Groups Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Tq Groups"
+   }
+  },
   "/api/projects/{pid}/tqs": {
    "get": {
     "operationId": "project_tqs_api_projects__pid__tqs_get",
@@ -5796,6 +6122,66 @@
      }
     },
     "summary": "Project Tqs"
+   }
+  },
+  "/api/projects/{pid}/tqs/bulk-answer": {
+   "post": {
+    "description": "Give the same answer to several TQs. Each is validated like a single answer; a TQ that\nfails is reported and the rest still apply.",
+    "operationId": "bulk_answer_api_projects__pid__tqs_bulk_answer_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BulkAnswerIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/BulkAnswerOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Unprocessable Content"
+     }
+    },
+    "summary": "Bulk Answer"
    }
   },
   "/api/projects/{pid}/tqs/{tid}/answer": {

@@ -9,6 +9,9 @@ from app.api.models import (
     AllocationOut,
     AnswerIn,
     AnswerOut,
+    BulkAnswerIn,
+    BulkAnswerOut,
+    BulkFailure,
     GroupsOut,
     ImpactOut,
     LayoutOut,
@@ -21,6 +24,7 @@ from app.core.ai.features import TqWording, explain_tq
 from app.core.model.allocation import Allocation
 from app.core.tq.answers import AnswerError
 from app.core.tq.model import TQ
+from app.core.tq.triage import TqGroup, triage
 
 router = APIRouter(prefix="/api")
 ERRORS = {"model": ErrorBody}
@@ -173,6 +177,40 @@ def answer(pid: str, tid: str, body: AnswerIn, request: Request, svc: Service = 
     except AnswerError as e:
         raise ApiError(422, "invalid_answer", str(e)) from e
     return AnswerOut(answer=a, tq=store.get(tid), history=store.history(tid))  # type: ignore[arg-type]
+
+
+@router.get("/projects/{pid}/tq-groups", response_model=list[TqGroup], responses={404: ERRORS})
+def tq_groups(pid: str, request: Request, svc: Service = Depends(service)):
+    """The project's TQs grouped by cause, most urgent first, each with a safe recommendation."""
+    project_of(request, pid)
+    return triage(svc.store.tq_store(pid).all(), svc.pack)
+
+
+@router.post("/projects/{pid}/tqs/bulk-answer", response_model=BulkAnswerOut,
+             responses={404: ERRORS, 422: ERRORS})  # fmt: skip
+def bulk_answer(pid: str, body: BulkAnswerIn, request: Request, svc: Service = Depends(service)):
+    """Give the same answer to several TQs. Each is validated like a single answer; a TQ that
+    fails is reported and the rest still apply."""
+    project_of(request, pid)
+    if body.scope not in ("row", "cable", "everywhere"):
+        raise ApiError(422, "invalid_answer", f"unknown scope '{body.scope}'")
+    store = svc.store.tq_store(pid)
+    done: list[str] = []
+    failed: list[BulkFailure] = []
+    with svc.store.lock:
+        for tid in dict.fromkeys(body.tq_ids):
+            if store.get(tid) is None:
+                failed.append(BulkFailure(tq_id=tid, error="no such TQ"))
+                continue
+            try:
+                store.answer(
+                    tid, body.option, pack=svc.pack, value=body.value, fields=body.fields,
+                    scope=body.scope, author=body.author,  # type: ignore[arg-type]
+                )  # fmt: skip
+                done.append(tid)
+            except AnswerError as e:
+                failed.append(BulkFailure(tq_id=tid, error=str(e)))
+    return BulkAnswerOut(answered=done, failed=failed)
 
 
 @router.get("/projects/{pid}/tqs/{tid}/explain", response_model=TqWording, responses={404: ERRORS})
