@@ -62,6 +62,8 @@ export function useCreateProject() {
 
 export type Upload = Schemas['UploadOut']
 export type MappingSheet = Schemas['MappingSheet']
+export type MappingOut = Schemas['MappingOut']
+export type ValuesOut = Schemas['ValuesOut']
 export type UnknownValue = Schemas['UnknownValueOut']
 export type ValueMaps = Schemas['ValueMaps']
 
@@ -363,5 +365,15 @@ export function useStartRevision(pid: string) {
   return useMutation({
     mutationFn: (body: Schemas['RevisionCreate']) => unwrap(api.POST('/api/projects/{pid}/revisions', { params: { path: { pid } }, body })),
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: sub(pid, 'runs') }), qc.invalidateQueries({ queryKey: sub(pid, 'revisions') })]),
+  })
+}
+
+// -- Demo ---------------------------------------------------------------------------------
+
+export function useLoadSample() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => unwrap(api.POST('/api/demo/sample')),
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.projects }),
   })
 }

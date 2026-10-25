@@ -2579,6 +2579,36 @@
     "title": "RunOut",
     "type": "object"
    },
+   "SampleOut": {
+    "properties": {
+     "created": {
+      "title": "Created",
+      "type": "boolean"
+     },
+     "project_id": {
+      "title": "Project Id",
+      "type": "string"
+     },
+     "run_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Run Id"
+     }
+    },
+    "required": [
+     "project_id",
+     "run_id",
+     "created"
+    ],
+    "title": "SampleOut",
+    "type": "object"
+   },
    "SheetInfo": {
     "properties": {
      "columns": {
@@ -3588,6 +3618,35 @@
      }
     },
     "summary": "Ai Status"
+   }
+  },
+  "/api/demo/sample": {
+   "post": {
+    "description": "Create (once) a project from the sample MDB and start its first run.",
+    "operationId": "load_sample_api_demo_sample_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SampleOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     }
+    },
+    "summary": "Load Sample"
    }
   },
   "/api/health": {

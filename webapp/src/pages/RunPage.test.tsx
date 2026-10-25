@@ -70,9 +70,9 @@ const setupFetch = (req: Request) => {
 describe('Run page', () => {
   it('summarises readiness and starts a run, then follows it', async () => {
     const router = mount('/projects/p1/run', setupFetch)
-    expect(await screen.findByText('1 file uploaded')).toBeInTheDocument()
+    expect(await screen.findByText(/1 file imported/)).toBeInTheDocument()
     expect(await screen.findByText(/1 unrecognised value will become questions/)).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /start run/i }))
+    await userEvent.click(screen.getByRole('button', { name: /start allocation/i }))
     await vi.waitFor(() => expect(router.state.location.search).toBe('?run=r9'))
     expect(await screen.findByRole('list', { name: 'Pipeline stages' })).toBeInTheDocument()
     expect(FakeES.last?.url).toMatch(/\/api\/projects\/p1\/runs\/r9\/events$/)
@@ -80,8 +80,8 @@ describe('Run page', () => {
 
   it('blocks starting without data', async () => {
     mount('/projects/p1/run', (req) => (new URL(req.url).pathname.endsWith('/projects/p1') ? json(200, { ...project, uploads: 0 }) : setupFetch(req)))
-    expect(await screen.findByText('Upload a workbook first')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /start run/i })).toBeDisabled()
+    expect(await screen.findByText('Upload the signal list first')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /start allocation/i })).toBeDisabled()
   })
 
   it('replays a burst at reading pace and ends on the results link', async () => {

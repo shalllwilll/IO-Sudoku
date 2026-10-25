@@ -66,20 +66,20 @@ function Setup({ pid }: { pid: string }) {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-8">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Run</h1>
-        <p className="mt-1 text-[13px] text-fg-muted text-pretty">Check what the run will use, then start it. Anything unresolved becomes a question for you afterwards, not a silent guess.</p>
+        <h1 className="text-lg font-semibold tracking-tight">Allocate</h1>
+        <p className="mt-1 text-[13px] text-fg-muted text-pretty">Start the allocation. Anything unclear becomes a question for you afterwards, never a silent guess.</p>
       </div>
-      <ul className="rounded-lg border border-border bg-surface-1 p-1 shadow-card">
-        <Check_ ok={hasData} title="Data" detail={hasData ? `${project.data?.uploads} ${project.data?.uploads === 1 ? 'file' : 'files'} uploaded` : 'Upload a workbook first'} to={`/projects/${pid}/data`} />
-        <Check_ ok={missing.length === 0} warn title="Mapping" detail={!hasData ? 'Waiting for data' : missing.length ? `Required fields not mapped: ${[...new Set(missing)].join(', ')}` : 'Every required field is mapped'} to={`/projects/${pid}/map`} />
-        <Check_ ok={open_ === 0} warn title="Values" detail={!hasData ? 'Waiting for data' : open_ ? `${open_} unrecognised ${open_ === 1 ? 'value' : 'values'} will become questions` : 'Every value is recognised'} to={`/projects/${pid}/values`} />
-        <Check_ ok={pending === 0} warn title="Answers" detail={pending ? `${pending} ${pending === 1 ? 'answer' : 'answers'} given since the last run will apply now` : 'No new answers since the last run'} to={`/projects/${pid}/tqs`} />
-        <Check_ ok title="Rules" detail={presetLabel} to={`/projects/${pid}/rules`} />
+      <ul className="rounded-lg border border-border bg-surface-1 p-1 shadow-card" aria-label="Before you start">
+        {!hasData && <Check_ ok={false} title="Import" detail="Upload the signal list first" to={`/projects/${pid}/data`} />}
+        {hasData && missing.length > 0 && <Check_ ok={false} warn title="Columns" detail={`Required fields not matched: ${[...new Set(missing)].join(', ')}`} to={`/projects/${pid}/map`} />}
+        {hasData && open_ > 0 && <Check_ ok={false} warn title="Values" detail={`${open_} unrecognised ${open_ === 1 ? 'value' : 'values'} will become questions`} to={`/projects/${pid}/values`} />}
+        {pending > 0 && <Check_ ok={false} warn title="Answers" detail={`${pending} ${pending === 1 ? 'answer' : 'answers'} given since the last run will apply now`} to={`/projects/${pid}/tqs`} />}
+        {hasData && missing.length === 0 && open_ === 0 && pending === 0 && <Check_ ok title="Ready" detail={`${project.data?.uploads} ${project.data?.uploads === 1 ? 'file' : 'files'} imported · ${presetLabel} rules`} to={`/projects/${pid}/rules`} />}
       </ul>
 
       <div className="rounded-lg border border-border bg-surface-1 shadow-card">
         <button type="button" aria-expanded={open} className="flex w-full items-center gap-2 px-4 py-3 text-left text-[13px] font-medium" onClick={() => setOpen((v) => !v)}>
-          Advanced
+          Engineering options
           <ChevronDown size={14} strokeWidth={1.75} className={cn('ml-auto text-fg-muted transition-[rotate] duration-150 ease-out', open && 'rotate-180')} />
         </button>
         {open && (
@@ -111,7 +111,7 @@ function Setup({ pid }: { pid: string }) {
       )}
       <div className="flex items-center gap-3">
         <Button variant="primary" icon={<Play size={15} strokeWidth={1.75} />} disabled={!hasData || start.isPending} onClick={go}>
-          {start.isPending ? 'Starting…' : 'Start run'}
+          {start.isPending ? 'Starting…' : 'Start allocation'}
         </Button>
         {(runs.data?.length ?? 0) > 0 && <span className="text-xs text-fg-muted tnum">{runs.data!.length} earlier {runs.data!.length === 1 ? 'run' : 'runs'}</span>}
       </div>

@@ -1,6 +1,6 @@
 /** Rule presets the backend accepts. The API has no preset listing outside a project, so they are named here. */
 export const PRESETS = [
-  { value: 'plant-default', label: 'Plant default', hint: 'Balanced: hard safety rules, soft grouping preferences.' },
-  { value: 'strict', label: 'Strict', hint: 'Promotes grouping preferences to hard rules. Fewer options, more questions.' },
+  { value: 'plant-default', label: 'Standard', hint: 'Safety rules are always kept. Grouping preferences are followed where possible.' },
+  { value: 'strict', label: 'Strict', hint: 'Grouping preferences become firm rules. Fewer options, more questions for you.' },
 ] as const
 export const DEFAULT_PRESET = PRESETS[0].value

@@ -1,8 +1,8 @@
-import { FolderPlus, Search } from 'lucide-react'
+import { FlaskConical, FolderPlus, Search } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { describeError } from '@/api/errors'
-import { useCreateProject, useProjects } from '@/api/queries'
+import { useCreateProject, useLoadSample, useProjects } from '@/api/queries'
 import { ErrorPanel } from '@/components/ErrorView'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
@@ -66,6 +66,17 @@ export default function Projects() {
   const { data, error, isPending, refetch } = useProjects()
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
+  const nav = useNavigate()
+  const sample = useLoadSample()
+  const loadSample = () =>
+    sample.mutate(undefined, {
+      onSuccess: (r) => nav(r.created && r.run_id ? `/projects/${r.project_id}/run?run=${r.run_id}` : r.run_id ? `/projects/${r.project_id}/runs/${r.run_id}` : `/projects/${r.project_id}`),
+    })
+  const sampleButton = (primary: boolean) => (
+    <Button variant={primary ? 'primary' : 'secondary'} icon={<FlaskConical size={15} strokeWidth={1.75} />} disabled={sample.isPending} onClick={loadSample}>
+      {sample.isPending ? 'Loading sample…' : 'Load sample plant'}
+    </Button>
+  )
 
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -86,6 +97,7 @@ export default function Projects() {
             <input aria-label="Search projects" className={cn(inputClass, 'h-9 w-56 pl-8 text-[13px]')} placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
           </label>
         )}
+        {data && data.length > 0 && sampleButton(false)}
         {(!data || data.length > 0) && (
           <Button variant="primary" icon={<FolderPlus size={15} strokeWidth={1.75} />} className={cn(!data && 'ml-auto')} onClick={() => setOpen(true)}>
             New project
@@ -93,17 +105,22 @@ export default function Projects() {
         )}
       </div>
 
+      {sample.isError && data && data.length > 0 && <p role="alert" className="text-[13px] text-danger">{describeError(sample.error)}</p>}
       {isPending ? (
         <p className="text-[13px] text-fg-muted">Loading projects…</p>
       ) : data.length === 0 ? (
         <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed border-border-strong p-8">
           <h2 className="text-[15px] font-medium">No projects yet</h2>
           <p className="max-w-md text-[13px] text-fg-muted text-pretty">
-            A project holds one unit&apos;s signal list, its mapping decisions, rules and every run. Start by creating one, then upload the MDB workbook.
+            A project holds one unit&apos;s signal list, its rules and every allocation. Try the supplied sample plant to see the whole flow in under a minute, or start with your own data.
           </p>
-          <Button variant="primary" icon={<FolderPlus size={15} strokeWidth={1.75} />} onClick={() => setOpen(true)}>
-            Create your first project
-          </Button>
+          <div className="flex gap-2">
+            {sampleButton(true)}
+            <Button icon={<FolderPlus size={15} strokeWidth={1.75} />} onClick={() => setOpen(true)}>
+              New project
+            </Button>
+          </div>
+          {sample.isError && <p role="alert" className="text-[13px] text-danger">{describeError(sample.error)}</p>}
         </div>
       ) : rows.length === 0 ? (
         <p className="text-[13px] text-fg-muted">No project matches “{q}”.</p>

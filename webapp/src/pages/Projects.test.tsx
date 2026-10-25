@@ -38,10 +38,11 @@ describe('projectStatus', () => {
 })
 
 describe('Projects page', () => {
-  it('shows an empty state with one primary action', async () => {
+  it('shows an empty state offering the sample plant and a new project', async () => {
     mount(async () => json(200, []))
     expect(await screen.findByText('No projects yet')).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /create your first project/i })).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Load sample plant' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'New project' })).toHaveLength(1)
   })
 
   it('lists projects and filters by search', async () => {
@@ -61,7 +62,8 @@ describe('Projects page', () => {
       }
       return json(200, [])
     })
-    await userEvent.click(await screen.findByRole('button', { name: /create your first project/i }))
+    await screen.findByText('No projects yet')
+    await userEvent.click(screen.getByRole('button', { name: 'New project' }))
     await userEvent.type(screen.getByLabelText('Name'), 'My unit')
     await userEvent.click(screen.getByRole('radio', { name: /strict/i }))
     await userEvent.click(screen.getByRole('button', { name: 'Create project' }))
@@ -71,7 +73,8 @@ describe('Projects page', () => {
 
   it('shows the backend error when creation fails', async () => {
     mount(async (req) => (req.method === 'POST' ? json(422, { code: 'validation_error', message: 'bad', details: null }) : json(200, [])))
-    await userEvent.click(await screen.findByRole('button', { name: /create your first project/i }))
+    await screen.findByText('No projects yet')
+    await userEvent.click(screen.getByRole('button', { name: 'New project' }))
     await userEvent.type(screen.getByLabelText('Name'), 'x')
     await userEvent.click(screen.getByRole('button', { name: 'Create project' }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/not valid/i)

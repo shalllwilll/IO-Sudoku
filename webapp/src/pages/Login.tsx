@@ -3,10 +3,9 @@ import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/Button'
-import { Segmented } from '@/components/ui/Segmented'
 import { IO_BG } from '@/components/charm/kinds'
 import { cn } from '@/lib/cn'
-import { useSession, type Role } from '@/state/session'
+import { useSession } from '@/state/session'
 import { BASEPLATES, CHANNELS, IO_TYPES } from '@/lib/hierarchy'
 
 // Entrance for an infrequent view: 100ms stagger, 300ms ease-out, 12px rise, 4px blur.
@@ -46,7 +45,6 @@ export default function Login() {
   const from = (useLocation().state as { from?: string } | null)?.from ?? '/projects'
   const signIn = useSession((s) => s.signIn)
   const [name, setName] = useState('')
-  const [role, setRole] = useState<Role>('engineer')
 
   return (
     <div className="grid min-h-dvh grid-cols-1 bg-bg lg:grid-cols-[minmax(420px,520px)_1fr]">
@@ -60,7 +58,7 @@ export default function Login() {
           onSubmit={(e) => {
             e.preventDefault()
             if (!name.trim()) return
-            signIn(name, role)
+            signIn(name, 'engineer')
             nav(from, { replace: true })
           }}
         >
@@ -73,7 +71,7 @@ export default function Login() {
             </p>
           </motion.div>
           <motion.label {...chunk(1)} className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium">Name or email</span>
+            <span className="text-[13px] font-medium">Your name</span>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -83,24 +81,12 @@ export default function Login() {
               className="h-10 rounded-md border border-border-strong bg-surface-1 px-3 text-[14px] outline-none transition-[border-color,box-shadow] duration-150 ease-out placeholder:text-fg-subtle focus:border-accent focus:ring-2 focus:ring-accent-soft"
             />
           </motion.label>
-          <motion.div {...chunk(2)} className="flex flex-col gap-1.5">
-            <span className="text-[13px] font-medium">Role</span>
-            <Segmented<Role>
-              label="Role"
-              value={role}
-              onChange={setRole}
-              options={[
-                { value: 'engineer', label: 'Engineer', hint: 'Edits mappings, rules, answers TQs' },
-                { value: 'reviewer', label: 'Reviewer', hint: 'Reads results and reports' },
-              ]}
-            />
-          </motion.div>
-          <motion.div {...chunk(3)} className="flex flex-col gap-3">
+          <motion.div {...chunk(2)} className="flex flex-col gap-3">
             <Button variant="primary" type="submit" className="h-10 text-[14px]">
               Continue
             </Button>
             <p className="text-xs text-fg-subtle text-pretty">
-              Demo sign-in. There is no password; your name and role are kept on this device only.
+              Demo sign-in. There is no password; your name is kept on this device only.
             </p>
           </motion.div>
         </form>

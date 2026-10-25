@@ -54,7 +54,6 @@ function useCrumbs(explicit?: string[]): string[] {
 export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: ReactNode; children: ReactNode }) {
   const { pid } = useParams()
   const nav = useNavigate()
-  const project = useProject(pid)
   const openTqs = useOpenTqs(pid)
   const ai = useAiStatus()
   const { name, role, signOut } = useSession()
@@ -82,7 +81,7 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
           {pid && (
             <NavLink to={`/projects/${pid}/tqs`} className={navLink}>
               <CircleHelp size={16} strokeWidth={1.75} />
-              TQ inbox
+              Technical queries
               {open > 0 && (
                 <span className="ml-auto rounded-full bg-danger/20 px-1.5 text-[11px] font-medium text-danger tnum" aria-label={`${open} open`}>
                   {open}
@@ -95,13 +94,6 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
             Settings
           </NavLink>
         </nav>
-        {project.data && (
-          <div className="mt-auto rounded-lg border border-border p-2.5">
-            <div className="text-[11px] uppercase tracking-wider text-fg-subtle">Current project</div>
-            <div className="mt-1 truncate text-[13px] font-medium">{project.data.name}</div>
-            <div className="truncate font-mono text-xs text-fg-muted">{[project.data.area, project.data.unit].filter(Boolean).join(' · ') || '–'}</div>
-          </div>
-        )}
       </aside>
       <div className="flex min-w-0 flex-col">
         <OfflineBanner />
@@ -129,11 +121,11 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
               >
                 <Sparkles size={14} strokeWidth={1.75} />
                 Assistant
-                <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} aria-label={aiOn ? 'AI on' : 'AI off'} />
+                <span className={cn('rounded-full px-1.5 py-px text-[11px] font-medium', aiOn ? 'bg-success/15 text-success' : 'bg-surface-3 text-fg-muted')}>{aiOn ? 'AI ready' : 'AI off'}</span>
               </button>
             ) : (
               <span className="flex items-center gap-1.5 text-xs text-fg-muted" title={aiOn ? 'AI features are advisory only' : 'AI is not configured. Everything else works.'}>
-                <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} /> {aiOn ? 'AI on' : 'AI off'}
+                <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} /> {aiOn ? 'AI ready' : 'AI off'}
               </span>
             )}
             <ThemeToggle />

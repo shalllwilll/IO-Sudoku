@@ -1,9 +1,11 @@
+import os
+import sys
 from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ai, errors, events, projects, revisions, runs
+from app.api import ai, demo, errors, events, projects, revisions, runs
 from app.api.service import Service
 from app.api.store import ApiStore
 from app.config import Settings
@@ -36,7 +38,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(revisions.router)
     app.include_router(events.router)
     app.include_router(ai.router)
+    app.include_router(demo.router)
     return app
 
+
+def load_dotenv(path: Path) -> None:
+    """Read KEY=VALUE lines into the environment without overriding what is already set."""
+    if not path.is_file():
+        return
+    for line in path.read_text().splitlines():
+        key, sep, value = line.strip().partition("=")
+        if sep and key and not key.startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
+if "pytest" not in sys.modules:  # a test run builds its own settings
+    load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 app = create_app()

@@ -149,7 +149,7 @@ export function RunProgress({ pid, rid, view, status, onReplay }: { pid: string;
                 <span>Questions raised</span>
                 {done && (
                   <Link to={`/projects/${pid}/tqs`} className="text-accent hover:underline">
-                    Review in the TQ inbox
+                    Resolve these
                   </Link>
                 )}
               </div>

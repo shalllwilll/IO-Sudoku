@@ -1,11 +1,12 @@
 import { FileSpreadsheet, Trash2, Upload as UploadIcon } from 'lucide-react'
 import { useRef, useState, type DragEvent } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { describeError } from '@/api/errors'
-import { useDeleteUpload, useUploadFile, useUploads, type Upload } from '@/api/queries'
+import { useDeleteUpload, useMapping, useUploadFile, useUploads, useValues, type Upload } from '@/api/queries'
 import { ErrorPanel } from '@/components/ErrorView'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/cn'
+import { importHealth } from '@/lib/importHealth'
 import { checkFile } from '@/lib/upload'
 
 const fmtSize = (n: number) => (n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`)
@@ -66,6 +67,37 @@ function UploadRow({ u, onDelete, busy }: { u: Upload; onDelete: () => void; bus
   )
 }
 
+function Check({ pid }: { pid: string }) {
+  const mapping = useMapping(pid)
+  const values = useValues(pid)
+  const h = importHealth(mapping.data, values.data)
+  if (!mapping.data || !values.data) return null
+  const rows = [
+    { to: 'map', title: 'Columns', ok: h.missing.length === 0, text: h.missing.length ? `Required fields not matched: ${h.missing.join(', ')}` : 'Every required column was recognised', action: h.missing.length ? 'Fix' : 'Review' },
+    { to: 'values', title: 'Values', ok: h.open === 0, text: h.open ? `${h.open} unrecognised ${h.open === 1 ? 'value needs' : 'values need'} a decision` : 'Every value was recognised', action: h.open ? 'Decide' : 'Review' },
+  ]
+  return (
+    <section aria-label="Import check" className="rounded-lg border border-border bg-surface-1 shadow-card">
+      <ul>
+        {rows.map((r) => (
+          <li key={r.to} className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-0">
+            <span className={cn('size-2 shrink-0 rounded-full', r.ok ? 'bg-success' : 'bg-warning')} />
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-medium">{r.title}</div>
+              <div className="text-xs text-fg-muted text-pretty">{r.text}</div>
+            </div>
+            <Link to={`/projects/${pid}/${r.to}`} className="text-[13px] text-accent hover:underline">{r.action}</Link>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center justify-end gap-3 border-t border-border px-4 py-3">
+        {!h.ok && <span className="text-xs text-fg-muted">You can continue; open items become questions after the run.</span>}
+        <Link to={`/projects/${pid}/rules`} className="inline-flex h-9 items-center rounded-md bg-accent px-3.5 text-[13px] font-medium text-accent-fg shadow-card transition-[background-color] duration-150 ease-out hover:bg-accent-strong">Continue to Rules</Link>
+      </div>
+    </section>
+  )
+}
+
 export default function Data() {
   const { pid = '' } = useParams()
   const uploads = useUploads(pid)
@@ -97,8 +129,8 @@ export default function Data() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 p-8">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">Data</h1>
-        <p className="mt-1 text-[13px] text-fg-muted text-pretty">Upload the MDB workbook. Several files can be combined; each sheet is read separately.</p>
+        <h1 className="text-lg font-semibold tracking-tight">Import</h1>
+        <p className="mt-1 text-[13px] text-fg-muted text-pretty">Upload the signal list workbook. Columns and values are matched for you; only what is unclear is asked.</p>
       </div>
       <div
         onDragOver={(e) => {
@@ -145,6 +177,7 @@ export default function Data() {
           ))}
         </ul>
       )}
+      {(uploads.data?.length ?? 0) > 0 && <Check pid={pid} />}
     </div>
   )
 }

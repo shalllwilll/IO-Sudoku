@@ -80,7 +80,7 @@ export function TqInbox({ pid, tqs, runLabel }: { pid: string; tqs: TQ[]; runLab
     <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[1fr_380px]">
       <div className="flex min-w-0 flex-col gap-4 overflow-auto p-6">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">{runLabel ?? 'TQ inbox'}</h1>
+          <h1 className="text-lg font-semibold tracking-tight">{runLabel ?? 'Technical queries'}</h1>
           <p className="mt-1 text-[13px] text-fg-muted tnum">{open} open · {tqs.length - open} answered. Answers apply the next time you run.</p>
         </div>
         {pending > 0 && (
