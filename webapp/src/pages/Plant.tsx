@@ -17,7 +17,7 @@ export default function Plant() {
             The 3D model mounts here. It receives the layout, placements and TQs of this run, and reports back the slot a
             user selects, so both views stay in step.
           </p>
-          <Button icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={() => nav('/layout')}>
+          <Button icon={<ArrowLeft size={15} strokeWidth={1.75} />} onClick={() => nav('/preview/layout')}>
             Back to layout
           </Button>
         </div>

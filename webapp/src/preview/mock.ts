@@ -1,7 +1,8 @@
 // Synthetic data for the design preview only. Invented tags and cables, never real workbook rows.
 export type Kind = 'field' | 'wired_spare' | 'spare_slot' | 'cabinet_alarm' | 'empty'
-export type Io = 'AIR' | 'AOR' | 'DIR' | 'DOR'
-export const IO_TYPES: Io[] = ['AIR', 'AOR', 'DIR', 'DOR']
+import { BASEPLATES, CHANNELS, charmNo, IO_TYPES, type Io } from '@/lib/hierarchy'
+export { BASEPLATES, CHANNELS, charmNo, IO_TYPES }
+export type { Io }
 
 export interface Slot {
   cab: number
@@ -19,9 +20,6 @@ export interface Slot {
 
 export const CABINETS = 3
 export const CIOCS_PER_CABINET = 4
-export const BASEPLATES = 8
-export const CHANNELS = 12
-export const charmNo = (bp: number, ch: number) => (bp - 1) * CHANNELS + ch
 
 function rng(seed: number) {
   return () => {

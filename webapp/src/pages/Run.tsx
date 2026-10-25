@@ -92,7 +92,7 @@ export default function Run() {
             <Button icon={<RotateCcw size={15} strokeWidth={1.75} />} onClick={() => setRun((r) => r + 1)}>
               Replay
             </Button>
-            <Button variant="primary" disabled={!done} onClick={() => nav('/layout')}>
+            <Button variant="primary" disabled={!done} onClick={() => nav('/preview/layout')}>
               Open results
             </Button>
           </div>

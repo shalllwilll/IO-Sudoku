@@ -123,7 +123,7 @@ export default function Layout() {
                   </button>
                 ))}
               </div>
-              <Button className="ml-auto" icon={<Box size={15} strokeWidth={1.75} />} onClick={() => nav('/plant')}>
+              <Button className="ml-auto" icon={<Box size={15} strokeWidth={1.75} />} onClick={() => nav('/preview/plant')}>
                 View in 3D
               </Button>
             </div>

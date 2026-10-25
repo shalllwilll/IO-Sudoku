@@ -1,5 +1,9 @@
-import { CircleHelp, FolderKanban, Settings } from 'lucide-react'
+import { CircleHelp, FolderKanban, LogOut, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { NavLink, useMatches, useNavigate, useParams } from 'react-router-dom'
+import { useAiStatus, useOpenTqs, useProject } from '@/api/queries'
+import { initials, useSession } from '@/state/session'
+import { OfflineBanner } from './OfflineBanner'
 import { cn } from '@/lib/cn'
 import { ThemeToggle } from './ThemeToggle'
 
@@ -27,57 +31,105 @@ function Brand() {
   )
 }
 
-const nav = [
-  { label: 'Projects', icon: FolderKanban, active: true },
-  { label: 'TQ inbox', icon: CircleHelp, badge: 4 },
-  { label: 'Settings', icon: Settings },
-]
+const navLink = ({ isActive }: { isActive: boolean }) =>
+  cn(
+    'flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] transition-[background-color,color] duration-150 ease-out',
+    isActive ? 'bg-surface-3 text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+  )
 
-export function Shell({ crumbs, rail, children }: { crumbs: string[]; rail?: ReactNode; children: ReactNode }) {
+/** Section names come from route `handle.crumb`; the project name comes from the API. */
+function useCrumbs(explicit?: string[]): string[] {
+  const { pid } = useParams()
+  const project = useProject(pid)
+  const matches = useMatches() as { handle?: { crumb?: string } }[]
+  if (explicit) return explicit
+  const crumbs = ['Projects']
+  if (pid) crumbs.push(project.data?.name ?? '…')
+  for (const m of matches) if (m.handle?.crumb) crumbs.push(m.handle.crumb)
+  return crumbs
+}
+
+export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: ReactNode; children: ReactNode }) {
+  const { pid } = useParams()
+  const nav = useNavigate()
+  const project = useProject(pid)
+  const openTqs = useOpenTqs(pid)
+  const ai = useAiStatus()
+  const { name, role, signOut } = useSession()
+  const trail = useCrumbs(crumbs)
+  const open = openTqs.data?.length ?? 0
+  const aiOn = ai.data?.ai_available === true
+
   return (
     <div className="grid h-dvh grid-cols-[232px_1fr] bg-bg">
       <aside className="flex flex-col gap-6 border-r border-border bg-surface-1 p-3">
         <Brand />
         <nav className="flex flex-col gap-0.5" aria-label="Primary">
-          {nav.map(({ label, icon: Icon, active, badge }) => (
-            <a
-              key={label}
-              href="#"
-              onClick={(e) => e.preventDefault()}
-              className={cn(
-                'flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] transition-[background-color,color] duration-150 ease-out',
-                active ? 'bg-surface-3 text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+          <NavLink to="/projects" end className={navLink}>
+            <FolderKanban size={16} strokeWidth={1.75} />
+            Projects
+          </NavLink>
+          {pid && (
+            <NavLink to={`/projects/${pid}/tqs`} className={navLink}>
+              <CircleHelp size={16} strokeWidth={1.75} />
+              TQ inbox
+              {open > 0 && (
+                <span className="ml-auto rounded-full bg-danger/20 px-1.5 text-[11px] font-medium text-danger tnum" aria-label={`${open} open`}>
+                  {open}
+                </span>
               )}
-            >
-              <Icon size={16} strokeWidth={1.75} />
-              {label}
-              {badge && <span className="ml-auto rounded-full bg-danger/20 px-1.5 text-[11px] font-medium text-danger tnum">{badge}</span>}
-            </a>
-          ))}
+            </NavLink>
+          )}
+          <NavLink to="/settings" className={navLink}>
+            <Settings size={16} strokeWidth={1.75} />
+            Settings
+          </NavLink>
         </nav>
-        <div className="mt-auto rounded-lg border border-border p-2.5">
-          <div className="text-[11px] uppercase tracking-wider text-fg-subtle">Current project</div>
-          <div className="mt-1 text-[13px] font-medium">Unit 100 allocation</div>
-          <div className="font-mono text-xs text-fg-muted">AR1 · 100</div>
-        </div>
+        {project.data && (
+          <div className="mt-auto rounded-lg border border-border p-2.5">
+            <div className="text-[11px] uppercase tracking-wider text-fg-subtle">Current project</div>
+            <div className="mt-1 truncate text-[13px] font-medium">{project.data.name}</div>
+            <div className="truncate font-mono text-xs text-fg-muted">{[project.data.area, project.data.unit].filter(Boolean).join(' · ') || '–'}</div>
+          </div>
+        )}
       </aside>
       <div className="flex min-w-0 flex-col">
+        <OfflineBanner />
         <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border px-5">
-          <div className="flex items-center gap-1.5 text-[13px] text-fg-muted">
-            {crumbs.map((c, i) => (
-              <span key={c} className={cn(i === crumbs.length - 1 && 'text-fg')}>
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] text-fg-muted">
+            {trail.map((c, i) => (
+              <span key={`${i}-${c}`} className={cn(i === trail.length - 1 && 'text-fg')}>
                 {i > 0 && <span className="mr-1.5 text-fg-subtle">/</span>}
                 {c}
               </span>
             ))}
-          </div>
+          </nav>
           <div className="ml-6">{rail}</div>
           <div className="ml-auto flex items-center gap-2">
-            <span className="flex items-center gap-1.5 text-xs text-fg-muted" title="AI features are advisory only">
-              <span className="size-1.5 rounded-full bg-fg-subtle" /> AI off
+            <span
+              className="flex items-center gap-1.5 text-xs text-fg-muted"
+              title={aiOn ? 'AI features are advisory only' : 'AI is not configured. Everything else works.'}
+            >
+              <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} /> {aiOn ? 'AI on' : 'AI off'}
             </span>
             <ThemeToggle />
-            <span className="grid size-8 place-items-center rounded-full bg-surface-3 text-xs font-medium">SH</span>
+            {name && (
+              <>
+                <span className="grid size-8 place-items-center rounded-full bg-surface-3 text-xs font-medium" title={`${name} · ${role}`}>
+                  {initials(name)}
+                </span>
+                <button
+                  aria-label="Sign out"
+                  className="grid size-8 place-items-center rounded-md text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg"
+                  onClick={() => {
+                    signOut()
+                    nav('/login')
+                  }}
+                >
+                  <LogOut size={15} strokeWidth={1.75} />
+                </button>
+              </>
+            )}
           </div>
         </header>
         <main className="min-h-0 flex-1 overflow-auto">{children}</main>

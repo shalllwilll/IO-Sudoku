@@ -1,14 +1,13 @@
 import { motion } from 'motion/react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/Button'
 import { Segmented } from '@/components/ui/Segmented'
 import { IO_BG } from '@/components/charm/kinds'
 import { cn } from '@/lib/cn'
-import { BASEPLATES, CHANNELS, IO_TYPES } from '@/preview/mock'
-
-type Role = 'engineer' | 'reviewer'
+import { useSession, type Role } from '@/state/session'
+import { BASEPLATES, CHANNELS, IO_TYPES } from '@/lib/hierarchy'
 
 // Entrance for an infrequent view: 100ms stagger, 300ms ease-out, 12px rise, 4px blur.
 const chunk = (i: number) => ({
@@ -44,6 +43,8 @@ function CiocMotif() {
 
 export default function Login() {
   const nav = useNavigate()
+  const from = (useLocation().state as { from?: string } | null)?.from ?? '/projects'
+  const signIn = useSession((s) => s.signIn)
   const [name, setName] = useState('')
   const [role, setRole] = useState<Role>('engineer')
 
@@ -58,7 +59,9 @@ export default function Login() {
           className="my-auto flex max-w-sm flex-col gap-6 py-12"
           onSubmit={(e) => {
             e.preventDefault()
-            nav('/run')
+            if (!name.trim()) return
+            signIn(name, role)
+            nav(from, { replace: true })
           }}
         >
           <motion.div {...chunk(0)} className="flex flex-col gap-2">
@@ -74,6 +77,7 @@ export default function Login() {
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
+              required
               autoComplete="name"
               placeholder="Priya Nair"
               className="h-10 rounded-md border border-border-strong bg-surface-1 px-3 text-[14px] outline-none transition-[border-color,box-shadow] duration-150 ease-out placeholder:text-fg-subtle focus:border-accent focus:ring-2 focus:ring-accent-soft"
