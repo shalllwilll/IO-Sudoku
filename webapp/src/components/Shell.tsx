@@ -44,7 +44,7 @@ function useCrumbs(explicit?: string[]): string[] {
   const matches = useMatches() as { handle?: { crumb?: string } }[]
   if (explicit) return explicit
   const crumbs = ['Projects']
-  if (pid) crumbs.push(project.data?.name ?? '…')
+  if (pid) crumbs.push(project.data?.name ?? (project.isError ? 'Not found' : '…'))
   for (const m of matches) if (m.handle?.crumb) crumbs.push(m.handle.crumb)
   return crumbs
 }

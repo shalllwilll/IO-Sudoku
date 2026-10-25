@@ -5,6 +5,7 @@ import { RouteError } from './components/ErrorView'
 import Layout from './pages/Layout'
 import Login from './pages/Login'
 import Placeholder from './pages/Placeholder'
+import Projects from './pages/Projects'
 import Plant from './pages/Plant'
 import ProjectFrame from './pages/ProjectFrame'
 import Run from './pages/Run'
@@ -23,7 +24,7 @@ export const routes: RouteObject[] = [
           {
             element: <AppShell />,
             children: [
-              { path: '/projects', element: stub('Projects', 'U2') },
+              { path: '/projects', element: <Projects /> },
               {
                 path: '/projects/:pid',
                 element: <ProjectFrame />,
