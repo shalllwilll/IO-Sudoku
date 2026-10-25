@@ -12,16 +12,20 @@ from app.api.models import (
     BulkAnswerIn,
     BulkAnswerOut,
     BulkFailure,
+    CandidateOut,
     GroupsOut,
     ImpactOut,
     LayoutOut,
+    PlacementsOut,
     ReportOut,
     RunCreate,
     RunOut,
 )
 from app.api.service import Service
 from app.core.ai.features import TqWording, explain_tq
+from app.core.layout.blocks import build_blocks
 from app.core.model.allocation import Allocation
+from app.core.solve.manual import candidates
 from app.core.tq.answers import AnswerError
 from app.core.tq.model import TQ
 from app.core.tq.triage import TqGroup, triage
@@ -184,6 +188,36 @@ def tq_groups(pid: str, request: Request, svc: Service = Depends(service)):
     """The project's TQs grouped by cause, most urgent first, each with a safe recommendation."""
     project_of(request, pid)
     return triage(svc.store.tq_store(pid).all(), svc.pack)
+
+
+@router.get("/projects/{pid}/runs/{rid}/tqs/{tid}/placements", response_model=PlacementsOut,
+            responses={404: ERRORS, 409: ERRORS})  # fmt: skip
+def tq_placements(pid: str, rid: str, tid: str, request: Request, svc: Service = Depends(service)):
+    """Legal slots for the held-out cable behind a TQ in this run. Nothing is changed."""
+    project = project_of(request, pid)
+    r = _finished(run_of(request, pid, rid))
+    tq = svc.store.tq_store(pid).get(tid)
+    if tq is None:
+        raise not_found("TQ")
+    alloc = Allocation.model_validate(r["data"]["allocation"])
+    held = {f"{u.signal.source_file or '?'}:{u.signal.source_row}": u.signal for u in alloc.unplaced}
+    cable = tq.data.get("cable") or next(
+        (held[k].cable for k in tq.signal_keys if k in held and held[k].cable), None
+    )
+    if cable is None:
+        return PlacementsOut(cable=None, size=0, candidates=[], reason="this question is not about a held-out cable")  # fmt: skip
+    signals = [p.signal for p in alloc.placements if p.signal] + [u.signal for u in alloc.unplaced]
+    blocks = build_blocks(signals, svc.pack)
+    block = next((b for b in blocks.blocks if b.id == cable), None)
+    if block is None or not any(
+        f"{s.source_file or '?'}:{s.source_row}" in held for s in block.signals
+    ):
+        return PlacementsOut(cable=cable, size=0, candidates=[], reason="the cable is already placed in this run")  # fmt: skip
+    found, why, blockers = candidates(alloc, block, blocks, svc.pack, svc.rules(project))
+    return PlacementsOut(
+        cable=cable, size=block.size, reason=why, blockers=blockers,
+        candidates=[CandidateOut(**{**c.model_dump(), "cells": [list(x) for x in c.cells]}) for c in found],
+    )  # fmt: skip
 
 
 @router.post("/projects/{pid}/tqs/bulk-answer", response_model=BulkAnswerOut,

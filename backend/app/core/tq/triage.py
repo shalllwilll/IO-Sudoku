@@ -21,7 +21,7 @@ PRIORITY = {"blocking": "P1", "assumed": "P2", "info": "P3"}
 NEEDS = {
     "map_pick": ["value"], "value": ["value"], "segregation": ["value"], "capacity": ["value"],
     "hardware": ["fields:charm", "fields:tb"], "naming": ["fields:area|unit"],
-    "rule_revise": ["fields"], "rule_waive": ["fields:rule"],
+    "rule_revise": ["fields"], "rule_waive": ["fields:rule"], "place": ["placement"],
 }  # fmt: skip
 
 # (pattern, kind, title, why): refinements within a code, matched against the message
@@ -82,6 +82,13 @@ class Recommended(BaseModel):
     reason: str
 
 
+class CableRef(BaseModel):
+    tq_id: str
+    cable: str
+    signals: int
+    open: bool
+
+
 class TqGroup(BaseModel):
     key: str
     code: str
@@ -96,6 +103,7 @@ class TqGroup(BaseModel):
     options: list[GroupOption]
     recommended: Recommended | None = None
     can_place: bool = False
+    cables: list[CableRef] = Field(default_factory=list)  # per-cable TQs, for placement
     samples: list[str] = Field(default_factory=list)
 
 
@@ -200,6 +208,10 @@ def triage(tqs: list[TQ], pack: Pack) -> list[TqGroup]:
                 status="open" if len(open_items) == len(items) else "answered" if not open_items else "mixed",
                 options=options, recommended=rec,
                 can_place=first.code in ("TQ-RULE", "TQ-CAP", "TQ-SEG", "TQ-ALM"),
+                cables=[
+                    CableRef(tq_id=t.id, cable=t.data["cable"], signals=len(t.signal_keys), open=t.status == "open")
+                    for t in items if t.data.get("cable") and first.code in ("TQ-RULE", "TQ-CAP", "TQ-SEG")
+                ],
                 samples=[t.message for t in items[:3]],
             )
         )  # fmt: skip

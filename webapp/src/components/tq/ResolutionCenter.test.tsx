@@ -17,6 +17,7 @@ const group = (o: Record<string, unknown> = {}) => ({
 })
 
 let calls: { path: string; body?: unknown }[] = []
+let placements: unknown = {}
 function mount(groups: unknown[]) {
   calls = []
   vi.stubGlobal('fetch', vi.fn(async (req: Request) => {
@@ -24,6 +25,10 @@ function mount(groups: unknown[]) {
     const body = req.method === 'POST' ? await req.clone().json().catch(() => undefined) : undefined
     calls.push({ path, body })
     if (path.endsWith('/tq-groups')) return json(groups)
+    if (path.endsWith('/runs')) return json([{ id: 'r1', status: 'finished', created_at: '2026-01-01T00:00:00Z' }])
+    if (path.endsWith('/rules')) return json({ preset: 'strict', custom: false, rules: [{ id: 'STRICT-LOGIC', name: 'Same logic number stays together' }] })
+    if (path.includes('/placements')) return json(placements)
+    if (path.endsWith('/answer')) return json({ answer: {}, tq: {}, history: [] })
     if (path.endsWith('/bulk-answer')) return json({ answered: (body as { tq_ids: string[] }).tq_ids, failed: [] })
     return json({})
   }))
@@ -52,5 +57,28 @@ describe('ResolutionCenter', () => {
     expect(calls.find((c) => c.path.endsWith('/bulk-answer'))?.body).toMatchObject({ option: 'Map to a known value', value: 'AIR' })
     expect(usePending.getState().changed.p1).toBe(1)
     expect(await screen.findByText(/Re-run to see the effect|changes the allocation/)).toBeInTheDocument()
+  })
+
+  const placeGroup = () => group({ code: 'TQ-RULE', priority: 'P1', title: 'Cables no rule-compliant slot can hold', recommended: null, can_place: true, tq_ids: ['t1'], open_ids: ['t1'], signals: 24,
+    cables: [{ tq_id: 't1', cable: '320-CE-0001', signals: 24, open: true }],
+    options: [{ label: 'Waive the rule', consequence: 'not enforced', effect: 'rule_waive', changes_allocation: true, needs: ['fields:rule'], choices: [] }, { label: 'Place it in a chosen slot', consequence: 'placed', effect: 'place', changes_allocation: true, needs: ['placement'], choices: [] }] })
+
+  it('lists legal slots for a held-out cable and saves the verified one', async () => {
+    placements = { cable: '320-CE-0001', size: 2, blockers: {}, candidates: [{ cioc_no: 2, cioc_name: 'CIOC-02', cells: [[1, 1], [1, 2]], summary: 'Cabinet 1 · CIOC-02 · baseplate 1 ch 1 to baseplate 1 ch 2', same_group: true }] }
+    mount([placeGroup()])
+    await userEvent.click(await screen.findByRole('button', { name: /Choose an answer/ }))
+    expect(await screen.findByText(/1 legal slot found/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Verify and place here' }))
+    expect(calls.find((c) => c.path.endsWith('/answer'))?.body).toMatchObject({ option: 'Place it in a chosen slot', scope: 'cable', target: '320-CE-0001', fields: { cioc: 2, cells: [[1, 1], [1, 2]] } })
+    expect(usePending.getState().changed.p1).toBe(1)
+  })
+
+  it('names the rule blocking every slot and offers to waive it', async () => {
+    placements = { cable: '320-CE-0001', size: 24, candidates: [], reason: 'none', blockers: { 'STRICT-LOGIC': 83 } }
+    mount([placeGroup()])
+    expect(await screen.findByText(/No free position is legal/)).toBeInTheDocument()
+    expect(screen.getByText(/Same logic number stays together · rejected 83 positions/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Waive STRICT-LOGIC' }))
+    expect(calls.find((c) => c.path.endsWith('/bulk-answer'))?.body).toMatchObject({ option: 'Waive the rule', fields: { rule: 'STRICT-LOGIC' } })
   })
 })

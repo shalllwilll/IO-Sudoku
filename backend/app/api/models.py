@@ -200,6 +200,22 @@ class AnswerIn(BaseModel):
     author: str = Field(default="engineer", max_length=80)
 
 
+class CandidateOut(BaseModel):
+    cioc_no: int
+    cioc_name: str
+    cells: list[list[int]]
+    summary: str
+    same_group: bool = False
+
+
+class PlacementsOut(BaseModel):
+    cable: str | None
+    size: int
+    candidates: list[CandidateOut]
+    reason: str | None = None
+    blockers: dict[str, int] = Field(default_factory=dict)  # rule id -> free positions it rejected
+
+
 class BulkAnswerIn(BaseModel):
     tq_ids: list[str] = Field(min_length=1, max_length=500)
     option: str

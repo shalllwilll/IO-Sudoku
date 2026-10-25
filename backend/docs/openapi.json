@@ -532,6 +532,34 @@
     "title": "CabinetSpares",
     "type": "object"
    },
+   "CableRef": {
+    "properties": {
+     "cable": {
+      "title": "Cable",
+      "type": "string"
+     },
+     "open": {
+      "title": "Open",
+      "type": "boolean"
+     },
+     "signals": {
+      "title": "Signals",
+      "type": "integer"
+     },
+     "tq_id": {
+      "title": "Tq Id",
+      "type": "string"
+     }
+    },
+    "required": [
+     "tq_id",
+     "cable",
+     "signals",
+     "open"
+    ],
+    "title": "CableRef",
+    "type": "object"
+   },
    "Candidate": {
     "properties": {
      "already_enforced": {
@@ -577,6 +605,45 @@
      "confidence"
     ],
     "title": "Candidate",
+    "type": "object"
+   },
+   "CandidateOut": {
+    "properties": {
+     "cells": {
+      "items": {
+       "items": {
+        "type": "integer"
+       },
+       "type": "array"
+      },
+      "title": "Cells",
+      "type": "array"
+     },
+     "cioc_name": {
+      "title": "Cioc Name",
+      "type": "string"
+     },
+     "cioc_no": {
+      "title": "Cioc No",
+      "type": "integer"
+     },
+     "same_group": {
+      "default": false,
+      "title": "Same Group",
+      "type": "boolean"
+     },
+     "summary": {
+      "title": "Summary",
+      "type": "string"
+     }
+    },
+    "required": [
+     "cioc_no",
+     "cioc_name",
+     "cells",
+     "summary"
+    ],
+    "title": "CandidateOut",
     "type": "object"
    },
    "ChainEntry": {
@@ -2115,6 +2182,57 @@
     "title": "Placement",
     "type": "object"
    },
+   "PlacementsOut": {
+    "properties": {
+     "blockers": {
+      "additionalProperties": {
+       "type": "integer"
+      },
+      "title": "Blockers",
+      "type": "object"
+     },
+     "cable": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Cable"
+     },
+     "candidates": {
+      "items": {
+       "$ref": "#/components/schemas/CandidateOut"
+      },
+      "title": "Candidates",
+      "type": "array"
+     },
+     "reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Reason"
+     },
+     "size": {
+      "title": "Size",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "cable",
+     "size",
+     "candidates"
+    ],
+    "title": "PlacementsOut",
+    "type": "object"
+   },
    "ProjectCreate": {
     "properties": {
      "area": {
@@ -3489,6 +3607,13 @@
    },
    "TqGroup": {
     "properties": {
+     "cables": {
+      "items": {
+       "$ref": "#/components/schemas/CableRef"
+      },
+      "title": "Cables",
+      "type": "array"
+     },
      "can_place": {
       "default": false,
       "title": "Can Place",
@@ -5919,6 +6044,84 @@
      }
     },
     "summary": "Run Tqs"
+   }
+  },
+  "/api/projects/{pid}/runs/{rid}/tqs/{tid}/placements": {
+   "get": {
+    "description": "Legal slots for the held-out cable behind a TQ in this run. Nothing is changed.",
+    "operationId": "tq_placements_api_projects__pid__runs__rid__tqs__tid__placements_get",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "pid",
+      "required": true,
+      "schema": {
+       "title": "Pid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "rid",
+      "required": true,
+      "schema": {
+       "title": "Rid",
+       "type": "string"
+      }
+     },
+     {
+      "in": "path",
+      "name": "tid",
+      "required": true,
+      "schema": {
+       "title": "Tid",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlacementsOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "404": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Not Found"
+     },
+     "409": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/ErrorBody"
+        }
+       }
+      },
+      "description": "Conflict"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Tq Placements"
    }
   },
   "/api/projects/{pid}/signals/history": {

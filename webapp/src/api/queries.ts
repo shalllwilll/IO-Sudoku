@@ -397,3 +397,12 @@ export function useBulkAnswer(pid: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects', pid] }),
   })
 }
+
+export function useTqPlacements(pid: string, rid: string | undefined, tid: string | null) {
+  return useQuery({
+    queryKey: [...sub(pid, 'runs'), rid ?? '', 'placements', tid ?? ''] as const,
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs/{rid}/tqs/{tid}/placements', { params: { path: { pid, rid: rid ?? '', tid: tid ?? '' } }, signal })),
+    enabled: !!rid && !!tid,
+    staleTime: 0,
+  })
+}

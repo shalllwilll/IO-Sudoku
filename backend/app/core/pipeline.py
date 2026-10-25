@@ -29,6 +29,7 @@ from app.core.rules.schema import Rule
 from app.core.rules.sets import make_ruleset
 from app.core.solve.cache import ResultCache
 from app.core.solve.chain import ChainResult, run_chain
+from app.core.solve.manual import apply_manual
 from app.core.tq.answers import Compiled
 from app.core.tq.model import TQ
 from app.core.tq.store import collect_tqs, unaccounted
@@ -122,6 +123,10 @@ class Pipeline:
 
     def forget(self) -> None:
         self._done.clear()
+
+    @staticmethod
+    def _with_manual(res: ChainResult, blocks: BlockSet, pack, rules, c: Compiled) -> ChainResult:
+        return apply_manual(res, blocks, pack, rules, c.manual) if c.manual else res
 
     # -- inputs per stage ------------------------------------------------------------------
 
@@ -257,10 +262,13 @@ class Pipeline:
         chain: ChainResult = stage(
             "pack",
             [eff.hash, rhash, area, unit, self.cpsat_enabled, self.qiga_enabled, self.chain_overrides],
-            lambda: run_chain(
-                blocks, eff, area, unit, rules, ruleset_hash=rhash, cache=self.cache,
-                cpsat_enabled=self.cpsat_enabled, qiga_enabled=self.qiga_enabled,
-                **self.chain_overrides,
+            lambda: self._with_manual(
+                run_chain(
+                    blocks, eff, area, unit, rules, ruleset_hash=rhash, cache=self.cache,
+                    cpsat_enabled=self.cpsat_enabled, qiga_enabled=self.qiga_enabled,
+                    **self.chain_overrides,
+                ),
+                blocks, eff, rules, c,
             ),
         )  # fmt: skip
 

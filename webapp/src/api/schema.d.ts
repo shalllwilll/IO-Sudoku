@@ -545,6 +545,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{pid}/runs/{rid}/tqs/{tid}/placements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tq Placements
+         * @description Legal slots for the held-out cable behind a TQ in this run. Nothing is changed.
+         */
+        get: operations["tq_placements_api_projects__pid__runs__rid__tqs__tid__placements_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{pid}/signals/history": {
         parameters: {
             query?: never;
@@ -933,6 +953,17 @@ export interface components {
             /** Wired Spare Pairs */
             wired_spare_pairs: number;
         };
+        /** CableRef */
+        CableRef: {
+            /** Cable */
+            cable: string;
+            /** Open */
+            open: boolean;
+            /** Signals */
+            signals: number;
+            /** Tq Id */
+            tq_id: string;
+        };
         /** Candidate */
         Candidate: {
             /**
@@ -958,6 +989,22 @@ export interface components {
             rule: components["schemas"]["Rule"];
             /** Support */
             support: number;
+        };
+        /** CandidateOut */
+        CandidateOut: {
+            /** Cells */
+            cells: number[][];
+            /** Cioc Name */
+            cioc_name: string;
+            /** Cioc No */
+            cioc_no: number;
+            /**
+             * Same Group
+             * @default false
+             */
+            same_group: boolean;
+            /** Summary */
+            summary: string;
         };
         /** ChainEntry */
         ChainEntry: {
@@ -1586,6 +1633,21 @@ export interface components {
             /** Signal Type */
             signal_type?: string | null;
         };
+        /** PlacementsOut */
+        PlacementsOut: {
+            /** Blockers */
+            blockers?: {
+                [key: string]: number;
+            };
+            /** Cable */
+            cable: string | null;
+            /** Candidates */
+            candidates: components["schemas"]["CandidateOut"][];
+            /** Reason */
+            reason?: string | null;
+            /** Size */
+            size: number;
+        };
         /** ProjectCreate */
         ProjectCreate: {
             /** Area */
@@ -2044,6 +2106,8 @@ export interface components {
         };
         /** TqGroup */
         TqGroup: {
+            /** Cables */
+            cables?: components["schemas"]["CableRef"][];
             /**
              * Can Place
              * @default false
@@ -3702,6 +3766,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TQ"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tq_placements_api_projects__pid__runs__rid__tqs__tid__placements_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pid: string;
+                rid: string;
+                tid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlacementsOut"];
                 };
             };
             /** @description Not Found */

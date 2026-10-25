@@ -320,6 +320,8 @@ def _minimal(tq, effect, pack):
         return {"fields": {"rule": "R1", "max": 2}}
     if effect == "rule_waive":
         return {"fields": {"rule": "R1"}}
+    if effect == "place":
+        return {"fields": {"cioc": 1, "cells": [[1, 1]]}}
     return {}
 
 
@@ -328,7 +330,8 @@ FACTS = {
     "TQ-VALUE": {"field": "io_type", "value": "XX", "cable": "C1"},
     "TQ-SEG": {"cable": "C1"},
     "TQ-NAME": {"field": "area"},
-    "TQ-RULE": {"rules": "R1"},
+    "TQ-RULE": {"rules": "R1", "cable": "C1"},
+    "TQ-CAP": {"cable": "C1"},
 }
 
 
@@ -350,6 +353,8 @@ def test_every_code_is_raised_and_answerable(pack):
                 scope = "row"
             if code in ("TQ-VALUE", "TQ-SEG"):
                 scope = "row"
+            if effect == "place":
+                scope = "cable"
             a = store.answer(tq.id, label, pack=pack, scope=scope, **_minimal(tq, effect, pack))
             assert a.effect == effect
         assert store.get(tq.id).status == "answered"

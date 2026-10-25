@@ -26,7 +26,7 @@ RESTART = {
     "value": "normalise", "segregation": "normalise",
     "hardware": "hardware",
     "capacity": "pack", "naming": "pack", "rule_revise": "pack", "rule_waive": "pack",
-    "revision": "pack",
+    "revision": "pack", "place": "pack",
     "note": None,
 }  # fmt: skip
 
@@ -36,11 +36,11 @@ EFFECT: dict[str, list[str]] = {
     "TQ-MAP": ["map_confirm", "map_pick"],
     "TQ-VALUE": ["value", "note"],
     "TQ-HW": ["hardware", "note"],
-    "TQ-CAP": ["capacity", "note"],
-    "TQ-SEG": ["segregation", "note"],
+    "TQ-CAP": ["capacity", "note", "place"],
+    "TQ-SEG": ["segregation", "note", "place"],
     "TQ-SPARE": ["note", "note"],
     "TQ-ALM": ["capacity", "note"],
-    "TQ-RULE": ["rule_revise", "rule_waive"],
+    "TQ-RULE": ["rule_revise", "rule_waive", "place"],
     "TQ-NAME": ["naming", "note"],
     "TQ-REV": ["revision", "revision"],
 }
@@ -93,6 +93,14 @@ def validate_answer(tq: TQ, a: Answer, pack: Pack) -> str:
         raise AnswerError(f"{tq.id}: row scope needs a signal key and the TQ names none")
     if a.scope == "cable" and not (a.target or tq.data.get("cable")):
         raise AnswerError(f"{tq.id}: cable scope needs a cable name")
+    if effect == "place":
+        if a.scope != "cable":
+            raise AnswerError("a placement answer applies to one cable: use scope 'cable'")
+        cells = a.fields.get("cells")
+        if not (a.target or tq.data.get("cable")):
+            raise AnswerError("a placement answer needs the cable (target)")
+        if not (isinstance(a.fields.get("cioc"), int) and isinstance(cells, list) and cells):
+            raise AnswerError("a placement answer needs fields.cioc and fields.cells")
     if effect == "map_pick" and not a.value:
         raise AnswerError("pick another column: give the column name as the value")
     if effect in ("map_confirm", "map_pick") and not (tq.source_file and tq.data.get("field")):
@@ -213,6 +221,7 @@ class Compiled(BaseModel):
     waived: dict[str, str] = Field(default_factory=dict)  # rule id -> who waived it
     rule_patches: dict[str, dict[str, object]] = Field(default_factory=dict)
     revision: dict[str, str] = Field(default_factory=dict)  # signal key or '*' -> keep | move
+    manual: dict[str, dict] = Field(default_factory=dict)  # cable -> {cioc, cells} verified by hand
     notes: list[str] = Field(default_factory=list)  # answers that change no input
     restart: str | None = None  # earliest stage touched by any answer
 
@@ -228,6 +237,7 @@ class Compiled(BaseModel):
             return {
                 "max_cabinets": self.max_cabinets, "names": self.names,
                 "waived": sorted(self.waived), "patches": self.rule_patches,
+                "manual": self.manual,
             }  # fmt: skip
         return None
 
@@ -312,6 +322,10 @@ def compile_answers(answers: list[Answer], tqs: dict[str, TQ], pack: Pack) -> Co
                     out.rule_patches.setdefault(rid, {}).update(
                         {k: v for k, v in a.fields.items() if k != "rule"}
                     )
+        elif eff == "place":
+            out.manual[a.target or tq.data["cable"]] = {
+                "cioc": a.fields["cioc"], "cells": a.fields["cells"],
+            }
         elif eff == "revision":
             keep = a.option.startswith("Keep")
             for key in tq.signal_keys or ["*"]:
