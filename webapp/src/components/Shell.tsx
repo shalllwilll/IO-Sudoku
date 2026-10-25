@@ -1,8 +1,10 @@
-import { CircleHelp, FolderKanban, LogOut, Settings } from 'lucide-react'
+import { CircleHelp, FolderKanban, LogOut, Settings, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { NavLink, useMatches, useNavigate, useParams } from 'react-router-dom'
 import { useAiStatus, useOpenTqs, useProject } from '@/api/queries'
 import { initials, useSession } from '@/state/session'
+import { useAssistant } from '@/state/assistant'
+import { AssistantPanel } from './assistant/AssistantPanel'
 import { OfflineBanner } from './OfflineBanner'
 import { cn } from '@/lib/cn'
 import { ThemeToggle } from './ThemeToggle'
@@ -56,6 +58,8 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
   const openTqs = useOpenTqs(pid)
   const ai = useAiStatus()
   const { name, role, signOut } = useSession()
+  const assistantOpen = useAssistant((s) => s.open)
+  const toggleAssistant = useAssistant((s) => s.toggle)
   const trail = useCrumbs(crumbs)
   const open = openTqs.data?.length ?? 0
   const aiOn = ai.data?.ai_available === true
@@ -106,12 +110,26 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
           </nav>
           <div className="ml-6">{rail}</div>
           <div className="ml-auto flex items-center gap-2">
-            <span
-              className="flex items-center gap-1.5 text-xs text-fg-muted"
-              title={aiOn ? 'AI features are advisory only' : 'AI is not configured. Everything else works.'}
-            >
-              <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} /> {aiOn ? 'AI on' : 'AI off'}
-            </span>
+            {pid ? (
+              <button
+                type="button"
+                aria-pressed={assistantOpen}
+                title={aiOn ? 'AI features are advisory only' : 'AI is not configured. Everything else works.'}
+                onClick={toggleAssistant}
+                className={cn(
+                  'flex h-8 items-center gap-2 rounded-md px-2.5 text-xs transition-[background-color,color] duration-150 ease-out',
+                  assistantOpen ? 'bg-surface-3 text-fg' : 'text-fg-muted hover:bg-surface-2 hover:text-fg',
+                )}
+              >
+                <Sparkles size={14} strokeWidth={1.75} />
+                Assistant
+                <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} aria-label={aiOn ? 'AI on' : 'AI off'} />
+              </button>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs text-fg-muted" title={aiOn ? 'AI features are advisory only' : 'AI is not configured. Everything else works.'}>
+                <span className={cn('size-1.5 rounded-full', aiOn ? 'bg-success' : 'bg-fg-subtle')} /> {aiOn ? 'AI on' : 'AI off'}
+              </span>
+            )}
             <ThemeToggle />
             {name && (
               <>
@@ -132,7 +150,10 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
             )}
           </div>
         </header>
-        <main className="min-h-0 flex-1 overflow-auto">{children}</main>
+        <div className="flex min-h-0 flex-1">
+          <main className="min-h-0 min-w-0 flex-1 overflow-auto">{children}</main>
+          <AssistantPanel />
+        </div>
       </div>
     </div>
   )

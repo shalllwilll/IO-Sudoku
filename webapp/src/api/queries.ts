@@ -279,3 +279,21 @@ export const useExplainTq = (pid: string) =>
   useMutation({
     mutationFn: (tid: string) => unwrap(api.GET('/api/projects/{pid}/tqs/{tid}/explain', { params: { path: { pid, tid } } })),
   })
+
+// -- Assistant ----------------------------------------------------------------------------
+
+export type IntentResult = Schemas['IntentPreview']
+
+export const useIntent = (pid: string) =>
+  useMutation({
+    mutationFn: (request: string) => unwrap(api.POST('/api/projects/{pid}/intent', { params: { path: { pid } }, body: { request } })),
+  })
+
+/** Adding a previewed rule saves it to the project's rule set, so rules and their lint are stale afterwards. */
+export function useConfirmRule(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (rule: Record<string, unknown>) => unwrap(api.POST('/api/projects/{pid}/rules/compile/confirm', { params: { path: { pid } }, body: { rule } })),
+    onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: sub(pid, 'rules') }), qc.invalidateQueries({ queryKey: sub(pid, 'lint') })]),
+  })
+}
