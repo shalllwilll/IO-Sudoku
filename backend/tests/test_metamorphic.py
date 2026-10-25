@@ -172,7 +172,11 @@ def test_area_replication_scales_counts_linearly(spec, k):
     assert count(many, "field") + len(many.allocation.unplaced) == k * (
         count(one, "field") + len(one.allocation.unplaced)
     )
-    assert count(many, "wired_spare") == k * count(one, "wired_spare")
+    # Wired spares are a per-controller 10% floor, so they need not scale exactly; the declared
+    # unused pairs they are drawn from (wired plus protected) do.
+    assert count(many, "wired_spare") + count(many, "spare_slot") == k * (
+        count(one, "wired_spare") + count(one, "spare_slot")
+    )
     assert len(many.allocation.layout.cabinets) >= len(one.allocation.layout.cabinets)
     assert len(many.allocation.layout.cabinets) <= k * len(one.allocation.layout.cabinets)
     check_invariant(replicate(spec, k), many)

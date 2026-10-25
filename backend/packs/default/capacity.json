@@ -6,7 +6,7 @@
  "alarm_baseplate_index": 1,
  "spare_percent": 10,
  "spare_rounding": "floor",
- "wired_spare_policy": "explicit_pairs",
+ "wired_spare_policy": "required_spares",
  "wired_spare_pairs": {},
  "wired_spare_hardware": {},
  "controllers_per_system_cabinet": 1,

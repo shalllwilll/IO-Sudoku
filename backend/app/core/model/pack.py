@@ -87,7 +87,11 @@ class Capacity(BaseModel):
     # A declared-but-unused cable pair reserves cable continuity, but does not prove that a
     # CHARM and terminal block were installed. Only a confirmed wiring plan (or per-pair
     # hardware facts) makes it a Wired Spare; otherwise it remains a protected Spare Slot.
-    wired_spare_policy: Literal["declared_pairs", "explicit_pairs"] = "explicit_pairs"
+    # required_spares: after placement, promote just enough declared unused pairs to meet the
+    # per-controller, per-IO-type wired-spare requirement, and ask the engineer to confirm them.
+    wired_spare_policy: Literal["declared_pairs", "explicit_pairs", "required_spares"] = (
+        "required_spares"
+    )
     wired_spare_pairs: dict[str, list[int]] = Field(default_factory=dict)
     # Optional per-pair hardware facts for confirmed installed wired spares. These override the
     # cable-majority fallback used when the wiring plan does not name a pair.

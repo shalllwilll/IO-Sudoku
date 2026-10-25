@@ -15,3 +15,9 @@
   signals.
 - **Scope.** MCC and IRC rows in the hackathon data are out of scope by design.
 - **Security.** No authentication; intended for a trusted plant network or local use.
+- **Wired spares are assumed, not read.** The MDB does not say which unused cable pairs are
+  physically wired. The default `required_spares` policy promotes just enough declared unused
+  pairs to meet the 10%-per-IO-type-per-controller rule and raises a `TQ-SPARE` for the engineer
+  to confirm; a real wiring plan (`explicit_pairs`) overrides it. The per-controller grouping
+  depends on `ciocs_per_controller` (16), which no supplied document confirms. The guidelines
+  document does confirm 4 CIOCs per cabinet, 8 baseplates per CIOC and 12 channels per baseplate.

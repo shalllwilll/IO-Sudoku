@@ -36,12 +36,15 @@ app/
   reduced to distinct samples), and every suggestion waits for a human confirmation.
 - **Only hard rules are enforced.** Rules have a strength (`hard`, `soft`, `advisory`); the
   solvers and the validator enforce hard rules only.
-- **Spare intent is explicit.** `capacity.json` defaults to the `explicit_pairs` policy: only
-  cable pairs listed in `wired_spare_pairs` are treated as installed wired spares. Every other
-  declared but unused pair stays a protected `Spare Slot` row with no claimed CHARM hardware and
-  raises a `TQ-SPARE`, because the MDB does not say which pairs were physically wired. A plant
-  that wants the older behaviour (each declared unused pair counts as a wired spare) can select
-  `declared_pairs`.
+- **Spare intent is explicit.** `capacity.json` defaults to the `required_spares` policy. The
+  MDB declares cable pairs but not which were physically wired, so after placement the primary
+  run promotes just enough declared unused pairs to meet the 10%-per-IO-type-per-controller
+  requirement (lowest free pair first, clustered in few cables). Each batch is re-validated
+  against the hard rules and undone if it would break them, and each is reported as a
+  `TQ-SPARE` assumption for the engineer to confirm. Every other unused pair stays a protected
+  `Spare Slot`. Revisions never promote: the baseline's wired spares are kept as established
+  facts. `explicit_pairs` (only pairs listed in `wired_spare_pairs`) and `declared_pairs` (every
+  declared unused pair is wired) remain selectable.
 - **Spare shortfalls are visible.** A controller/IO-type allowance that cannot be met creates a
   `TQ-SPARE` and fails `R-SPARE`; it does not invalidate otherwise sound field allocations.
 

@@ -15,7 +15,7 @@ from app.core.layout.spares import attach_spare_shortfall_issues
 from app.core.model.allocation import Allocation, Placement, Unplaced
 from app.core.model.issue import Issue
 from app.core.model.layout import Block, Layout
-from app.core.model.pack import Pack
+from app.core.model.pack import Pack, WiredSpareHardware
 from app.core.model.signal import Signal
 from app.core.revision.baseline import Baseline, skey
 from app.core.revision.match import Change, MatchResult, match_revision, normalise_label
@@ -257,6 +257,40 @@ def _cpsat_tier(
     return alloc, f"{name}{' (primary optimal)' if primary else ''}"
 
 
+def _with_baseline_spares(baseline: Baseline, pack: Pack) -> Pack:
+    """Treat the baseline's wired spares as established facts, whatever the spare policy.
+
+    A revision starts from an approved layout: pairs already wired stay wired, and pairs that are
+    not are not promoted behind the engineer's back.
+    """
+    if pack.capacity.wired_spare_policy == "declared_pairs":
+        return pack
+    pairs: dict[str, set[int]] = {c: set(v) for c, v in pack.capacity.wired_spare_pairs.items()}
+    hardware = {c: dict(v) for c, v in pack.capacity.wired_spare_hardware.items()}
+    for p in baseline.allocation.placements:
+        if p.kind != "wired_spare" or not p.block_id or p.pair is None:
+            continue
+        pairs.setdefault(p.block_id, set()).add(p.pair)
+        if p.io_type:
+            hardware.setdefault(p.block_id, {}).setdefault(
+                p.pair,
+                WiredSpareHardware(
+                    io_type=p.io_type,
+                    duty_class=p.duty_class,
+                    signal_type=p.signal_type,
+                    signal_level=p.signal_level,
+                ),
+            )
+    capacity = pack.capacity.model_copy(
+        update={
+            "wired_spare_policy": "explicit_pairs",
+            "wired_spare_pairs": {c: sorted(v) for c, v in sorted(pairs.items())},
+            "wired_spare_hardware": hardware,
+        }
+    )
+    return pack.model_copy(update={"capacity": capacity})
+
+
 def solve_revision(
     baseline: Baseline,
     revised: list[Signal],
@@ -270,6 +304,7 @@ def solve_revision(
     match: MatchResult | None = None,
     **overrides,
 ) -> RevisionResult:
+    pack = _with_baseline_spares(baseline, pack)
     m = match or match_revision(baseline, revised)
     live = [c.new for c in m.changes if c.new is not None and c.kind != "deleted"]
     blocks = build_blocks(live, pack)

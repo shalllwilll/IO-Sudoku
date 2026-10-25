@@ -133,7 +133,12 @@ def run_chain(
         chosen = _try_greedy(blocks, pack, area, unit, rules, events)
         if chosen.solver == "greedy" and _improvable(chosen.allocation):
             chosen = _try_qiga(chosen, blocks, pack, rules, events, qiga_on)
-    attach_spare_shortfall_issues(chosen.allocation, pack)
+    attach_spare_shortfall_issues(
+        chosen.allocation,
+        pack,
+        promote=True,
+        accept=lambda a: not cpsat.gate(a, blocks, pack, rules),
+    )
     attach_wired_spare_hardware_issues(chosen.allocation, pack)
     chosen.events, chosen.key = events, key
     if any(i.code == "TQ-RULE" for i in chosen.allocation.issues):
