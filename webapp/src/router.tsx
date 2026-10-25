@@ -14,13 +14,11 @@ import LayoutTab from './pages/results/LayoutTab'
 import Tqs from './pages/Tqs'
 import RunTqs from './pages/results/RunTqs'
 import Login from './pages/Login'
-import Placeholder from './pages/Placeholder'
 import Projects from './pages/Projects'
 import Revisions from './pages/Revisions'
+import Settings from './pages/Settings'
 import Plant from './pages/Plant'
 import ProjectFrame from './pages/ProjectFrame'
-
-const stub = (title: string, milestone: string) => <Placeholder title={title} milestone={milestone} />
 
 export const routes: RouteObject[] = [
   {
@@ -58,16 +56,14 @@ export const routes: RouteObject[] = [
                   },
                   { path: 'tqs', element: <Tqs />, handle: { crumb: 'TQ inbox' } },
                   { path: 'revisions', element: <Revisions />, handle: { crumb: 'Revisions' } },
-                  { path: 'plant', element: stub('3D plant', 'U10'), handle: { crumb: '3D plant' } },
+                  { path: 'runs/:rid/plant', element: <Plant />, handle: { crumb: '3D plant' } },
                 ],
               },
-              { path: '/settings', element: stub('Settings', 'U10'), handle: { crumb: 'Settings' } },
+              { path: '/settings', element: <Settings />, handle: { crumb: 'Settings' } },
             ],
           },
         ],
       },
-      // Design-lock screens, kept as a visual reference until the real ones replace them.
-      { path: '/preview/plant', element: <Plant /> },
       { path: '*', element: <Navigate to="/projects" replace /> },
     ],
   },

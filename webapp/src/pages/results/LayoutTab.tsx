@@ -78,7 +78,7 @@ export default function LayoutTab() {
               </button>
             ))}
           </div>
-          <Link to={`/projects/${pid}/plant?run=${rid}`} className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3.5 text-[13px] font-medium transition-[background-color] duration-150 ease-out hover:bg-surface-3">
+          <Link to={`/projects/${pid}/runs/${rid}/plant`} className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3.5 text-[13px] font-medium transition-[background-color] duration-150 ease-out hover:bg-surface-3">
             <Box size={15} strokeWidth={1.75} /> View in 3D
           </Link>
         </div>

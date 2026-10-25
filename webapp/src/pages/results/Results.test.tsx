@@ -89,7 +89,7 @@ describe('Results', () => {
     expect(await screen.findByRole('region', { name: 'CIOC 1' })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /CIOC 1, baseplate 2, channel 1:/ }))
     expect(screen.getByText('CIOC 1 · BP 2 · CH 1')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /view in 3d/i })).toHaveAttribute('href', '/projects/p1/plant?run=r1')
+    expect(screen.getByRole('link', { name: /view in 3d/i })).toHaveAttribute('href', '/projects/p1/runs/r1/plant')
   })
 
   it('explains an unfinished run instead of showing empty tabs', async () => {

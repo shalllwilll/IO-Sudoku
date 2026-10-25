@@ -31,4 +31,11 @@ Types are the backend's, generated from `backend/docs/openapi.json` (the host ap
 - Size: up to 1,152 positions per three-cabinet plant, more for larger projects. Instance meshes; measure frame rate on a laptop GPU.
 
 ## Development
-Develop against a JSON fixture of the three responses above. A synthetic fixture generator lives in `src/preview/mock.ts`; a backend-shaped JSON fixture is added in the foundation milestone. The scene must also run standalone, without the host app.
+Develop against saved copies of the three responses above. With the backend running and a finished run, capture them:
+
+```bash
+B=http://localhost:8000/api/projects/<pid>/runs/<rid>
+curl -s $B/layout > layout.json; curl -s $B/allocation > allocation.json; curl -s $B/tqs > tqs.json
+```
+
+Keep these out of git if they come from real plant data. The scene must also run standalone, without the host app.
