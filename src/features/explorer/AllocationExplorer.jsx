@@ -5,7 +5,6 @@ import { api } from "../../api/index.js";
 import { config } from "../../config.js";
 import { hasWebgl } from "../../scene/loadScene.js";
 import ExplorerScene from "./ExplorerScene.jsx";
-import FlowDiagram from "./FlowDiagram.jsx";
 import RecordTable from "./RecordTable.jsx";
 import { HardwareTree, IssueList, SelectionDetails } from "./Panels.jsx";
 import { IoTypeBadge, SlotHoverCard, ValidationChecks } from "./IoPresentation.jsx";
@@ -148,20 +147,18 @@ export default function AllocationExplorer() {
         <div className="simple-filters"><label className="explorer-field">I/O Type<select disabled={snapshot.running || busy} value={filters.ioType} onChange={(event) => setFilters((previous) => ({ ...previous, ioType: event.target.value }))}><option value="">All Signals</option>{Object.values(IO_TYPES).map((io) => <option key={io.code} value={io.code}>{io.code} — {io.name}</option>)}</select></label>
           <label className="explorer-field">TQ Status<select disabled={snapshot.running || busy} value={filters.tq} onChange={(event) => setFilters((previous) => ({ ...previous, tq: event.target.value }))}><option value="all">All</option><option value="raised">TQ Raised</option><option value="none">No TQ</option></select></label></div>
       </section>
-      <section className="flow-layout" aria-label="Field to cabinets to control room" data-phase={snapshot.phase}>
-        <FlowDiagram side="field" phase={snapshot.phase} />
+      <section className="flow-layout" aria-label="Cabinets, with static field and control-room structures either side" data-phase={snapshot.phase}>
         <section className="simple-cabinet-view" aria-label="Allocation viewport" data-render-fps={fps ?? ""}>
           <nav className="explorer-breadcrumb" aria-label="Hardware hierarchy"><button type="button" onClick={() => selectNode("overview")}>Overview</button>{path.filter((node) => node.type !== "overview").map((node) => <span key={node.id}> / <button type="button" title={node.label} onClick={() => selectNode(node.id)}>{nodeLabel(node)}</button></span>)}</nav>
           <div className="explorer-camera-toolbar" role="group" aria-label="Camera controls"><button type="button" className="explorer-button" disabled={!selectedNode || selectedNode.type === "overview"} onClick={goBack}>Parent</button><button type="button" className="explorer-button" onClick={() => focus([view.selectedId || "overview"])}>Fit selection</button><button type="button" className="explorer-button" onClick={() => focus(["overview"])}>Fit scene / reset</button>{["selection", "equipment", "issues", "records"].map((tab) => <button key={tab} type="button" className="explorer-button" onClick={() => setDrawer(tab)}>{tab === "selection" ? "Details" : tab === "equipment" ? "Equipment" : tab === "issues" ? "Issues (" + dataset.issues.length + ")" : "Records"}</button>)}</div>
           <div className="explorer-viewport simple-viewport">
             {webgl && dataset.counts.positions ? <SceneBoundary resetKey={dataset.id} fallback={<RecordTable records={records} onInspect={inspectRecord} />}><Canvas role="region" aria-label="Interactive schematic allocation scene" camera={INITIAL_CAMERA} dpr={[1, 1.5]} gl={GL_OPTIONS}>
-              <color attach="background" args={["#111923"]} /><ExplorerScene dataset={dataset} selectedNodeId={view.selectedId} focusRequest={view.focus} visibleIds={visibleIds} selectedIds={pickedIds} filteredOnly={false} locked={false} reducedMotion={reducedMotion} playback={MANUAL_OFF} animationIds={NO_PATHS} onComplete={NOOP} onSelect={selectNode} onStats={updateFps} onHover={setHoveredId} reveal={playback} activeCabinetId={snapshot.activeCabinetId} showContext={false} />
+              <color attach="background" args={["#111923"]} /><ExplorerScene dataset={dataset} selectedNodeId={view.selectedId} focusRequest={view.focus} visibleIds={visibleIds} selectedIds={pickedIds} filteredOnly={false} locked={false} reducedMotion={reducedMotion} playback={MANUAL_OFF} animationIds={NO_PATHS} onComplete={NOOP} onSelect={selectNode} onStats={updateFps} onHover={setHoveredId} reveal={playback} activeCabinetId={snapshot.activeCabinetId} />
             </Canvas></SceneBoundary> : <div className="explorer-viewport-fallback"><h2 className="text-lg font-semibold">{webgl ? "No assigned hardware to display" : "3D rendering is unavailable"}</h2><p className="mt-3 text-sm">{webgl ? "This workbook has no complete hardware assignments. Use an allocated workbook to display cabinets; the source records remain available below." : "Use the allocation records and inspection details below."}</p></div>}
             {dataset.nodes.get(hoveredId)?.type === "position" && <div className="explorer-hover-anchor"><SlotHoverCard node={dataset.nodes.get(hoveredId)} dataset={dataset} /></div>}
             <div className="simple-reveal-caption" aria-live="off">{snapshot.running && snapshot.current ? snapshot.current.code + " · " + snapshot.current.label + " · " + snapshot.current.baseplate + " / Channel " + snapshot.current.channel : "Drag to orbit · right-drag to pan · scroll to zoom · click to inspect"}</div>
           </div>
         </section>
-        <FlowDiagram side="control" phase={snapshot.phase} />
       </section>
       <div className="simple-playback" data-phase={snapshot.phase}><p role="status">{phaseLabel}</p>{snapshot.running && <><progress max="100" value={snapshot.progress} aria-label="Allocation presentation progress" /><span aria-live="off">{snapshot.revealed} / {playback?.timeline.entries.length || 0} occupied positions presented</span></>}</div>
       <ul aria-label="I/O type color legend" className="explorer-legend simple-legend">{[...Object.values(IO_TYPES), SPARE_IO, UNKNOWN_IO].map((definition) => <li key={definition.code}><IoTypeBadge definition={definition} /></li>)}</ul>

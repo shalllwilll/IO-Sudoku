@@ -4,7 +4,7 @@ import { memo, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { CatmullRomCurve3, Color, Object3D, Vector3 } from "three";
 import { combinedBounds, createGeometry, logicalRoute, OVERVIEW_POSITION_LIMIT } from "./geometry.js";
 import { STATUS } from "./model.js";
-import EquipmentContext from "./EquipmentContext.jsx";
+import SiteStructures from "./SiteStructures.jsx";
 import { nodeIo, slotIndicator } from "./IoPresentation.jsx";
 import { recordIo } from "./ioTypes.js";
 import { slotBrightness } from "./allocationPlayback.js";
@@ -229,8 +229,8 @@ function RevealHighlights({ reveal, geometry }) {
   return <instancedMesh ref={mesh} args={[null, null, 1024]} raycast={() => null}><boxGeometry args={[1, 1, 1]} /><meshBasicMaterial color="#e6f5ff" toneMapped={false} /></instancedMesh>;
 }
 
-export default memo(function ExplorerScene({ dataset, selectedNodeId, focusRequest, visibleIds, selectedIds, filteredOnly, locked, reducedMotion, playback, animationIds, onComplete, onSelect, onStats, onHover, reveal, activeCabinetId, showContext = false }) {
-  const geometry = useMemo(() => createGeometry(dataset, { includeContext: showContext }), [dataset, showContext]);
+export default memo(function ExplorerScene({ dataset, selectedNodeId, focusRequest, visibleIds, selectedIds, filteredOnly, locked, reducedMotion, playback, animationIds, onComplete, onSelect, onStats, onHover, reveal, activeCabinetId }) {
+  const geometry = useMemo(() => createGeometry(dataset), [dataset]);
   const scope = useMemo(() => {
     const chain = [];
     for (let node = dataset.nodes.get(selectedNodeId); node; node = dataset.nodes.get(node.parentId)) chain.push(node);
@@ -258,7 +258,7 @@ export default memo(function ExplorerScene({ dataset, selectedNodeId, focusReque
     <CameraController geometry={geometry} request={focusRequest} locked={locked} reducedMotion={reducedMotion} />
     <ambientLight intensity={1.2} /><directionalLight position={[12, 18, 20]} intensity={2.2} /><directionalLight position={[-15, 7, 2]} intensity={0.7} />
     <gridHelper args={[Math.max(60, geometry.get("overview").size[0] * 1.6), 60, "#343e4b", "#252b34"]} position={[0, -0.2, 0]} />
-    {showContext && <EquipmentContext dataset={dataset} geometry={geometry} visibleIds={visibleIds} filteredOnly={filteredOnly} />}
+    <SiteStructures geometry={geometry} />
     <HardwareInstances dataset={dataset} geometry={geometry} visibleIds={visibleIds} filteredOnly={filteredOnly} focusCabinet={scope.cabinet} focusCioc={scope.cioc} onSelect={onSelect} />
     <PositionInstances positions={positions} geometry={geometry} dataset={dataset} visibleIds={visibleIds} filteredOnly={filteredOnly} onSelect={onSelect} onHover={onHover} reveal={reveal} />
     <PositionIndicators positions={positions} geometry={geometry} dataset={dataset} visibleIds={visibleIds} selectedIds={selectedIds} filteredOnly={filteredOnly} />

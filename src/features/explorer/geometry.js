@@ -2,7 +2,9 @@ import { recordIo } from "./ioTypes.js";
 
 // A labelled schematic. Dimensions and ordering are presentation choices, not surveyed hardware.
 export const OVERVIEW_POSITION_LIMIT = 1000;
-export function createGeometry(dataset, { includeContext = true } = {}) {
+// Space reserved either side of the cabinets for the static field/control-room structures.
+const SITE_MARGIN = 7.5;
+export function createGeometry(dataset) {
   const result = new Map();
   const cabinets = dataset.root.childIds.map((id) => dataset.nodes.get(id));
   let cursor = 0;
@@ -36,11 +38,10 @@ export function createGeometry(dataset, { includeContext = true } = {}) {
   for (const entry of result.values()) entry.position[0] -= offset;
   const maxHeight = Math.max(4, ...cabinets.map((cabinet) => result.get(cabinet.id).size[1]));
   const span = Math.max(6, cursor - 2.5);
-  const hasField = includeContext && dataset.records.some((record) => record.active && record.kind !== "cabinet alarm");
-  const systems = includeContext ? new Set(dataset.records.map((record) => record.systemCabinet || record.controller).filter(Boolean)).size : 0;
-  const minX = -span / 2 - (hasField ? 7 : 1), maxX = span / 2 + (systems ? 7 : 1);
-  const minZ = -Math.max(0, Math.min(12, systems) - 1) * 3 - 2;
-  result.set("overview", { position: [(minX + maxX) / 2, maxHeight / 2, (minZ + 4) / 2], size: [Math.max(10, maxX - minX), maxHeight + 1, Math.max(8, 4 - minZ)] });
+  const minX = -span / 2 - SITE_MARGIN, maxX = span / 2 + SITE_MARGIN;
+  result.set("overview", { position: [(minX + maxX) / 2, maxHeight / 2, 2], size: [Math.max(10, maxX - minX), maxHeight + 1, 8] });
+  result.set("site-field", { position: [minX + SITE_MARGIN / 2, maxHeight / 2, 1], size: [SITE_MARGIN, maxHeight, 4] });
+  result.set("site-control", { position: [maxX - SITE_MARGIN / 2, maxHeight / 2, 1], size: [SITE_MARGIN, maxHeight, 4] });
   return result;
 }
 

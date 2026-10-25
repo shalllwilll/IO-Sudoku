@@ -68,6 +68,17 @@ describe("allocation explorer data integrity", () => {
     const internal = { ...dataset.records[0], kind: "cabinet alarm" };
     expect(logicalRoute(geometry, dataset, internal)[0][0]).toBe(geometry.get(ancestors(dataset, internal.nodeId).find((node) => node.type === "cabinet").id).position[0]);
   });
+  it("reserves a site-field and site-control box clear of the cabinets, on either side", () => {
+    const dataset = buildDataset([record("1"), record("2", { cabinet: "CAB-B", channel: "1" })]);
+    const geometry = createGeometry(dataset);
+    const field = geometry.get("site-field"), control = geometry.get("site-control");
+    const cabinets = combinedBounds(geometry, dataset.root.childIds);
+    expect(field.position[0] + field.size[0] / 2).toBeLessThanOrEqual(cabinets.position[0] - cabinets.size[0] / 2);
+    expect(control.position[0] - control.size[0] / 2).toBeGreaterThanOrEqual(cabinets.position[0] + cabinets.size[0] / 2);
+    const overview = geometry.get("overview");
+    expect(overview.position[0] - overview.size[0] / 2).toBeLessThanOrEqual(field.position[0] - field.size[0] / 2);
+    expect(overview.position[0] + overview.size[0] / 2).toBeGreaterThanOrEqual(control.position[0] + control.size[0] / 2);
+  });
 });
 
 describe("I/O identity independent of status", () => {
