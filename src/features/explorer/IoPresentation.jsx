@@ -1,5 +1,6 @@
 import { STATUS, issueResolved } from "./model.js";
 import { UNKNOWN_IO, isSpareRecord, positionIo, recordIo } from "./ioTypes.js";
+import { areaText } from "./displayNames.js";
 
 export const nodeIo = (node, dataset) => node?.io ?? positionIo((node?.recordIds ?? []).map((id) => dataset.recordMap.get(id)));
 
@@ -21,9 +22,10 @@ export function IoTypeBadge({ record, definition, compact = false }) {
   </span>;
 }
 
+export const allocationText = (record) => isSpareRecord(record) ? record.kind === "wired spare" ? "Wired spare" : record.kind === "reserved spare" ? "Reserved spare" : "Unused / spare position" : record.nodeId ? "Allocated" : "Unallocated";
+
 export function AllocationBadge({ record }) {
-  const text = isSpareRecord(record) ? record.kind === "wired spare" ? "Wired spare" : record.kind === "reserved spare" ? "Reserved spare" : "Unused / spare position" : record.nodeId ? "Allocated" : "Unallocated";
-  return <span className="explorer-allocation-badge">{text}</span>;
+  return <span className="explorer-allocation-badge">{allocationText(record)}</span>;
 }
 
 export function RecordValidation({ record }) {
@@ -43,13 +45,19 @@ export function SlotHoverCard({ node, dataset }) {
     {info.conflict && <p className="mt-1 text-xs">Conflicting source types; no single I/O type chosen.</p>}
     {!rows.length && <p className="mt-2 text-xs">Unused position · no source signal assigned.</p>}
     {rows.slice(0, 4).map((record) => <section key={record.id} className="mt-2 border-t border-steel pt-2">
-      <strong className="block break-words text-sm">{record.tag || (isSpareRecord(record) ? record.kind : "Signal tag unavailable")}</strong>
+      {/* Function first, then where it is wired, then its status. Spares show a status, not a name. */}
+      <strong className="block break-words text-sm">{record.displayName || (isSpareRecord(record) ? allocationText(record) : "Signal name unavailable")}</strong>
+      {record.tag && <p className="text-xs">Tag: <span className="font-medium">{record.tag}</span></p>}
       {rows.length > 1 && <IoTypeBadge record={record} />}
-      <p className="mt-1 text-xs">Source I/O: {record.ioType || "Unavailable"}</p>
-      <p className="text-xs">{record.cabinet || "Cabinet unavailable"} / {record.cioc || "CIOC unavailable"}</p>
-      <p className="text-xs">{record.baseplate || "Baseplate unavailable"} / Channel {record.channel || "unavailable"} · CHARM {record.charm || "unavailable"}</p>
-      <AllocationBadge record={record} /><RecordValidation record={record} />
-      {record.issueIds.map((id) => { const issue = dataset.issues.find((item) => item.id === id); return <p key={id} className="mt-1 text-xs">{issue.kind === "tq" ? `TQ ${issue.reference}` : issue.reference} · {issue.severity}{issue.status ? ` · ${issue.status}` : ""}: {issue.message}</p>; })}
+      <p className="text-xs">I/O type: {record.ioType ? `${record.ioType} — ${recordIo(record).name}` : "Unavailable"}</p>
+      {record.equipment && <p className="text-xs">Equipment: {record.equipment}</p>}
+      {record.description && !isSpareRecord(record) && <p className="text-xs">Service: {record.description}</p>}
+      {(record.area || record.unit) && <p className="text-xs">{[record.area && areaText(record.area), record.unit && `Unit ${record.unit}`].filter(Boolean).join(" · ")}</p>}
+      <p className="mt-1 text-xs">{record.cabinetDisplay ? `${record.cabinetDisplay} (${record.cabinet})` : record.cabinet || "Cabinet unavailable"}{record.controller ? ` · ${record.controller}` : ""}</p>
+      <p className="text-xs">{record.cioc || "CIOC unavailable"} / {record.baseplate || "Baseplate unavailable"} / Channel {record.channel || "unavailable"} · CHARM {record.charm || "unavailable"}</p>
+      {(record.cable || record.pair) && <p className="text-xs">Cable {record.cable || "unavailable"}{record.pair ? ` · ${record.pair}` : ""}</p>}
+      <div className="mt-1"><AllocationBadge record={record} /><span className="explorer-validation-note">Engineering validation: not run</span></div>
+      {record.issueIds.map((id) => { const issue = dataset.issues.find((item) => item.id === id); return <p key={id} className="mt-1 text-xs">{issue.kind === "tq" && !/^TQ/i.test(issue.reference) ? `TQ ${issue.reference}` : issue.reference}{issue.severity && issue.severity !== "unknown" ? ` · ${issue.severity}` : ""}{issue.status && issue.status !== "unknown" ? ` · ${issue.status}` : ""}: {issue.message}</p>; })}
     </section>)}
     {indicator && <p className="mt-2 text-xs" style={{ color: indicator.color }}>{indicator.cue} {indicator.label}</p>}
     {rows.length > 4 && <p className="mt-2 text-xs">{rows.length - 4} additional source records. Click the slot to inspect all.</p>}

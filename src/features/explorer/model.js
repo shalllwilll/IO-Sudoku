@@ -1,5 +1,6 @@
 import { clean } from "./workbook.js";
 import { isSpareRecord, positionIo, positionKind, recordIo } from "./ioTypes.js";
+import { areaDisplay, cabinetDisplay, signalDisplayName } from "./displayNames.js";
 
 export const STATUS = {
   valid: { label: "Application validated", color: "#60d394", cue: "✓" },
@@ -57,6 +58,9 @@ export function buildDataset(records, meta = {}, suppliedIssues = [], hardware =
     if (![record.cabinet, record.cioc, record.baseplate, record.channel].every((v) => clean(v))) return null;
     if (!/^\d+$/.test(String(record.channel)) || Number(record.channel) < 1) return null;
     const cabinet = node("cabinet", record.cabinet, root.id, [record.cabinet]);
+    // Display text only: node.label stays the exact source identifier.
+    if (!cabinet.display) { const display = cabinetDisplay(record.cabinet, record.unit); if (display) cabinet.display = display; }
+    if (!cabinet.areaCode && clean(record.area)) cabinet.areaCode = clean(record.area);
     const cioc = node("cioc", record.cioc, cabinet.id, [record.cabinet, record.cioc]);
     const baseplate = node("baseplate", record.baseplate, cioc.id, [record.cabinet, record.cioc, record.baseplate]);
     const position = node("position", `Channel ${record.channel}`, baseplate.id, [record.cabinet, record.cioc, record.baseplate, String(Number(record.channel))]);
@@ -71,6 +75,10 @@ export function buildDataset(records, meta = {}, suppliedIssues = [], hardware =
     const spare = isSpareRecord(record);
     const wiredSpare = kind === "wired spare";
     record.active = !spare && Boolean(record.tag || record.ioType || record.description);
+    // Presentation metadata only. Spare and unused positions get a status, never a signal name.
+    record.displayName = record.active ? signalDisplayName(record) : "";
+    record.cabinetDisplay = cabinetDisplay(record.cabinet, record.unit);
+    record.areaDisplay = areaDisplay(record.area);
     record.sourceValidationState = validationState(record.validation);
     record.applicationValidation = "not_run";
     // A workbook assertion (including a manually mapped demo hint) is not an application check.

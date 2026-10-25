@@ -8,6 +8,7 @@ import EquipmentContext from "./EquipmentContext.jsx";
 import { nodeIo, slotIndicator } from "./IoPresentation.jsx";
 import { recordIo } from "./ioTypes.js";
 import { slotBrightness } from "./allocationPlayback.js";
+import { nodeLabel } from "./displayNames.js";
 
 function CameraController({ geometry, request, locked, reducedMotion }) {
   const controls = useRef(null);
@@ -46,7 +47,7 @@ function EquipmentLabel({ node, position, selected, onSelect, dataset, onHover, 
   });
   return <Html position={position} center zIndexRange={[15, 0]}><div ref={wrapper}>
     <button type="button" className={`explorer-world-label ${selected ? "is-selected" : ""} ${presenting ? "is-presenting" : ""}`} aria-label={info ? `${node.label}: ${info.code} — ${info.name}` : undefined} onClick={(event) => { event.stopPropagation(); onSelect(node.id); }} onPointerEnter={() => { if (info) onHover(node.id); }} onPointerMove={(event) => { event.stopPropagation(); if (info) onHover(node.id); }} onPointerLeave={() => { if (info) onHover(null); }} onFocus={() => { if (info) onHover(node.id); }} onBlur={() => { if (info) onHover(null); }}>
-      <span>{info ? `${node.channel} · ${info.code === "UNKNOWN" ? "?" : info.code === "SPARE" ? "SP" : info.code}` : node.label}</span>{node.summary.issues > 0 && <span className="ml-1" style={{ color: STATUS[node.status].color }}>!</span>}
+      <span>{info ? `${node.channel} · ${info.code === "UNKNOWN" ? "?" : info.code === "SPARE" ? "SP" : info.code}` : nodeLabel(node)}</span>{node.display && <span className="block text-[9px] text-soft-white/70">{node.label}</span>}{node.summary.issues > 0 && <span className="ml-1" style={{ color: STATUS[node.status].color }}>!</span>}
       {node.type === "cabinet" && <span className="block text-[9px] text-soft-white/80">{node.summary.signals} signals · {node.summary.spares} spares</span>}
     </button>
   </div></Html>;

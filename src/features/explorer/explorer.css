@@ -84,10 +84,12 @@
 .simple-data-bar > span { overflow-wrap:anywhere; }
 .simple-filters { display:flex; gap:10px; flex-wrap:wrap; }
 .simple-filters select { min-width:160px; }
-.flow-layout { display:grid; grid-template-columns:clamp(75px,12vw,165px) minmax(0,1fr) clamp(75px,12vw,165px); align-items:stretch; }
+.flow-layout { display:grid; grid-template-columns:clamp(90px,15vw,240px) minmax(0,1fr) clamp(90px,15vw,240px); align-items:stretch; }
 .flow-side { pointer-events:none; user-select:none; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:18px 8px; background:#182330; border-inline:1px solid #334252; }
 .flow-side figcaption { color:#d2e2f2; font-weight:600; font-size:11px; text-align:center; letter-spacing:.08em; }
-.flow-side svg { width:100%; max-width:160px; height:auto; }
+.flow-side svg { width:100%; max-width:230px; height:auto; }
+.explorer-tq-card { padding:8px; border:1px solid #526176; border-radius:8px; background:#1d2937; }
+.explorer-tq-card .explorer-dl { margin-top:6px; }
 .flow-side p { color:#bbcbdc; text-align:center; font-size:9px; line-height:1.5; }
 .flow-pulse { display:none; }
 .is-flowing .flow-pulse { display:block; animation:wire-flow .65s linear infinite; }

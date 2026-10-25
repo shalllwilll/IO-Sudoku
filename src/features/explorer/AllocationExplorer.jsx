@@ -10,6 +10,7 @@ import RecordTable from "./RecordTable.jsx";
 import { HardwareTree, IssueList, SelectionDetails } from "./Panels.jsx";
 import { IoTypeBadge, SlotHoverCard, ValidationChecks } from "./IoPresentation.jsx";
 import { ancestors, datasetFromRun } from "./model.js";
+import { nodeLabel } from "./displayNames.js";
 import { allocatedWorkbook } from "./directWorkbook.js";
 import { inspectionRecords } from "./allocationPlayback.js";
 import { IO_TYPES, SPARE_IO, UNKNOWN_IO } from "./ioTypes.js";
@@ -130,7 +131,7 @@ export default function AllocationExplorer() {
     finally { if (request === requestNumber.current) { worker.current?.terminate(); worker.current = null; inFlight.current = false; setBusy(false); } }
   }
 
-  const phaseLabel = snapshot.phase === "arrival" ? "Signals arriving from the field" : snapshot.phase === "filling" ? "Presenting " + (snapshot.current?.cabinet || dataset?.nodes.get(snapshot.activeCabinetId)?.label || "cabinet") : snapshot.phase === "outgoing" ? "Signals reaching the control room" : "Ready to inspect";
+  const phaseLabel = snapshot.phase === "arrival" ? "Signals arriving from the field" : snapshot.phase === "filling" ? "Presenting " + (nodeLabel(dataset?.nodes.get(snapshot.activeCabinetId)) || snapshot.current?.cabinet || "cabinet") : snapshot.phase === "outgoing" ? "Signals reaching the control room" : "Ready to inspect";
   return <main className={"allocation-explorer simple-explorer " + (dataset ? "has-dataset" : "is-start")}>
     <header className="explorer-header simple-header">
       <h1 className="text-xl font-semibold">IO Signal Sudoku</h1>
@@ -150,7 +151,7 @@ export default function AllocationExplorer() {
       <section className="flow-layout" aria-label="Field to cabinets to control room" data-phase={snapshot.phase}>
         <FlowDiagram side="field" phase={snapshot.phase} />
         <section className="simple-cabinet-view" aria-label="Allocation viewport" data-render-fps={fps ?? ""}>
-          <nav className="explorer-breadcrumb" aria-label="Hardware hierarchy"><button type="button" onClick={() => selectNode("overview")}>Overview</button>{path.filter((node) => node.type !== "overview").map((node) => <span key={node.id}> / <button type="button" onClick={() => selectNode(node.id)}>{node.label}</button></span>)}</nav>
+          <nav className="explorer-breadcrumb" aria-label="Hardware hierarchy"><button type="button" onClick={() => selectNode("overview")}>Overview</button>{path.filter((node) => node.type !== "overview").map((node) => <span key={node.id}> / <button type="button" title={node.label} onClick={() => selectNode(node.id)}>{nodeLabel(node)}</button></span>)}</nav>
           <div className="explorer-camera-toolbar" role="group" aria-label="Camera controls"><button type="button" className="explorer-button" disabled={!selectedNode || selectedNode.type === "overview"} onClick={goBack}>Parent</button><button type="button" className="explorer-button" onClick={() => focus([view.selectedId || "overview"])}>Fit selection</button><button type="button" className="explorer-button" onClick={() => focus(["overview"])}>Fit scene / reset</button>{["selection", "equipment", "issues", "records"].map((tab) => <button key={tab} type="button" className="explorer-button" onClick={() => setDrawer(tab)}>{tab === "selection" ? "Details" : tab === "equipment" ? "Equipment" : tab === "issues" ? "Issues (" + dataset.issues.length + ")" : "Records"}</button>)}</div>
           <div className="explorer-viewport simple-viewport">
             {webgl && dataset.counts.positions ? <SceneBoundary resetKey={dataset.id} fallback={<RecordTable records={records} onInspect={inspectRecord} />}><Canvas role="region" aria-label="Interactive schematic allocation scene" camera={INITIAL_CAMERA} dpr={[1, 1.5]} gl={GL_OPTIONS}>

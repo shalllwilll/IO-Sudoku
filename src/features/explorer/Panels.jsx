@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { ancestors, STATUS } from "./model.js";
-import { AllocationBadge, IoTypeBadge, RecordValidation, nodeIo } from "./IoPresentation.jsx";
+import { AllocationBadge, IoTypeBadge, RecordValidation, allocationText, nodeIo } from "./IoPresentation.jsx";
+import { areaText, nodeLabel } from "./displayNames.js";
+import TqCard from "./TqCard.jsx";
 
 export function StatusBadge({ status }) {
   const style = STATUS[status] ?? STATUS.unverified;
@@ -39,7 +41,7 @@ function TreeNode({ dataset, id, selectedId, onSelect }) {
     <div className="flex items-center gap-1">
       {node.childIds.length > 0 && <button type="button" className="explorer-tree-toggle" aria-expanded={expanded} aria-label={`${expanded ? "Collapse" : "Expand"} ${node.label}`} onClick={() => setExpanded((value) => !value)}>{expanded ? "−" : "+"}</button>}
       <button type="button" aria-pressed={id === selectedId} className={`explorer-tree-node ${id === selectedId ? "is-selected" : ""}`} onClick={() => onSelect(id)}>
-        <span>{node.label}</span><span className="ml-1 text-soft-white/70">{node.type !== "position" ? `(${node.summary.signals})` : nodeIo(node, dataset).code}</span>
+        <span title={node.label}>{nodeLabel(node)}</span><span className="ml-1 text-soft-white/70">{node.type !== "position" ? `(${node.summary.signals})` : nodeIo(node, dataset).code}</span>
       </button>
     </div>
     {expanded && <ul className="ml-3 border-l border-steel pl-2">{node.childIds.map((child) => <TreeNode key={child} dataset={dataset} id={child} selectedId={selectedId} onSelect={onSelect} />)}</ul>}
@@ -97,16 +99,24 @@ export function IssueList({ dataset, records, selectedIssueId, onInspect, compac
   </div>;
 }
 
-const DETAIL_FIELDS = { tag: "Tag", description: "Description", ioType: "I/O type", signalType: "Signal type", charm: "CHARM identifier", charmType: "CHARM type", channel: "Channel", baseplate: "Baseplate", cioc: "CIOC / CSLS", cabinet: "Marshalling cabinet", systemCabinet: "System cabinet", controller: "Controller", terminalBlock: "Terminal block", terminal1: "Terminal 1", terminal2: "Terminal 2", terminal3: "Terminal 3", cable: "Field cable", pair: "Cable pair", equipment: "Equipment", revision: "Revision", change: "Change category" };
+const DETAIL_FIELDS = { tag: "Tag", description: "Description", ioType: "I/O type", signalType: "Signal type", area: "Operating area", unit: "Unit", charm: "CHARM identifier", charmType: "CHARM type", channel: "Channel", baseplate: "Baseplate", cioc: "CIOC / CSLS", cabinet: "Marshalling cabinet", systemCabinet: "System cabinet", controller: "Controller", terminalBlock: "Terminal block", terminal1: "Terminal 1", terminal2: "Terminal 2", terminal3: "Terminal 3", cable: "Field cable", pair: "Cable pair", equipment: "Equipment", revision: "Revision", change: "Change category" };
+
+// Readable labels sit beside the exact source identifiers and never replace them.
+function detailValue(record, field) {
+  if (field === "area") return record.area ? areaText(record.area) : "";
+  if (field === "cabinet") return record.cabinetDisplay ? `${record.cabinetDisplay} (${record.cabinet})` : record.cabinet;
+  return record[field];
+}
 
 function RecordDetails({ record, dataset }) {
   return <article className="explorer-record-details">
-    <h3 className="text-sm font-semibold">{record.tag || `Source row ${record.sourceRow}`}</h3>
+    <h3 className="text-sm font-semibold">{record.displayName || record.tag || allocationText(record) || `Source row ${record.sourceRow}`}</h3>
+    {record.displayName && record.tag && <p className="text-xs">Tag: {record.tag}</p>}
     <IoTypeBadge record={record} /><div className="mt-1"><AllocationBadge record={record} />{["error", "warning"].includes(record.status) && <StatusBadge status={record.status} />}</div>
     <RecordValidation record={record} />
-    <dl className="explorer-dl">{Object.entries(DETAIL_FIELDS).map(([field, label]) => <div key={field}><dt>{label}</dt><dd>{record[field] || "Unavailable"}</dd></div>)}</dl>
+    <dl className="explorer-dl">{Object.entries(DETAIL_FIELDS).map(([field, label]) => <div key={field}><dt>{label}</dt><dd>{detailValue(record, field) || "Unavailable"}</dd></div>)}</dl>
     <p className="mt-3 break-words text-xs text-soft-white/80">Source: {record.sourceFile || "Unavailable"} · {record.sourceSheet || "sheet unavailable"} · row {record.sourceRow || "unavailable"}</p>
-    {record.issueIds.length > 0 && <ul className="mt-3 space-y-2 text-xs">{record.issueIds.map((id) => { const issue = dataset.issues.find((item) => item.id === id); return <li key={id}><strong>{issue.reference} · {issue.severity}</strong><br />{issue.message}</li>; })}</ul>}
+    {record.issueIds.length > 0 && <ul className="mt-3 space-y-2 text-xs">{record.issueIds.map((id) => { const issue = dataset.issues.find((item) => item.id === id); return <li key={id}>{issue.kind === "tq" ? <TqCard issue={issue} dataset={dataset} /> : <><strong>{issue.reference} · {issue.severity}</strong><br />{issue.message}</>}</li>; })}</ul>}
     {record.sourceValues && <details className="mt-4"><summary className="cursor-pointer text-xs">All source columns</summary><dl className="explorer-dl">{record.sourceValues.map((entry, index) => <div key={index}><dt>{entry.header}</dt><dd>{entry.value || "Unavailable"}</dd></div>)}</dl></details>}
   </article>;
 }
@@ -119,12 +129,12 @@ export function SelectionDetails({ dataset, selectedId, activeRecordId, issueId,
   const records = positionRecords.length > 1 ? positionRecords : activeRecord ? [activeRecord] : positionRecords;
   return <div className="space-y-4">
     <h2 className="text-sm font-semibold">Inspection details</h2>
-    {issue && <section className="rounded-xl border border-steel p-3 text-xs"><h3 className="font-semibold">{issue.reference} · {issue.severity}</h3><p className="mt-2">{issue.message}</p><p className="mt-2 text-soft-white/80">{issue.nodeIds.length ? "Related source records:" : "This issue has no reliable hardware location. The camera has not been moved to an unrelated position."}</p><ul className="mt-2 space-y-2">{issue.recordIds.map((id) => { const record = dataset.recordMap.get(id); return <li key={id}><button type="button" className="underline" onClick={() => onInspect(id)}>{record.tag || `Row ${record.sourceRow}`} · {record.baseplate || "unplaced"} / {record.channel || "—"}</button></li>; })}</ul></section>}
+    {issue && <section className="rounded-xl border border-steel p-3 text-xs">{issue.kind === "tq" ? <TqCard issue={issue} dataset={dataset} /> : <><h3 className="font-semibold">{issue.reference} · {issue.severity}</h3><p className="mt-2">{issue.message}</p></>}<p className="mt-2 text-soft-white/80">{issue.nodeIds.length ? "Related source records:" : "This issue has no reliable hardware location. The camera has not been moved to an unrelated position."}</p><ul className="mt-2 space-y-2">{issue.recordIds.map((id) => { const record = dataset.recordMap.get(id); return <li key={id}><button type="button" className="underline" onClick={() => onInspect(id)}>{record.tag || `Row ${record.sourceRow}`} · {record.baseplate || "unplaced"} / {record.channel || "—"}</button></li>; })}</ul></section>}
     {node && <>
-      <div><span className="text-xs uppercase tracking-wider text-soft-white/75">{node.type}</span><h3 className="mt-1 break-words text-base font-semibold">{node.label}</h3>{node.type === "position" && <IoTypeBadge definition={nodeIo(node, dataset)} />}{["error", "warning"].includes(node.status) && <div><StatusBadge status={node.status} /></div>}</div>
-      <nav aria-label="Selected hardware parents" className="flex flex-wrap gap-2 text-xs">{ancestors(dataset, node.id).slice(0, -1).map((parent) => <button type="button" className="underline" key={parent.id} onClick={() => onSelect(parent.id)}>{parent.label}</button>)}</nav>
+      <div><span className="text-xs uppercase tracking-wider text-soft-white/75">{node.type}</span><h3 className="mt-1 break-words text-base font-semibold">{nodeLabel(node)}</h3>{node.display && <p className="text-xs text-soft-white/80">Source identifier: {node.label}{node.areaCode ? ` · ${areaText(node.areaCode)}` : ""}</p>}{node.type === "position" && <IoTypeBadge definition={nodeIo(node, dataset)} />}{["error", "warning"].includes(node.status) && <div><StatusBadge status={node.status} /></div>}</div>
+      <nav aria-label="Selected hardware parents" className="flex flex-wrap gap-2 text-xs">{ancestors(dataset, node.id).slice(0, -1).map((parent) => <button type="button" className="underline" key={parent.id} onClick={() => onSelect(parent.id)} title={parent.label}>{nodeLabel(parent)}</button>)}</nav>
       {node.type !== "position" && <><dl className="explorer-dl"><div><dt>Source records</dt><dd>{node.summary.records}</dd></div><div><dt>Active signals</dt><dd>{node.summary.signals}</dd></div><div><dt>Occupied records</dt><dd>{node.summary.occupied}</dd></div><div><dt>Spare records</dt><dd>{node.summary.spares}</dd></div><div><dt>Related issues</dt><dd>{node.summary.issues}</dd></div></dl>
-        <ul aria-label="Selected hardware children" className="space-y-1">{node.childIds.map((id) => { const child = dataset.nodes.get(id); return <li key={id}><button type="button" className="explorer-child" onClick={() => onSelect(id)}>{child.label}{child.type === "position" && <IoTypeBadge definition={nodeIo(child, dataset)} compact />}<span aria-hidden="true">{STATUS[child.status].cue} →</span></button></li>; })}</ul>
+        <ul aria-label="Selected hardware children" className="space-y-1">{node.childIds.map((id) => { const child = dataset.nodes.get(id); return <li key={id}><button type="button" className="explorer-child" onClick={() => onSelect(id)} title={child.label}>{nodeLabel(child)}{child.type === "position" && <IoTypeBadge definition={nodeIo(child, dataset)} compact />}<span aria-hidden="true">{STATUS[child.status].cue} →</span></button></li>; })}</ul>
       </>}
       {node.type === "position" && node.recordIds.length > 1 && <p role="alert" className="text-sm" style={{ color: STATUS.error.color }}>Conflicting assignment: all {node.recordIds.length} records are shown below.</p>}
       {node.type === "position" && !node.recordIds.length && <p className="text-sm text-soft-white/80">No record assigned. This position comes from the run's configured hardware layout.</p>}

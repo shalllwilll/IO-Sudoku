@@ -81,3 +81,14 @@ The benchmark prints counts/timings only. It does not establish browser GPU memo
 | `src/pages/Projects.jsx`, `Result.jsx`, `src/auth/session.js` | Entry links and clearing local workbook data on sign-out. |
 | `vite.config.js`, `package.json`, lockfile | ES worker output and the existing ExcelJS dependency used by the importer. |
 | `features/explorer/explorer.test.js`, `e2e/explorer.spec.js`, existing route tests, `scripts/profile-explorer.mjs` | Data integrity, actual workbook coverage, interactive/browser checks, and local profiling. |
+
+## Readable names and TQ guidance
+
+Labels are presentation metadata, built from each loaded dataset by `displayNames.js` and `tqGuidance.js`. Source identifiers are never replaced: the tag, cabinet, controller, CIOC, baseplate and CHARM values stay in the data model, the inspector, the hover card and exports, and a label is rebuilt on every import, so nothing carries over from a previous workbook.
+
+- **Cabinets:** an identifier shaped like `P30-DCM-32001-04` is shown as `Unit 320 — Cabinet 04`, with the exact identifier beneath it. Any other shape keeps its own text. The cabinet count comes from the loaded rows.
+- **Operating areas:** `OA-11` is shown as `Process Area 11`, with the code kept beside it. No industry is inferred.
+- **Signals:** the display name comes from the row's own service description, with a function phrase added only when the description names the instrument (for example a pressure transmitter). It is not added otherwise. Spare, reserved and unused positions show their status, not a name.
+- **Hover card:** display name, tag, I/O type, equipment, service, area and unit, cabinet to CHARM location, cable and pair, allocation status and any TQ.
+- **TQs:** each card shows the supplied ID, message and status, the affected signal and position, why that kind of issue matters, the check needed, and a proposed resolution labelled as a proposal. A status comes from the data: a `TQ Status` column, or a TQ register sheet matched by TQ ID and tag. Otherwise it reads "Status not supplied". Nothing is shown as resolved without a resolved status. Rows from a synthetic workbook are marked as demonstration cases.
+- **Side structures:** the field-side and control-room drawings either side of the cabinets are decorative. They take no pointer input and stand for no workbook record.
