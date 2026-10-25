@@ -27,7 +27,7 @@ def with_ai(client, obj):
 
 
 SEP = {
-    "name": "keep AI and DI apart", "primitive": "separate", "scope": "",
+    "name": "please keep the two kinds well away from each other", "primitive": "separate", "scope": "",
     "parameters": {"a": "io_type = AIR", "b": "io_type = DIR"}, "confidence": 0.9,
 }  # fmt: skip
 
@@ -43,7 +43,7 @@ def test_compile_gives_a_preview_and_applies_nothing(tmp_path):  # T10.2.1
     pid = project_with_data(c, tmp_path)
     before = c.get(f"/api/projects/{pid}/rules").json()["rules"]
     r = c.post(
-        f"/api/projects/{pid}/rules/compile", json={"request": "keep AI and DI apart"}
+        f"/api/projects/{pid}/rules/compile", json={"request": "please keep the two kinds well away from each other"}
     ).json()
     assert r["status"] == "ok" and r["applied"] is False and r["source"] == "ai"
     assert r["rule"]["primitive"] == "separate" and r["dry_run"][0]["rule_id"] == r["rule"]["id"]
@@ -54,7 +54,7 @@ def test_confirm_adds_the_rule(tmp_path):  # T10.2.2
     c = with_ai(make_client(tmp_path), SEP)
     pid = project_with_data(c, tmp_path)
     prev = c.post(
-        f"/api/projects/{pid}/rules/compile", json={"request": "keep AI and DI apart"}
+        f"/api/projects/{pid}/rules/compile", json={"request": "please keep the two kinds well away from each other"}
     ).json()
     n = len(c.get(f"/api/projects/{pid}/rules").json()["rules"])
     r = c.post(f"/api/projects/{pid}/rules/compile/confirm", json={"rule": prev["rule"]})
@@ -106,7 +106,7 @@ def test_ai_offline_is_clear_and_the_form_still_works(tmp_path):  # T10.2.6
     c = make_client(tmp_path)
     pid = project_with_data(c, tmp_path)
     r = c.post(
-        f"/api/projects/{pid}/rules/compile", json={"request": "keep AI and DI apart"}
+        f"/api/projects/{pid}/rules/compile", json={"request": "please keep the two kinds well away from each other"}
     ).json()
     assert r["status"] == "unavailable" and "rule form" in r["message"]
     custom = [{"id": "SEP", "primitive": "separate",
@@ -153,7 +153,7 @@ def test_allocation_is_identical_with_ai_on_and_off(tmp_path):  # T10.2.8
         upload(c, pid, xlsx_bytes(d, rows))
         c.get(f"/api/projects/{pid}/mapping")
         c.get(f"/api/projects/{pid}/values")
-        c.post(f"/api/projects/{pid}/rules/compile", json={"request": "keep AI and DI apart"})
+        c.post(f"/api/projects/{pid}/rules/compile", json={"request": "please keep the two kinds well away from each other"})
         run = run_now(c, pid)
         a = c.get(f"/api/projects/{pid}/runs/{run['id']}/allocation").json()
         return json.dumps([a["placements"], a["unplaced"], a["rows"]], sort_keys=True)

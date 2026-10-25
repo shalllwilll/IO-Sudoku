@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.core.ai.gateway import Gateway
+from app.core.ai.templates import compile_template
 from app.core.model.signal import Signal
 from app.core.rules.dryrun import DryRun, dry_run
 from app.core.rules.lint import Finding, lint
@@ -115,7 +116,7 @@ class RulePreview(BaseModel):
     findings: list[Finding] = Field(default_factory=list)
     dry_run: list[DryRun] = Field(default_factory=list)
     confidence: float | None = None
-    source: Literal["ai"] = "ai"
+    source: Literal["ai", "template"] = "ai"
     applied: bool = False  # a preview is never applied; confirming is a separate call
 
 
@@ -142,10 +143,21 @@ def compile_rule(
     blocks=None,
     groups: dict[str, str] | None = None,
 ) -> RulePreview:
+    """A preview for one sentence: a template when one matches, otherwise the model."""
+    tpl = compile_template(request)
+    if tpl is not None:
+        ai = _AiRule(
+            name=tpl.name, primitive=tpl.primitive, scope=tpl.scope, parameters=tpl.parameters,
+            confidence=1.0,
+        )  # fmt: skip
+        return _preview(ai, "NL", "template", existing_ids, signals, blocks, groups, tpl.strength)
     if not gw.available:
         return RulePreview(
             status="unavailable",
-            message="AI is not configured; build the rule with the rule form instead",
+            message=(
+                "This sentence is not one of the phrasings that work without AI. Rephrase it "
+                "(for example: Keep AIR and DOR on separate CIOCs) or build the rule with the rule form"
+            ),
         )
     res = gw.ask(
         "rule",
@@ -157,26 +169,39 @@ def compile_rule(
         return RulePreview(
             status="unavailable", message="the AI did not return a usable answer; use the rule form"
         )
-    ai = res.value
+    return _preview(res.value, "AI", "ai", existing_ids, signals, blocks, groups)
+
+
+def _preview(
+    ai: _AiRule,
+    prefix: str,
+    source: Literal["ai", "template"],
+    existing_ids: set[str],
+    signals: list[Signal] | None,
+    blocks,
+    groups: dict[str, str] | None,
+    strength: str = "hard",
+) -> RulePreview:
     if ai.primitive is None:
         reason = ai.unsupported_reason or "this cannot be expressed with the rule primitives"
         n = len(existing_ids) + 1
-        rule = Rule(id=f"AI-{n}", name=ai.name or "unsupported request", not_enforced_reason=reason)
+        rule = Rule(id=f"{prefix}-{n}", name=ai.name or "unsupported request", not_enforced_reason=reason)  # fmt: skip
         return RulePreview(
-            status="not_enforced", message=reason, rule=rule, confidence=ai.confidence
+            status="not_enforced", message=reason, rule=rule, confidence=ai.confidence, source=source
         )
     n = 1
-    while f"AI-{n}" in existing_ids:
+    while f"{prefix}-{n}" in existing_ids:
         n += 1
     try:
         rule = load_rules(
             [
                 {
-                    "id": f"AI-{n}",
+                    "id": f"{prefix}-{n}",
                     "name": ai.name,
                     "primitive": ai.primitive,
                     "scope": ai.scope,
                     "parameters": ai.parameters,
+                    "strength": strength,
                 }
             ]
         )[0]
@@ -186,6 +211,7 @@ def compile_rule(
             status="rejected",
             message=f"the suggested rule is not valid: {e}",
             confidence=ai.confidence,
+            source=source,
         )
     findings = lint([rule], signals, groups)
     if any(f.severity == "error" for f in findings):
@@ -195,6 +221,7 @@ def compile_rule(
             message=f"the suggested rule fails lint: {bad}",
             findings=findings,
             confidence=ai.confidence,
+            source=source,
         )
     counts = dry_run([rule], blocks) if blocks is not None else []
     return RulePreview(
@@ -204,6 +231,7 @@ def compile_rule(
         findings=findings,
         dry_run=counts,
         confidence=ai.confidence,
+        source=source,
     )
 
 

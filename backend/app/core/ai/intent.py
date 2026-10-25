@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 
 from app.core.ai.features import RulePreview, compile_rule
 from app.core.ai.gateway import Gateway
+from app.core.ai.templates import EXAMPLES, compile_template
 from app.core.model.signal import Signal
 
 IntentName = Literal["rule", "explain", "goal", "clarify", "unknown", "conflict"]
@@ -83,7 +84,11 @@ def propose_intent(
     blocks=None,
     groups: dict[str, str] | None = None,
 ) -> IntentPreview:
-    """Return a non-mutating proposal using the real rule lint/dry-run pipeline."""
+    """Return a non-mutating proposal using the real rule lint/dry-run pipeline.
+
+    Rule-like text always reaches the compiler: a template answers it offline, and with AI on the
+    model gets every sentence the templates and the local classifier do not settle.
+    """
     intent = _local(request)
     if intent == "conflict":
         return IntentPreview(
@@ -93,7 +98,8 @@ def propose_intent(
             locked_rules=["R-SEG"],
             questions=["Would you like a capacity or segregation review instead?"],
         )
-    if intent == "clarify":
+    templated = compile_template(request) is not None
+    if not templated and intent == "clarify":
         return IntentPreview(
             state="clarify",
             intent="clarify",
@@ -102,25 +108,23 @@ def propose_intent(
                 "Which signals should stay together, and at which level: baseplate, CIOC, or cabinet?"
             ],
         )
-    if intent == "explain":
+    if not templated and intent == "explain":
         return IntentPreview(
             state="clarify",
             intent="explain",
             message="An explanation needs a signal tag, cable/pair, TQ ID, or run ID.",
             questions=["Which allocation result should I explain?"],
         )
-    if intent in {"goal", "unknown"}:
+    if not templated and not gateway.available and intent in {"goal", "unknown"}:
         return IntentPreview(
             state="unknown" if intent == "unknown" else "clarify",
             intent=intent,
             message=(
-                "I could not map this to a supported allocation rule."
+                "I could not map this to a rule I can build without AI."
                 if intent == "unknown"
                 else "Goals are advisory; choose a concrete rule before applying a change."
             ),
-            questions=[
-                "Describe the constraint using signals, a scope, and the desired placement rule."
-            ],
+            questions=["Try a phrasing like: " + "; ".join(f'"{e}"' for e in EXAMPLES[:3])],
         )
     preview = compile_rule(gateway, request, existing_ids, signals, blocks, groups)
     state = (

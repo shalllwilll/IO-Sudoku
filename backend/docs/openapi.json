@@ -2638,8 +2638,11 @@
       ]
      },
      "source": {
-      "const": "ai",
       "default": "ai",
+      "enum": [
+       "ai",
+       "template"
+      ],
       "title": "Source",
       "type": "string"
      },
