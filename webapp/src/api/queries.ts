@@ -188,3 +188,28 @@ export function useMineUpload(pid: string) {
     },
   })
 }
+
+// -- Runs ---------------------------------------------------------------------------------
+
+export type Run = Schemas['RunOut']
+export type RunOptions = Schemas['RunCreate']
+
+export const runQuery = (pid: string, rid: string) =>
+  queryOptions({
+    queryKey: [...sub(pid, 'runs'), rid] as const,
+    queryFn: ({ signal }) => unwrap(api.GET('/api/projects/{pid}/runs/{rid}', { params: { path: { pid, rid } }, signal })),
+  })
+
+export function useStartRun(pid: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: RunOptions) => unwrap(api.POST('/api/projects/{pid}/runs', { params: { path: { pid } }, body })),
+    onSuccess: () => qc.invalidateQueries({ queryKey: sub(pid, 'runs') }),
+  })
+}
+
+/** After a run ends: counts on the project, the run list and the TQ inbox have all changed. */
+export function useRefreshAfterRun(pid: string) {
+  const qc = useQueryClient()
+  return () => qc.invalidateQueries({ queryKey: keys.project(pid) })
+}

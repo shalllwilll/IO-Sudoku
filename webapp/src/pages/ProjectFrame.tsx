@@ -32,14 +32,14 @@ export default function ProjectFrame() {
       data: { state: hasData ? 'done' : 'attention' },
       map: { state: !hasData ? 'todo' : mapNeeds ? 'attention' : 'done', note: mapNeeds ? 'Required missing' : undefined },
       values: { state: !hasData ? 'todo' : open > 0 ? 'attention' : 'done', note: open > 0 ? `${open} to review` : undefined },
-      rules: { state: 'todo' },
-      run: { state: 'todo' },
+      rules: { state: hasData ? 'done' : 'todo' },
+      run: { state: (project.data?.runs ?? 0) > 0 ? 'done' : 'todo' },
     }
     return STEPS.map(([id, label]) => {
       const b = base[id]
       return { id, label, to: `/projects/${pid}/${id}`, ...b, state: id === section ? 'current' : b.state }
     })
-  }, [hasData, mapping.data, values.data, pid, section])
+  }, [hasData, mapping.data, values.data, pid, section, project.data?.runs])
 
   if (project.isError) return <ErrorPanel error={project.error} onRetry={() => void project.refetch()} />
   if (project.isPending) return <p className="p-8 text-[13px] text-fg-muted">Loading project…</p>

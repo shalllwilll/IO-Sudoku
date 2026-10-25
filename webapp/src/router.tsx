@@ -6,6 +6,7 @@ import Data from './pages/Data'
 import MapPage from './pages/Map'
 import Values from './pages/Values'
 import Rules from './pages/Rules'
+import RunPage from './pages/RunPage'
 import Layout from './pages/Layout'
 import Login from './pages/Login'
 import Placeholder from './pages/Placeholder'
@@ -38,7 +39,7 @@ export const routes: RouteObject[] = [
                   { path: 'map', element: <MapPage />, handle: { crumb: 'Map' } },
                   { path: 'values', element: <Values />, handle: { crumb: 'Values' } },
                   { path: 'rules', element: <Rules />, handle: { crumb: 'Rules' } },
-                  { path: 'run', element: stub('Run', 'U5'), handle: { crumb: 'Run' } },
+                  { path: 'run', element: <RunPage />, handle: { crumb: 'Run' } },
                   { path: 'runs/:rid', element: stub('Results', 'U6'), handle: { crumb: 'Results' } },
                   { path: 'tqs', element: stub('TQ inbox', 'U7'), handle: { crumb: 'TQ inbox' } },
                   { path: 'revisions', element: stub('Revisions', 'U9'), handle: { crumb: 'Revisions' } },
