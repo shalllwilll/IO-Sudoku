@@ -9,6 +9,7 @@ import Rules from './pages/Rules'
 import RunPage from './pages/RunPage'
 import ResultsFrame from './pages/ResultsFrame'
 import Overview from './pages/results/Overview'
+import { RevisionReport, RunReport } from './pages/Report'
 import Landing from './pages/results/Landing'
 import Allocation from './pages/results/Allocation'
 import LayoutTab from './pages/results/LayoutTab'
@@ -57,6 +58,8 @@ export const routes: RouteObject[] = [
                     ],
                   },
                   { path: 'tqs', element: <Tqs />, handle: { crumb: 'Technical queries' } },
+                  { path: 'revisions/report', element: <RevisionReport />, handle: { crumb: 'Revision report' } },
+                  { path: 'runs/:rid/report/:kind', element: <RunReport />, handle: { crumb: 'Report' } },
                   { path: 'revisions', element: <Revisions />, handle: { crumb: 'Revisions' } },
                   { path: 'runs/:rid/plant', element: <Plant />, handle: { crumb: '3D plant' } },
                 ],

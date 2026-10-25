@@ -1,4 +1,4 @@
-import { CircleCheck, CircleHelp, Download } from 'lucide-react'
+import { CircleCheck, CircleHelp, Download, FileText } from 'lucide-react'
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom'
 import { downloadUrl } from '@/api/client'
 import { useOpenTqs, useReport, useRun } from '@/api/queries'
@@ -61,6 +61,16 @@ export default function ResultsFrame() {
         <span className="ml-auto mr-3 hidden text-xs text-fg-muted tnum md:block">
           <span className="font-mono">{r.id.slice(0, 8)}</span> · {new Date(r.created_at).toLocaleString()}
         </span>
+        {ready && (
+          <>
+            <Link to={`/projects/${pid}/runs/${rid}/report/allocation`} className="mr-2 inline-flex h-8 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3 text-[13px] font-medium transition-[background-color] duration-150 ease-out hover:bg-surface-3">
+              <FileText size={14} strokeWidth={1.75} /> Allocation report
+            </Link>
+            <Link to={`/projects/${pid}/runs/${rid}/report/tq`} className="mr-2 inline-flex h-8 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3 text-[13px] font-medium transition-[background-color] duration-150 ease-out hover:bg-surface-3">
+              <FileText size={14} strokeWidth={1.75} /> TQ report
+            </Link>
+          </>
+        )}
         {r.download_ready ? (
           <a href={downloadUrl(pid, rid)} className="inline-flex h-8 items-center gap-2 rounded-md border border-border-strong bg-surface-2 px-3 text-[13px] font-medium transition-[background-color,scale] duration-150 ease-out hover:bg-surface-3 active:scale-[0.96]">
             <Download size={14} strokeWidth={1.75} /> Download .xlsx

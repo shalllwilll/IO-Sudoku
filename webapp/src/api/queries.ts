@@ -406,3 +406,20 @@ export function useTqPlacements(pid: string, rid: string | undefined, tid: strin
     staleTime: 0,
   })
 }
+
+// -- Reports ------------------------------------------------------------------------------
+
+export type ReportDoc = Schemas['ReportDoc']
+
+export const useRunReportDoc = (pid: string, rid: string, kind: 'allocation' | 'tq') =>
+  useQuery({
+    queryKey: [...sub(pid, 'runs'), rid, 'reportdoc', kind],
+    queryFn: async ({ signal }) => (await unwrap(api.GET('/api/projects/{pid}/runs/{rid}/reports/{kind}', { params: { path: { pid, rid, kind }, query: { format: 'json' } }, signal }))) as unknown as ReportDoc,
+  })
+
+export const useRevisionReportDoc = (pid: string, from: string, to: string) =>
+  useQuery({
+    queryKey: [...sub(pid, 'revisions'), 'reportdoc', from, to] as const,
+    queryFn: async ({ signal }) => (await unwrap(api.GET('/api/projects/{pid}/revisions/report', { params: { path: { pid }, query: { from, to, format: 'json' } }, signal }))) as unknown as ReportDoc,
+    enabled: !!from && !!to && from !== to,
+  })

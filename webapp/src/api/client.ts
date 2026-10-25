@@ -35,3 +35,8 @@ export async function unwrap<T>(call: Promise<{ data?: T }>): Promise<T> {
 
 export const downloadUrl = (pid: string, rid: string) =>
   `${API_BASE}/api/projects/${encodeURIComponent(pid)}/runs/${encodeURIComponent(rid)}/download`
+
+export const reportXlsxUrl = (pid: string, rid: string, kind: string) =>
+  `${API_BASE}/api/projects/${encodeURIComponent(pid)}/runs/${encodeURIComponent(rid)}/reports/${kind}?format=xlsx`
+export const revisionXlsxUrl = (pid: string, from: string, to: string) =>
+  `${API_BASE}/api/projects/${encodeURIComponent(pid)}/revisions/report?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&format=xlsx`

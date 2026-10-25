@@ -147,7 +147,11 @@ function Compare({ pid, chain }: { pid: string; chain: ChainEntry[] }) {
   )
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-end gap-4">{sel(from, setFrom, 'From (older)')}{sel(to, setTo, 'To')}</div>
+      <div className="flex items-end gap-4">
+        {sel(from, setFrom, 'From (older)')}
+        {sel(to, setTo, 'To')}
+        {from !== to && <Link to={`/projects/${pid}/revisions/report?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`} className="ml-auto inline-flex h-9 items-center rounded-md border border-border-strong bg-surface-2 px-3.5 text-[13px] font-medium transition-[background-color] duration-150 ease-out hover:bg-surface-3">Open report</Link>}
+      </div>
       {from === to ? <p className="text-[13px] text-fg-muted">Pick two different issues to compare.</p> : cmp.isLoading ? <p className="text-[13px] text-fg-muted">Comparing…</p> : cmp.isError ? <p role="alert" className="text-[13px] text-danger">{describeError(cmp.error)}</p> : cmp.data && (
         <>
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-5">

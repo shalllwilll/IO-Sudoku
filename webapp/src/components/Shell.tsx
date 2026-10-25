@@ -64,8 +64,8 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
   const aiOn = ai.data?.ai_available === true
 
   return (
-    <div className="grid h-dvh grid-cols-[232px_1fr] bg-bg">
-      <aside className="flex flex-col gap-6 border-r border-border bg-surface-1 p-3">
+    <div className="grid h-dvh grid-cols-[232px_1fr] bg-bg print:block print:h-auto">
+      <aside className="flex flex-col gap-6 print:hidden border-r border-border bg-surface-1 p-3">
         <Brand />
         <nav className="flex flex-col gap-0.5" aria-label="Primary">
           <NavLink to="/projects" end className={navLink}>
@@ -95,9 +95,9 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
           </NavLink>
         </nav>
       </aside>
-      <div className="flex min-w-0 flex-col">
+      <div className="flex min-w-0 flex-col print:block">
         <OfflineBanner />
-        <header className="flex h-14 shrink-0 items-center gap-4 border-b border-border px-5">
+        <header className="flex h-14 shrink-0 print:hidden items-center gap-4 border-b border-border px-5">
           <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[13px] text-fg-muted">
             {trail.map((c, i) => (
               <span key={`${i}-${c}`} className={cn(i === trail.length - 1 && 'text-fg')}>
@@ -148,8 +148,8 @@ export function Shell({ crumbs, rail, children }: { crumbs?: string[]; rail?: Re
             )}
           </div>
         </header>
-        <div className="flex min-h-0 flex-1">
-          <main className="min-h-0 min-w-0 flex-1 overflow-auto">{children}</main>
+        <div className="flex min-h-0 flex-1 print:block">
+          <main className="min-h-0 min-w-0 flex-1 overflow-auto print:overflow-visible">{children}</main>
           <AssistantPanel />
         </div>
       </div>

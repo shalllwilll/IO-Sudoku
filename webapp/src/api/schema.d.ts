@@ -256,6 +256,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{pid}/revisions/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Revision Doc */
+        get: operations["revision_doc_api_projects__pid__revisions_report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{pid}/revisions/{label}": {
         parameters: {
             query?: never;
@@ -520,6 +537,23 @@ export interface paths {
         };
         /** Report */
         get: operations["report_api_projects__pid__runs__rid__report_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{pid}/runs/{rid}/reports/{kind}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Run Report */
+        get: operations["run_report_api_projects__pid__runs__rid__reports__kind__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1202,6 +1236,18 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** Fig */
+        Fig: {
+            /**
+             * Hint
+             * @default
+             */
+            hint: string;
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
+        };
         /** Finding */
         Finding: {
             /** Message */
@@ -1709,6 +1755,22 @@ export interface components {
             /** Value */
             value?: string | null;
         };
+        /** ReportDoc */
+        ReportDoc: {
+            /** Kind */
+            kind: string;
+            /** Meta */
+            meta?: string[][];
+            /** Sections */
+            sections?: components["schemas"]["Section"][];
+            /**
+             * Subtitle
+             * @default
+             */
+            subtitle: string;
+            /** Title */
+            title: string;
+        };
         /** ReportOut */
         ReportOut: {
             report: components["schemas"]["CompletionReport"];
@@ -1874,6 +1936,17 @@ export interface components {
             project_id: string;
             /** Run Id */
             run_id: string | null;
+        };
+        /** Section */
+        Section: {
+            /** Figures */
+            figures?: components["schemas"]["Fig"][];
+            /** Heading */
+            heading: string;
+            /** Tables */
+            tables?: components["schemas"]["Table"][];
+            /** Text */
+            text?: string[];
         };
         /** SheetInfo */
         SheetInfo: {
@@ -2103,6 +2176,18 @@ export interface components {
             status: string;
             /** Subject */
             subject: string;
+        };
+        /** Table */
+        Table: {
+            /** Columns */
+            columns: string[];
+            /** Rows */
+            rows: (string | number | null)[][];
+            /**
+             * Title
+             * @default
+             */
+            title: string;
         };
         /** TqGroup */
         TqGroup: {
@@ -2937,6 +3022,51 @@ export interface operations {
             };
         };
     };
+    revision_doc_api_projects__pid__revisions_report_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                format?: "json" | "xlsx";
+            };
+            header?: never;
+            path: {
+                pid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDoc"];
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     revision_api_projects__pid__revisions__label__get: {
         parameters: {
             query?: never;
@@ -3716,6 +3846,60 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorBody"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_report_api_projects__pid__runs__rid__reports__kind__get: {
+        parameters: {
+            query?: {
+                format?: "json" | "xlsx";
+            };
+            header?: never;
+            path: {
+                pid: string;
+                rid: string;
+                kind: "allocation" | "tq";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDoc"];
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": unknown;
                 };
             };
             /** @description Not Found */
