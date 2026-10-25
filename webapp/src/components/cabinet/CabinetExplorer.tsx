@@ -96,7 +96,7 @@ export function CabinetExplorer({ pid, layout, allocation, slots, tqKeys }: Prop
               ))}
             </div>
           )}
-          <Link to={`/projects/${pid}/runs/${allocation.run_id}/plant`} className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border px-3.5 text-[13px] font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg"><Box size={15} strokeWidth={1.75} /> Open 3D view</Link>
+          <a href={(import.meta.env.VITE_PLANT_URL as string | undefined)?.trim() || 'http://127.0.0.1:5182/plant'} target="_blank" rel="noreferrer" className="ml-auto inline-flex h-9 items-center gap-2 rounded-md border border-border px-3.5 text-[13px] font-medium text-fg-muted transition-[background-color,color] duration-150 ease-out hover:bg-surface-2 hover:text-fg"><Box size={15} strokeWidth={1.75} /> Open standalone 3D model</a>
         </div>
 
         <div className="mb-5 flex flex-wrap items-center gap-2">
