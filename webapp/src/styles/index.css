@@ -1,0 +1,140 @@
+@import 'tailwindcss';
+
+/* One token set drives both themes. Dark is the default; light overrides the same names. */
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: oklch(0.145 0.006 250);
+  --surface-1: oklch(0.18 0.007 250);
+  --surface-2: oklch(0.215 0.008 250);
+  --surface-3: oklch(0.26 0.009 250);
+  --border: oklch(1 0 0 / 0.07);
+  --border-strong: oklch(1 0 0 / 0.13);
+  --fg: oklch(0.96 0.003 250);
+  --fg-muted: oklch(0.74 0.01 250);
+  --fg-subtle: oklch(0.58 0.012 250);
+  --accent: oklch(0.8 0.125 195);
+  --accent-strong: oklch(0.72 0.13 195);
+  --accent-fg: oklch(0.17 0.02 195);
+  --accent-soft: oklch(0.8 0.125 195 / 0.14);
+  --success: oklch(0.78 0.15 155);
+  --warning: oklch(0.82 0.15 80);
+  --danger: oklch(0.7 0.19 25);
+  --info: oklch(0.76 0.12 250);
+  --shadow-1: 0 1px 2px oklch(0 0 0 / 0.4), 0 0 0 1px oklch(1 0 0 / 0.04);
+  --shadow-2: 0 8px 24px -8px oklch(0 0 0 / 0.6), 0 2px 6px oklch(0 0 0 / 0.35), 0 0 0 1px oklch(1 0 0 / 0.06);
+  /* Okabe-Ito derived, colour-blind-safe categorical set for IO types */
+  --io-air: #56b4e9;
+  --io-aor: #2ec4a0;
+  --io-dir: #e69f00;
+  --io-dor: #e8743b;
+  --io-other: #cc79a7;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+  --bg: oklch(0.985 0.003 250);
+  --surface-1: oklch(1 0 0);
+  --surface-2: oklch(0.968 0.004 250);
+  --surface-3: oklch(0.93 0.006 250);
+  --border: oklch(0 0 0 / 0.08);
+  --border-strong: oklch(0 0 0 / 0.16);
+  --fg: oklch(0.2 0.01 250);
+  --fg-muted: oklch(0.42 0.012 250);
+  --fg-subtle: oklch(0.54 0.012 250);
+  --accent: oklch(0.55 0.11 200);
+  --accent-strong: oklch(0.48 0.11 200);
+  --accent-fg: oklch(0.99 0.005 200);
+  --accent-soft: oklch(0.55 0.11 200 / 0.1);
+  --success: oklch(0.52 0.14 155);
+  --warning: oklch(0.6 0.14 70);
+  --danger: oklch(0.55 0.2 25);
+  --info: oklch(0.52 0.13 250);
+  --shadow-1: 0 1px 2px oklch(0 0 0 / 0.08), 0 0 0 1px oklch(0 0 0 / 0.04);
+  --shadow-2: 0 8px 24px -8px oklch(0 0 0 / 0.16), 0 2px 6px oklch(0 0 0 / 0.08), 0 0 0 1px oklch(0 0 0 / 0.06);
+  --io-air: #1f8fcf;
+  --io-aor: #00805f;
+  --io-dir: #b87800;
+  --io-dor: #c4501a;
+  --io-other: #a8527f;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'SF Mono', monospace;
+  --color-bg: var(--bg);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+  --color-io-air: var(--io-air);
+  --color-io-aor: var(--io-aor);
+  --color-io-dir: var(--io-dir);
+  --color-io-dor: var(--io-dor);
+  --color-io-other: var(--io-other);
+  --shadow-card: var(--shadow-1);
+  --shadow-float: var(--shadow-2);
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --ease-out-quint: cubic-bezier(0.2, 0, 0, 1);
+}
+
+html {
+  background: var(--bg);
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+::selection {
+  background: var(--accent-soft);
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Theme switch: transitions are off for one frame so colours do not smear. */
+.theme-switching,
+.theme-switching * {
+  transition: none !important;
+}
+
+/* Reduced motion keeps opacity fades and drops movement, blur and scale. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Spare-kind patterns: shape and texture, never colour alone. */
+.pat-alarm {
+  background-image: repeating-linear-gradient(135deg, transparent 0 3px, oklch(0 0 0 / 0.28) 3px 5px);
+}
+.pat-reserved {
+  background-image: repeating-linear-gradient(135deg, var(--border-strong) 0 1px, transparent 1px 6px);
+}
